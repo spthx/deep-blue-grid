@@ -1,5 +1,7 @@
 # DEEP BLUE GRID
 
+公開版: https://spthx.github.io/deep-blue-grid/
+
 ゲームボーイ時代のレーダー作戦ゲームを現代的に再構成した、1人用・1ステージ完結のブラウザ海戦ゲームです。8×8の海域へ3隻を配置し、通常砲撃・特殊兵装・レーダーを使って敵AI艦隊の全撃沈を目指します。
 
 ## 起動方法
@@ -19,6 +21,8 @@ npm run dev
 npm run build
 npm test
 ```
+
+GitHub Pages用の静的ビルドは `npm run build:pages` で生成できます。`master` ブランチへのpush時はGitHub Actionsが自動公開します。
 
 ## 操作
 
