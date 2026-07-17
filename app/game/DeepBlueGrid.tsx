@@ -328,6 +328,8 @@ export function DeepBlueGrid() {
   };
 
   const continueToPlayer = () => {
+    setWeapon("fire");
+    setPicked([]);
     setPhase("player");
     setFlash("player");
     setMessage("COMMAND：兵装と目標を選択してください。");

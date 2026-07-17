@@ -28,3 +28,8 @@ test("mobile command deck stays four columns by two rows", async () => {
   const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
   assert.match(css, /grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
 });
+
+test("returning from damage review resets the command to normal fire", async () => {
+  const source = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
+  assert.match(source, /const continueToPlayer = \(\) => \{\s*setWeapon\("fire"\);\s*setPicked\(\[\]\);/);
+});
