@@ -654,6 +654,27 @@ export function DeepBlueGrid() {
         <span>1. 自艦を配置（二本指で回転）</span><span>2. 兵装と目標を選択</span><span>3. プレビューを確認して発射</span><span>4. 全区画命中で撃沈</span>
       </section>
 
+      {difficulty && !result && (
+        <aside className="utility-overlay" aria-label="ゲーム設定">
+          <button
+            onClick={() => setMuted(audio.current?.toggle() ?? false)}
+            aria-label={muted ? "サウンドを有効にする" : "サウンドをミュートする"}
+            title={muted ? "サウンドを有効にする" : "サウンドをミュートする"}
+          >
+            <span aria-hidden="true">{muted ? "🔇" : "🔊"}</span>
+          </button>
+          <button
+            className="retry"
+            onClick={() => initStage(stageIndex)}
+            disabled={locked}
+            aria-label="現在のステージをリトライ"
+            title="現在のステージをリトライ"
+          >
+            <span aria-hidden="true">↻</span>
+          </button>
+        </aside>
+      )}
+
       {(hostilePursuit || ownPursuit) && (
         <section className="pursuit-alert" aria-live="polite">
           <b>PURSUIT PHASE</b>
@@ -767,12 +788,14 @@ export function DeepBlueGrid() {
                 </button>
               );
             })}
-            <button className={"cmd confirm " + (ready ? "ready" : "")} onClick={() => void confirmAction()} disabled={!ready || locked}>
-              <b>{confirmLabel}</b><small>{picked.length} / {targetRequirement} SELECTED</small>
-            </button>
-            <button className="cmd" onClick={cancelAim} disabled={locked || !picked.length}><b>CANCEL</b><small>照準解除 / ESC</small></button>
-            <button className="cmd" onClick={() => setMuted(audio.current?.toggle() ?? false)}><b>{muted ? "SOUND ON" : "MUTE"}</b><small>KEY M</small></button>
-            <button className="cmd danger" onClick={() => initStage(stageIndex)} disabled={locked}><b>RETRY</b><small>現在のステージを再開</small></button>
+            <div className="action-cluster">
+              <button className="cmd cancel-command" onClick={cancelAim} disabled={locked || !picked.length}>
+                <b>CANCEL</b><small>照準解除 / ESC</small>
+              </button>
+              <button className={"cmd confirm " + (ready ? "ready" : "")} onClick={() => void confirmAction()} disabled={!ready || locked}>
+                <b>{confirmLabel}</b><small>{picked.length} / {targetRequirement} SELECTED</small>
+              </button>
+            </div>
           </section>
           <section className="ops-lower">
             <div className="command-detail">
