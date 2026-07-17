@@ -69,6 +69,8 @@ export function DeepBlueGrid() {
 
   const [stageIndex, setStageIndex] = useState(0);
   const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
+  const [portraitPhone, setPortraitPhone] = useState(false);
+  const [visibleBoard, setVisibleBoard] = useState<"player" | "enemy">("player");
   const stage = STAGES[stageIndex];
   const [phase, setPhase] = useState<Phase>("placement");
   const [message, setMessage] = useState(stage.subtitle);
@@ -138,6 +140,19 @@ export function DeepBlueGrid() {
   useEffect(() => {
     initStage(0);
   }, [initStage]);
+
+  useEffect(() => {
+    const portraitQuery = window.matchMedia("(max-width: 760px) and (orientation: portrait)");
+    const updateLayout = () => setPortraitPhone(portraitQuery.matches);
+    updateLayout();
+    portraitQuery.addEventListener("change", updateLayout);
+    return () => portraitQuery.removeEventListener("change", updateLayout);
+  }, []);
+
+  useEffect(() => {
+    if (!portraitPhone) return;
+    setVisibleBoard(phase === "player" ? "enemy" : "player");
+  }, [phase, portraitPhone]);
 
   const startCampaign = (selectedDifficulty: Difficulty) => {
     difficultyRef.current = selectedDifficulty;
@@ -584,7 +599,7 @@ export function DeepBlueGrid() {
     if (!meta.carrier || !stage.fleet.includes(meta.carrier)) return { available: false, status: "未配備", reason: "搭載艦は後のステージで配備されます。" };
     if (!player.current.alive(meta.carrier)) return { available: false, status: "搭載艦喪失", reason: "搭載艦が撃沈されたため使用不能です。" };
     const uses = arsenal.current.uses[id];
-    return { available: uses > 0, status: uses + " / " + WEAPON_MAX[id], reason: uses > 0 ? "" : "このステージでの使用回数を使い切りました。" };
+    return { available: uses > 0, status: "残り " + uses + "/" + WEAPON_MAX[id], reason: uses > 0 ? "" : "このステージでの使用回数を使い切りました。" };
   };
 
   const result = phase === "victory" || phase === "defeat";
@@ -651,8 +666,21 @@ export function DeepBlueGrid() {
         </section>
       )}
 
+      <nav className="mobile-field-switch" aria-label="表示する海域">
+        <div>
+          <b>{phase === "enemy" ? "敵攻撃中：自軍海域を表示" : phase === "player" ? "自軍攻撃：敵軍海域を表示" : "艦隊配置：自軍海域を表示"}</b>
+          <small>ターンが変わると自動で切り替わります</small>
+        </div>
+        <button className={visibleBoard === "player" ? "active" : ""} onClick={() => setVisibleBoard("player")}>
+          自軍海域
+        </button>
+        <button className={visibleBoard === "enemy" ? "active" : ""} onClick={() => setVisibleBoard("enemy")} disabled={phase === "placement"}>
+          敵軍海域
+        </button>
+      </nav>
+
       <div className="boards">
-        <section className="tactical-panel">
+        <section className={"tactical-panel " + (portraitPhone && visibleBoard !== "player" ? "mobile-hidden" : "")}>
           <div className="panel-head"><h2>OWN WATERS // 自軍海域</h2><span>DEFENSE GRID</span></div>
           <div className="canvas-wrap">
             <canvas
@@ -673,7 +701,7 @@ export function DeepBlueGrid() {
           <div className="fleet-row">{stage.fleet.map((id) => shipCard(player.current, id, phase === "placement"))}</div>
         </section>
 
-        <section className="tactical-panel enemy-board">
+        <section className={"tactical-panel enemy-board " + (portraitPhone && visibleBoard !== "enemy" ? "mobile-hidden" : "")}>
           <div className="panel-head"><h2>HOSTILE WATERS // 敵軍海域</h2><span>CONTACT GRID</span></div>
           <div className="canvas-wrap">
             <canvas
