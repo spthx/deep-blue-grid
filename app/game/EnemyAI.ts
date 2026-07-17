@@ -1,6 +1,5 @@
 import { GRID_SIZE, SHIPS, type Coord, type ShipId } from "./constants.ts";
 import { Arsenal, Board, SeededRandom, harpoonCells, inBounds, keyOf, radarCells, sparrowCells, type AttackResult, type ShotMark } from "./engine.ts";
-import { acousticCandidateKeys, emptyAcousticIntel, type AcousticIntel } from "./AcousticTrace.ts";
 
 export type AIState = "HUNT" | "TARGET" | "SEARCH";
 export type AIDecision = { weapon: "fire" | "phantom" | "harpoon" | "sparrow" | "mk45" | "radar"; targets: Coord[]; state: AIState };
@@ -13,7 +12,6 @@ export class EnemyAI {
   search: Coord[] = [];
   turnsWithoutHit = 0;
   sunkSizes: number[] = [];
-  acoustic: AcousticIntel = emptyAcousticIntel();
   private rng: SeededRandom;
   private targetSizes: number[];
   private skill: number;
@@ -78,13 +76,6 @@ export class EnemyAI {
     this.updateState();
   }
 
-  observeAcoustic(intel: AcousticIntel) {
-    this.acoustic = { level: intel.level, weak: intel.weak.map((coord) => ({ ...coord })), candidates: intel.candidates.map((coord) => ({ ...coord })), strong: intel.strong ? { ...intel.strong } : undefined };
-    if (this.acoustic.strong && this.isUnknown(this.acoustic.strong)) this.search.unshift(this.acoustic.strong);
-    else this.acoustic.candidates.forEach((coord) => { if (this.isUnknown(coord)) this.search.push(coord); });
-    this.updateState();
-  }
-
   private chooseShot() {
     const targets = this.orientedTargets().filter((c) => this.isUnknown(c));
     if (targets.length) { this.state = "TARGET"; return targets[0]; }
@@ -107,7 +98,6 @@ export class EnemyAI {
   private rankCandidates() {
     const remainingSizes = this.targetSizes.filter((size) => !this.sunkSizes.includes(size));
     const submarineOnly = remainingSizes.every((s) => s === 1);
-    const acousticKeys = acousticCandidateKeys(this.acoustic);
     const scored = this.unknownCells().map((coord) => {
       let score = this.rng.next() * .4;
       if (!submarineOnly && (coord.x + coord.y) % 2 === 0) score += 2;
@@ -116,8 +106,6 @@ export class EnemyAI {
         if (cells.every(inBounds) && cells.every((c) => !["miss", "echo", "sunk"].includes(this.knowledge[c.y][c.x]))) score += 1;
       }
       for (const echo of this.findMarks("echo")) if (Math.abs(echo.x - coord.x) <= 1 && Math.abs(echo.y - coord.y) <= 1) score += 4;
-      if (acousticKeys.has(keyOf(coord))) score += this.acoustic.level >= 4 ? 14 : 7;
-      if (this.acoustic.strong && keyOf(this.acoustic.strong) === keyOf(coord)) score += 100;
       return { coord, score };
     });
     scored.sort((a, b) => b.score - a.score);

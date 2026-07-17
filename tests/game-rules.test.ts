@@ -3,7 +3,6 @@ import test from "node:test";
 import { SHIPS, STAGES } from "../app/game/constants.ts";
 import { Arsenal, Board, SeededRandom, harpoonCells, radarCells, sparrowCells } from "../app/game/engine.ts";
 import { EnemyAI } from "../app/game/EnemyAI.ts";
-import { advanceAcousticTrace, emptyAcousticIntel } from "../app/game/AcousticTrace.ts";
 
 test("random placement is legal and complete across many seeds", () => {
   for (let seed = 1; seed <= 100; seed++) {
@@ -72,21 +71,6 @@ test("weapon patterns clip safely and radar never damages", () => {
   assert.equal(b.radar({ x: 0, y: 0 }), true);
   assert.equal(b.ships[0].hits.size, 0);
   assert.equal(sparrowCells({ x: 7, y: 7 }).length, 1);
-});
-
-test("acoustic trace advances through five public levels without damage", () => {
-  const board = new Board();
-  board.placeShip("submarine", { x: 0, y: 0 }, "horizontal");
-  const rng = new SeededRandom(99);
-  let intel = emptyAcousticIntel();
-  for (let level = 1; level <= 5; level++) {
-    intel = advanceAcousticTrace(intel, { x: 0, y: 0 }, rng);
-    assert.equal(intel.level, level);
-    if (level === 4) assert.ok(intel.candidates.length <= 3);
-  }
-  assert.deepEqual(intel.strong, { x: 0, y: 0 });
-  assert.equal(board.ships[0].hits.size, 0);
-  assert.equal(board.shots.flat().every((mark) => mark === "unknown"), true);
 });
 
 test("carrier loss disables remaining weapon uses", () => {

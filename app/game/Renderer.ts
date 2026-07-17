@@ -1,10 +1,9 @@
 import { CELL_LABELS, GRID_SIZE, SHIPS, type Coord, type Orientation, type ShipId } from "./constants.ts";
 import { Board, harpoonCells, radarCells } from "./engine.ts";
-import type { AcousticIntel } from "./AcousticTrace.ts";
 
 export type RenderOptions = {
   revealShips: boolean; cursor?: Coord; previewShip?: { id: ShipId; orientation: Orientation; valid: boolean };
-  weapon?: "fire"|"phantom"|"harpoon"|"sparrow"|"mk45"|"radar"; selected?: Coord[]; active?: Coord[]; acoustic?: AcousticIntel; time?: number;
+  weapon?: "fire"|"phantom"|"harpoon"|"sparrow"|"mk45"|"radar"; selected?: Coord[]; active?: Coord[]; time?: number;
 };
 
 export function drawBoard(canvas: HTMLCanvasElement, board: Board, opts: RenderOptions) {
@@ -22,7 +21,6 @@ export function drawBoard(canvas: HTMLCanvasElement, board: Board, opts: RenderO
   ctx.fillStyle="#71909b";ctx.font=`bold ${Math.max(9,cell*.2)}px monospace`;ctx.textAlign="center";ctx.textBaseline="middle";
   for(let i=0;i<GRID_SIZE;i++){ctx.fillText(String(i+1),m+i*cell+cell/2,m*.42);ctx.fillText(CELL_LABELS[i],m*.43,m+i*cell+cell/2);}
   for(const scan of board.radarScans){const cells=radarCells(scan.origin);ctx.fillStyle=scan.contact?"rgba(124,229,223,.09)":"rgba(113,144,155,.055)";for(const c of cells)ctx.fillRect(m+c.x*cell,m+c.y*cell,cell,cell);}
-  drawAcoustic(ctx,opts.acoustic,m,cell,t);
   for(const ship of board.ships) if(opts.revealShips||ship.sunk) drawShip(ctx,ship.id,ship.cells,ship.orientation,m,cell,ship.sunk,ship.hits);
   for(let y=0;y<GRID_SIZE;y++)for(let x=0;x<GRID_SIZE;x++){const mark=board.shots[y][x];if(mark!=="unknown")drawMark(ctx,{x,y},mark,m,cell,t);}
   if(opts.cursor){
@@ -57,12 +55,6 @@ function drawShip(ctx:CanvasRenderingContext2D,id:ShipId,cells:Coord[],orientati
   if(id==="submarine"){ctx.fillRect(-cell*.18,-w*.12,cell*.7,w*.24);ctx.fillRect(cell*.05,-w*.32,cell*.14,w*.2);ctx.fillRect(cell*.1,-w*.42,cell*.05,w*.11);}
   ctx.strokeStyle=sunk?"#30282a":"#163b45";ctx.lineWidth=Math.max(1,cell*.035);ctx.strokeRect(-cell*.13,-cell*.04,len-cell*.75,cell*.08);ctx.restore();
   for(const c of cells) if(hits.has(`${c.x},${c.y}`)){ctx.fillStyle="#ff8585";ctx.beginPath();ctx.arc(m+(c.x+.5)*cell,m+(c.y+.5)*cell,cell*.12,0,Math.PI*2);ctx.fill();}
-}
-
-function drawAcoustic(ctx:CanvasRenderingContext2D,intel:AcousticIntel|undefined,m:number,cell:number,t:number){if(!intel?.level)return;
-  for(const c of intel.candidates){ctx.fillStyle=`rgba(229,215,138,${.08+.04*Math.sin(t*5)})`;ctx.fillRect(m+c.x*cell,m+c.y*cell,cell,cell);ctx.strokeStyle="rgba(229,215,138,.48)";ctx.strokeRect(m+c.x*cell+3,m+c.y*cell+3,cell-6,cell-6);}
-  for(const c of intel.weak){const x=m+(c.x+.5)*cell,y=m+(c.y+.5)*cell;ctx.strokeStyle="rgba(124,229,223,.48)";ctx.lineWidth=Math.max(1,cell*.035);ctx.beginPath();ctx.arc(x,y,cell*(.18+.04*Math.sin(t*5)),0,Math.PI*2);ctx.stroke();}
-  if(intel.strong){const x=m+(intel.strong.x+.5)*cell,y=m+(intel.strong.y+.5)*cell;ctx.strokeStyle="#ff8585";ctx.lineWidth=Math.max(2,cell*.055);for(const r of [.2,.34]){ctx.beginPath();ctx.arc(x,y,cell*r,0,Math.PI*2);ctx.stroke();}}
 }
 
 function drawMark(ctx:CanvasRenderingContext2D,c:Coord,mark:string,m:number,cell:number,t:number){const x=m+(c.x+.5)*cell,y=m+(c.y+.5)*cell;

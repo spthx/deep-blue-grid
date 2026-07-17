@@ -94,16 +94,6 @@ button { font: inherit; }
 }
 .quick-guide b { color:var(--cyan); letter-spacing:.1em; }
 
-.pursuit-alert {
-  display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:12px;
-  padding:8px 12px; border:1px solid #8d793f; border-top:0;
-  background:linear-gradient(90deg,#302916e8,#0b1b21e8); color:var(--amber);
-  box-shadow:inset 0 0 18px #0007;
-}
-.pursuit-alert b { font-size:11px; letter-spacing:.16em; text-shadow:0 0 10px #e5d78a66; }
-.pursuit-alert span { color:#d1cda9; font-size:9px; }
-.pursuit-alert em { font-style:normal; font-weight:900; font-size:10px; white-space:nowrap; }
-
 .mobile-field-switch { display:none; }
 
 .boards { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(12px, 2vw, 28px); margin: 14px 0 12px; scroll-margin-top:58px; }
@@ -220,7 +210,6 @@ button { font: inherit; }
 .legend { display:flex; justify-content:center; gap:16px; margin:8px 0 0; color:var(--steel); font-size:9px; }
 .legend i { display:inline-block; width:7px; height:7px; margin-right:4px; border-radius:50%; }
 .legend .miss{background:var(--steel)} .legend .echo{border:1px solid var(--cyan)} .legend .hit{background:var(--danger)} .legend .sunk{background:var(--amber)}
-.legend .trace { border:1px solid var(--amber); border-radius:0; background:#e5d78a33; }
 
 .turn-flash { position:fixed; inset:0; display:grid; place-items:center; z-index:25; pointer-events:none; background:#06131daa; animation:turnFlash 1.05s both; }
 .turn-flash div { border-block:1px solid currentColor; width:100%; padding:15px; text-align:center; color:var(--cyan); font-size:clamp(22px,5vw,52px); letter-spacing:.25em; text-shadow:0 0 22px currentColor; }
@@ -280,8 +269,6 @@ button { font: inherit; }
   .campaign-track b { display:none; }
   .quick-guide { justify-content:flex-start; gap:4px 10px; }
   .quick-guide b { flex-basis:100%; }
-  .pursuit-alert { grid-template-columns:1fr auto; gap:4px 8px; }
-  .pursuit-alert span { grid-column:1 / -1; grid-row:2; }
   .boards { grid-template-columns:1fr; gap:13px; }
   .tactical-panel.enemy-board { order:-1; }
   .canvas-wrap { width:min(100%,520px); }
