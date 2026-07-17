@@ -4,6 +4,7 @@ export type ShotMark = "unknown" | "miss" | "echo" | "hit" | "sunk";
 export type AttackKind = "MISS" | "ECHO" | "HIT" | "SUNK" | "ALREADY";
 export type Ship = { id: ShipId; name: string; size: number; orientation: Orientation; cells: Coord[]; hits: Set<string>; sunk: boolean };
 export type AttackResult = { coord: Coord; kind: AttackKind; shipId?: ShipId; shipName?: string; revealed?: Coord[] };
+export type RadarScan = { origin: Coord; contact: boolean; candidates: Coord[] };
 
 export class SeededRandom {
   private state: number;
@@ -21,7 +22,7 @@ export const sameCoord = (a: Coord, b: Coord) => a.x === b.x && a.y === b.y;
 export class Board {
   ships: Ship[] = [];
   shots: ShotMark[][] = Array.from({ length: GRID_SIZE }, () => Array<ShotMark>(GRID_SIZE).fill("unknown"));
-  radarScans: Array<{ origin: Coord; contact: boolean }> = [];
+  radarScans: RadarScan[] = [];
 
   reset() { this.ships = []; this.shots = Array.from({ length: GRID_SIZE }, () => Array<ShotMark>(GRID_SIZE).fill("unknown")); this.radarScans = []; }
   cellsFor(start: Coord, size: number, orientation: Orientation, id?: ShipId): Coord[] {
@@ -87,12 +88,12 @@ export class Board {
     return false;
   }
   radar(origin: Coord) {
-    const cells = radarCells(origin);
-    const contact = cells.some((c) => {
+    const candidates = radarCells(origin).filter((c) => this.shots[c.y][c.x] === "unknown");
+    const contact = candidates.some((c) => {
       const ship = this.shipAt(c);
       return ship && !ship.sunk && !ship.hits.has(keyOf(c));
     });
-    this.radarScans.push({ origin: { ...origin }, contact: !!contact });
+    this.radarScans.push({ origin: { ...origin }, contact: !!contact, candidates: candidates.map((c) => ({ ...c })) });
     return !!contact;
   }
   allPlaced(fleet: ShipId[] = SHIPS.map((ship) => ship.id)) { return fleet.every((id) => this.ships.some((ship) => ship.id === id)); }

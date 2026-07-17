@@ -115,6 +115,8 @@ test("radar contact only records unbroken enemy sections", () => {
   assert.equal(b.radar({ x: 0, y: 0 }), false);
   assert.equal(b.radar({ x: 1, y: 1 }), true);
   assert.deepEqual(b.radarScans.map((scan) => scan.contact), [false, true]);
+  assert.equal(b.radarScans[0].candidates.some((coord) => coord.x === 1 && coord.y === 1), false);
+  assert.equal(b.radarScans[1].candidates.some((coord) => coord.x === 1 && coord.y === 1), false);
 });
 
 test("carrier loss disables remaining weapon uses", () => {

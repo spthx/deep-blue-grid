@@ -22,9 +22,13 @@ export function drawBoard(canvas: HTMLCanvasElement, board: Board, opts: RenderO
   for(let i=0;i<GRID_SIZE;i++){ctx.fillText(String(i+1),m+i*cell+cell/2,m*.42);ctx.fillText(CELL_LABELS[i],m*.43,m+i*cell+cell/2);}
   const radarMarks=new Map<string,{coord:Coord;contact:boolean}>();
   for(const scan of board.radarScans){
-    const cells=radarCells(scan.origin);
-    if(cells.every(c=>board.shots[c.y][c.x]!=="unknown"))continue;
-    for(const coord of cells){const key=`${coord.x},${coord.y}`,seen=radarMarks.get(key);radarMarks.set(key,{coord,contact:!!seen?.contact||scan.contact});}
+    const contactResolved=scan.contact&&scan.candidates.some(c=>board.shots[c.y][c.x]==="hit"||board.shots[c.y][c.x]==="sunk");
+    if(contactResolved)continue;
+    for(const coord of scan.candidates){
+      if(board.shots[coord.y][coord.x]!=="unknown")continue;
+      const key=`${coord.x},${coord.y}`,seen=radarMarks.get(key);
+      radarMarks.set(key,{coord,contact:!!seen?.contact||scan.contact});
+    }
   }
   for(const {coord,contact} of radarMarks.values()){
     ctx.fillStyle=contact?"rgba(229,215,138,.18)":"rgba(76,151,133,.105)";

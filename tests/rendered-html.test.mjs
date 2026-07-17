@@ -46,4 +46,6 @@ test("radar contact and clear scans use restrained grid colors", async () => {
   const source = await readFile(new URL("../app/game/Renderer.ts", import.meta.url), "utf8");
   assert.match(source, /rgba\(229,215,138,\.18\)/);
   assert.match(source, /rgba\(76,151,133,\.105\)/);
+  assert.match(source, /contactResolved/);
+  assert.match(source, /board\.shots\[coord\.y\]\[coord\.x\]!=="unknown"/);
 });
