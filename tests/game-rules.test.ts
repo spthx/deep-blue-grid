@@ -4,6 +4,24 @@ import { SHIPS, STAGES } from "../app/game/constants.ts";
 import { Arsenal, Board, SeededRandom, harpoonCells, radarCells, sparrowCells } from "../app/game/engine.ts";
 import { EnemyAI } from "../app/game/EnemyAI.ts";
 import { nextSubmarineWake, submarineWakeCandidates } from "../app/game/SubmarineWake.ts";
+import { FULL_FLEET, playerFleetFor, survivingFleet, usesTacticsRules } from "../app/game/Campaign.ts";
+
+test("campaign is condensed to six escalating stages", () => {
+  assert.equal(STAGES.length, 6);
+  assert.deepEqual(STAGES.map((stage) => stage.id), [1, 2, 3, 4, 5, 6]);
+  assert.deepEqual(STAGES.map((stage) => stage.fleet.length), [3, 4, 5, 5, 6, 6]);
+  assert.ok(STAGES.every((stage, index) => index === 0 || stage.aiSkill > STAGES[index - 1].aiSkill));
+});
+
+test("survival starts with every ship and permanently removes sunk ships", () => {
+  assert.equal(FULL_FLEET.length, SHIPS.length);
+  assert.deepEqual(playerFleetFor("survival", STAGES[0].fleet, FULL_FLEET), FULL_FLEET);
+  const remaining = survivingFleet(FULL_FLEET, ["battleship", "submarine"]);
+  assert.equal(remaining.includes("battleship"), false);
+  assert.equal(remaining.includes("submarine"), false);
+  assert.equal(remaining.length, FULL_FLEET.length - 2);
+  assert.equal(usesTacticsRules("survival"), true);
+});
 
 test("random placement is legal and complete across many seeds", () => {
   for (let seed = 1; seed <= 100; seed++) {

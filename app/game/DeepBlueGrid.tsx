@@ -24,9 +24,9 @@ import { EnemyAI } from "./EnemyAI.ts";
 import { AudioManager } from "./AudioManager.ts";
 import { drawBoard, pointerToCoord } from "./Renderer.ts";
 import { nextSubmarineWake } from "./SubmarineWake.ts";
+import { FULL_FLEET, playerFleetFor, survivingFleet, usesTacticsRules, type GameMode } from "./Campaign.ts";
 
 type Phase = "placement" | "player" | "enemy" | "review" | "victory" | "defeat";
-type Difficulty = "casual" | "tactics";
 type Stats = { turns: number; shots: number; hits: number; sunk: number; specials: number; damage: number };
 type LogEntry = { id: number; text: string; tone: "info" | "good" | "bad" };
 type ShipCardOptions = { selectable?: boolean; concealDamage?: boolean };
@@ -37,7 +37,7 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const coordName = (coord: Coord) => CELL_LABELS[coord.y] + "-" + (coord.x + 1);
 const sameCoord = (a: Coord, b: Coord) => a.x === b.x && a.y === b.y;
 const freshStats = (): Stats => ({ turns: 0, shots: 0, hits: 0, sunk: 0, specials: 0, damage: 0 });
-const difficultySkill = (base: number, difficulty: Difficulty) => base * (difficulty === "tactics" ? 1.7 : 1.38);
+const difficultySkill = (base: number, mode: GameMode) => base * (usesTacticsRules(mode) ? 1.7 : 1.38);
 
 const WEAPON_META: Record<WeaponId, { label: string; carrier?: ShipId; help: string; requirement: string }> = {
   fire: { label: "通常砲撃", help: "敵海域の1マスを攻撃します。", requirement: "目標 1" },
@@ -60,7 +60,8 @@ export function DeepBlueGrid() {
   const enemyCanvas = useRef<HTMLCanvasElement>(null);
   const boardsRef = useRef<HTMLDivElement>(null);
   const animation = useRef(0);
-  const difficultyRef = useRef<Difficulty>("casual");
+  const difficultyRef = useRef<GameMode>("casual");
+  const survivalFleetRef = useRef<ShipId[]>([...FULL_FLEET]);
   const touchPointers = useRef(new Set<number>());
   const placementGesture = useRef<PlacementGesture | null>(null);
   const touchRotated = useRef(false);
@@ -70,10 +71,12 @@ export function DeepBlueGrid() {
   if (!audio.current && typeof window !== "undefined") audio.current = new AudioManager();
 
   const [stageIndex, setStageIndex] = useState(0);
-  const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
+  const [difficulty, setDifficulty] = useState<GameMode | null>(null);
+  const [survivalFleet, setSurvivalFleet] = useState<ShipId[]>([...FULL_FLEET]);
   const [portraitPhone, setPortraitPhone] = useState(false);
   const [visibleBoard, setVisibleBoard] = useState<"player" | "enemy">("player");
   const stage = STAGES[stageIndex];
+  const playerFleet = playerFleetFor(difficulty ?? difficultyRef.current, stage.fleet, survivalFleet);
   const [phase, setPhase] = useState<Phase>("placement");
   const [message, setMessage] = useState(stage.subtitle);
   const [selectedShip, setSelectedShip] = useState<ShipId>(stage.fleet[0]);
@@ -102,10 +105,11 @@ export function DeepBlueGrid() {
 
   const ownAlive = player.current.ships.filter((ship) => !ship.sunk).length;
   const enemyAlive = enemy.current.ships.filter((ship) => !ship.sunk).length;
-  const fleetCells = stage.fleet.reduce((total, id) => total + SHIPS.find((ship) => ship.id === id)!.size, 0);
-  const initStage = useCallback((nextStageIndex: number, nextDifficulty?: Difficulty) => {
+  const fleetCells = playerFleet.reduce((total, id) => total + SHIPS.find((ship) => ship.id === id)!.size, 0);
+  const initStage = useCallback((nextStageIndex: number, nextDifficulty?: GameMode, nextSurvivalFleet?: ShipId[]) => {
     const nextStage = STAGES[nextStageIndex];
     const selectedDifficulty = nextDifficulty ?? difficultyRef.current;
+    const nextPlayerFleet = playerFleetFor(selectedDifficulty, nextStage.fleet, nextSurvivalFleet ?? survivalFleetRef.current);
     difficultyRef.current = selectedDifficulty;
     seedRef.current = Date.now() + nextStageIndex * 7919;
     rngRef.current = new SeededRandom(seedRef.current);
@@ -114,9 +118,9 @@ export function DeepBlueGrid() {
     arsenal.current = new Arsenal();
     ai.current = new EnemyAI(
       new SeededRandom(seedRef.current ^ 0x51f15e),
-      nextStage.fleet,
+      nextPlayerFleet,
       difficultySkill(nextStage.aiSkill, selectedDifficulty),
-      selectedDifficulty,
+      usesTacticsRules(selectedDifficulty) ? "tactics" : "casual",
     );
     playerWakesRef.current = [];
     enemyWakesRef.current = [];
@@ -125,7 +129,7 @@ export function DeepBlueGrid() {
     setStageIndex(nextStageIndex);
     setPhase("placement");
     setMessage(nextStage.subtitle);
-    setSelectedShip(nextStage.fleet[0]);
+    setSelectedShip(nextPlayerFleet[0]);
     setOrientation("horizontal");
     setPlacementBackup(null);
     setCursor({ x: 1, y: 2 });
@@ -160,10 +164,13 @@ export function DeepBlueGrid() {
     }
   }, [phase, portraitPhone]);
 
-  const startCampaign = (selectedDifficulty: Difficulty) => {
+  const startCampaign = (selectedDifficulty: GameMode) => {
+    const startingFleet = selectedDifficulty === "survival" ? [...FULL_FLEET] : STAGES[0].fleet;
     difficultyRef.current = selectedDifficulty;
+    survivalFleetRef.current = [...FULL_FLEET];
+    setSurvivalFleet([...FULL_FLEET]);
     setDifficulty(selectedDifficulty);
-    initStage(0, selectedDifficulty);
+    initStage(0, selectedDifficulty, startingFleet);
   };
 
   const previewTargets = useMemo(() => {
@@ -208,8 +215,8 @@ export function DeepBlueGrid() {
   }, [render]);
 
   const randomize = () => {
-    player.current.randomize(rngRef.current, stage.fleet);
-    setSelectedShip(stage.fleet[0]);
+    player.current.randomize(rngRef.current, playerFleet);
+    setSelectedShip(playerFleet[0]);
     setPlacementBackup(null);
     setMessage("配置完了。艦隊カードと海図を確認して戦闘を開始してください。");
     addLog("自動配置を実行しました。");
@@ -219,7 +226,7 @@ export function DeepBlueGrid() {
 
   const clearPlacement = () => {
     player.current.reset();
-    setSelectedShip(stage.fleet[0]);
+    setSelectedShip(playerFleet[0]);
     setOrientation("horizontal");
     setPlacementBackup(null);
     setCursor({ x: 1, y: 2 });
@@ -247,14 +254,14 @@ export function DeepBlueGrid() {
   };
 
   const startBattle = () => {
-    if (!player.current.allPlaced(stage.fleet)) {
+    if (!player.current.allPlaced(playerFleet)) {
       setMessage("このステージの全艦を配置してください。");
       return;
     }
     enemy.current.randomize(rngRef.current, stage.fleet);
-    if (difficultyRef.current === "tactics") {
+    if (usesTacticsRules(difficultyRef.current)) {
       setLocked(true);
-      addLog("TACTICS：敵艦隊が先制攻撃を開始。", "bad");
+      addLog((difficultyRef.current === "survival" ? "SURVIVAL" : "TACTICS") + "：敵艦隊が先制攻撃を開始。", "bad");
       audio.current?.confirm();
       bump();
       void enemyTurn();
@@ -507,7 +514,7 @@ export function DeepBlueGrid() {
       player.current.placeShip(selectedShip, coord, orientation);
       setPlacementBackup(null);
       audio.current?.confirm();
-      const next = stage.fleet.find((id) => !player.current.ships.some((placed) => placed.id === id));
+      const next = playerFleet.find((id) => !player.current.ships.some((placed) => placed.id === id));
       const placedName = SHIPS.find((ship) => ship.id === selectedShip)!.name;
       if (next) {
         const nextOrientation: Orientation = "horizontal";
@@ -681,7 +688,7 @@ export function DeepBlueGrid() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [phase, cursor, weapon, picked, locked, ready, selectedShip, orientation, placementPreviewActive, placementBackup]);
+  }, [phase, cursor, weapon, picked, locked, ready, selectedShip, orientation, placementPreviewActive, placementBackup, playerFleet]);
 
   const shipCard = (board: Board, shipId: ShipId, options: ShipCardOptions = {}) => {
     const { selectable = false, concealDamage = false } = options;
@@ -708,7 +715,7 @@ export function DeepBlueGrid() {
   const weaponState = (id: WeaponId) => {
     if (id === "fire") return { available: true, status: "∞", reason: "" };
     const meta = WEAPON_META[id];
-    if (!meta.carrier || !stage.fleet.includes(meta.carrier)) return { available: false, status: "未配備", reason: "搭載艦は後のステージで配備されます。" };
+    if (!meta.carrier || !playerFleet.includes(meta.carrier)) return { available: false, status: difficulty === "survival" ? "永久喪失" : "未配備", reason: difficulty === "survival" ? "搭載艦を以前のステージで喪失したため使用不能です。" : "搭載艦は後のステージで配備されます。" };
     if (!player.current.alive(meta.carrier)) return { available: false, status: "搭載艦喪失", reason: "搭載艦が撃沈されたため使用不能です。" };
     const uses = arsenal.current.uses[id];
     return { available: uses > 0, status: "残り " + uses + "/" + WEAPON_MAX[id], reason: uses > 0 ? "" : "このステージでの使用回数を使い切りました。" };
@@ -721,12 +728,26 @@ export function DeepBlueGrid() {
   const confirmLabel = weapon === "radar" ? "走査実行" : selectedMeta.label + " 発射";
   const advanceFromResult = () => {
     if (phase === "defeat") {
-      initStage(stageIndex);
+      if (difficulty === "survival") {
+        survivalFleetRef.current = [...FULL_FLEET];
+        setSurvivalFleet([...FULL_FLEET]);
+        initStage(0, "survival", FULL_FLEET);
+      } else {
+        initStage(stageIndex);
+      }
     } else if (campaignClear) {
       setDifficulty(null);
       initStage(0);
     } else {
-      initStage(stageIndex + 1);
+      if (difficulty === "survival") {
+        const sunkThisStage = player.current.ships.filter((ship) => ship.sunk).map((ship) => ship.id);
+        const nextFleet = survivingFleet(survivalFleetRef.current, sunkThisStage);
+        survivalFleetRef.current = nextFleet;
+        setSurvivalFleet(nextFleet);
+        initStage(stageIndex + 1, "survival", nextFleet);
+      } else {
+        initStage(stageIndex + 1);
+      }
     }
   };
 
@@ -773,15 +794,17 @@ export function DeepBlueGrid() {
           >
             <span aria-hidden="true">{muted ? "🔇" : "🔊"}</span>
           </button>
-          <button
-            className="retry"
-            onClick={() => initStage(stageIndex)}
-            disabled={locked}
-            aria-label="現在のステージをリトライ"
-            title="現在のステージをリトライ"
-          >
-            <span aria-hidden="true">↻</span>
-          </button>
+          {difficulty !== "survival" && (
+            <button
+              className="retry"
+              onClick={() => initStage(stageIndex)}
+              disabled={locked}
+              aria-label="現在のステージをリトライ"
+              title="現在のステージをリトライ"
+            >
+              <span aria-hidden="true">↻</span>
+            </button>
+          )}
         </aside>
       )}
 
@@ -805,15 +828,17 @@ export function DeepBlueGrid() {
             >
               <span aria-hidden="true">{muted ? "🔇" : "🔊"}</span>
             </button>
-            <button
-              className="retry"
-              onClick={() => initStage(stageIndex)}
-              disabled={locked}
-              aria-label="現在のステージをリトライ"
-              title="現在のステージをリトライ"
-            >
-              <span aria-hidden="true">↻</span>
-            </button>
+            {difficulty !== "survival" && (
+              <button
+                className="retry"
+                onClick={() => initStage(stageIndex)}
+                disabled={locked}
+                aria-label="現在のステージをリトライ"
+                title="現在のステージをリトライ"
+              >
+                <span aria-hidden="true">↻</span>
+              </button>
+            )}
           </span>
         )}
       </nav>
@@ -848,7 +873,7 @@ export function DeepBlueGrid() {
             />
             <div className="radar-line" />
           </div>
-          <div className="fleet-row">{stage.fleet.map((id) => shipCard(player.current, id, { selectable: phase === "placement" }))}</div>
+          <div className="fleet-row">{playerFleet.map((id) => shipCard(player.current, id, { selectable: phase === "placement" }))}</div>
         </section>
 
         <section className={"tactical-panel enemy-board " + (portraitPhone && visibleBoard !== "enemy" ? "mobile-hidden" : "")}>
@@ -886,7 +911,7 @@ export function DeepBlueGrid() {
             />
             <div className="radar-line" />
           </div>
-          <div className="fleet-row">{stage.fleet.map((id) => shipCard(enemy.current, id, { concealDamage: difficulty === "tactics" }))}</div>
+          <div className="fleet-row">{stage.fleet.map((id) => shipCard(enemy.current, id, { concealDamage: difficulty === "tactics" || difficulty === "survival" }))}</div>
         </section>
       </div>
 
@@ -914,9 +939,9 @@ export function DeepBlueGrid() {
             <button className="cmd" onClick={clearPlacement}><b>CLEAR</b><small>配置をやり直す</small></button>
             <button className="cmd" onClick={randomize}><b>RANDOM</b><small>自動配置</small></button>
           </div>
-          {player.current.allPlaced(stage.fleet) && (
+          {player.current.allPlaced(playerFleet) && (
             <button className="cmd primary placement-start" onClick={startBattle}>
-              <b>BATTLE START</b><small>{player.current.ships.length} / {stage.fleet.length} 艦配置完了</small>
+              <b>BATTLE START</b><small>{player.current.ships.length} / {playerFleet.length} 艦配置完了</small>
             </button>
           )}
         </section>
@@ -983,13 +1008,16 @@ export function DeepBlueGrid() {
           <section className="difficulty-card">
             <div className="eyebrow">SELECT ENEMY TACTICS</div>
             <h2>DIFFICULTY</h2>
-            <p>両モードとも敵の艦隊・兵装回数は自軍と同じです。TACTICSでは敵先攻と情報秘匿が加わりますが、AIが未発見の配置を読むことはありません。</p>
+            <p>全6海域を攻略します。TACTICSとSURVIVALは敵先攻・損傷秘匿ですが、AIが未発見の配置を読むことはありません。</p>
             <div className="difficulty-options">
               <button className="mode-button" onClick={() => startCampaign("casual")}>
                 <span>CASUAL</span><small>公開情報を使い、索敵・追撃・特殊兵装をバランスよく運用します。</small>
               </button>
               <button className="mode-button tactics" onClick={() => startCampaign("tactics")}>
                 <span>TACTICS</span><b>敵先攻・情報戦</b><small>敵損傷は撃沈まで非公開。兵装回数は自軍と同じ。公開された戦果だけで最短追撃を狙います。</small>
+              </button>
+              <button className="mode-button survival" onClick={() => startCampaign("survival")}>
+                <span>SURVIVAL</span><b>全艦出撃・永久喪失</b><small>全6隻で開始。生存艦は各海域後に修復、兵装も回復しますが、撃沈艦と搭載兵装は戻りません。</small>
               </button>
             </div>
           </section>
@@ -1003,7 +1031,7 @@ export function DeepBlueGrid() {
             <h2>{campaignClear ? "CAMPAIGN CLEAR" : phase === "victory" ? "VICTORY" : "DEFEAT"}</h2>
             <p>
               {campaignClear
-                ? "全8海域を制圧しました。DEEP BLUE GRID 作戦完了。"
+                ? difficulty === "survival" ? "残存艦隊で全6海域を突破しました。SURVIVAL作戦完了。" : "全6海域を制圧しました。DEEP BLUE GRID 作戦完了。"
                 : phase === "victory"
                   ? "敵艦隊を撃破。次の海域へ進出できます。"
                   : "自軍艦隊が戦闘能力を喪失。配置と兵装運用を再検討してください。"}
@@ -1015,13 +1043,15 @@ export function DeepBlueGrid() {
               <div>SPECIAL USED<b>{stats.specials}</b></div>
               <div>DAMAGE TAKEN<b>{stats.damage} / {fleetCells}</b></div>
               <div>STAGE<b>{stage.id} / {STAGES.length}</b></div>
+              {difficulty === "survival" && <div>SURVIVORS<b>{player.current.ships.filter((ship) => !ship.sunk).length} / {playerFleet.length}</b></div>}
+              {difficulty === "survival" && <div>LOST THIS STAGE<b>{player.current.ships.filter((ship) => ship.sunk).length}</b></div>}
             </div>
             <button
               className="cmd primary"
               onClick={advanceFromResult}
             >
-              <b>{phase === "victory" ? (campaignClear ? "NEW CAMPAIGN" : "NEXT STAGE") : "RETRY STAGE"}</b>
-              <small>{phase === "victory" && !campaignClear ? STAGES[stageIndex + 1].title : "艦隊を再配置"}</small>
+              <b>{phase === "victory" ? (campaignClear ? "NEW CAMPAIGN" : "NEXT STAGE") : difficulty === "survival" ? "RESTART SURVIVAL" : "RETRY STAGE"}</b>
+              <small>{phase === "victory" && !campaignClear ? STAGES[stageIndex + 1].title : difficulty === "survival" ? "全6隻で海域1から再挑戦" : "艦隊を再配置"}</small>
             </button>
           </section>
         </div>

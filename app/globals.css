@@ -268,7 +268,7 @@ button { font: inherit; touch-action: manipulation; }
 .difficulty-card .eyebrow { color:var(--steel); font-size:9px; letter-spacing:.3em; }
 .difficulty-card h2 { margin:8px 0; color:var(--cyan); font-size:clamp(28px,6vw,54px); letter-spacing:.15em; }
 .difficulty-card > p { max-width:560px; margin:0 auto 22px; color:var(--steel); font-size:11px; line-height:1.7; }
-.difficulty-options { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+.difficulty-options { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
 .mode-button {
   min-height:135px; padding:18px; text-align:left; cursor:pointer; color:var(--foam);
   border:1px solid var(--cyan); background:linear-gradient(#1b4b56,#0a252e);
@@ -281,6 +281,8 @@ button { font: inherit; touch-action: manipulation; }
 .mode-button span + small { margin-top:10px; }
 .mode-button.tactics { border-color:var(--amber); background:linear-gradient(#594d22,#241f12); }
 .mode-button.tactics span { color:var(--amber); }
+.mode-button.survival { border-color:var(--danger); background:linear-gradient(#5b2d32,#241317); }
+.mode-button.survival span { color:var(--danger); }
 
 @media (max-width: 760px) {
   .game-shell { padding:10px 8px calc(16px + env(safe-area-inset-bottom,0px)); }

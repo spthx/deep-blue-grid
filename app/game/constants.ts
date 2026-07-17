@@ -18,7 +18,6 @@ export const SHIPS: ReadonlyArray<{ id: ShipId; name: string; code: string; size
 
 export type StageDefinition = {
   id: number;
-  level: number;
   title: string;
   subtitle: string;
   fleet: ShipId[];
@@ -26,14 +25,12 @@ export type StageDefinition = {
 };
 
 export const STAGES: ReadonlyArray<StageDefinition> = [
-  { id: 1, level: 1, title: "FIRST CONTACT", subtitle: "初期艦隊で索敵の基本を掴め", fleet: ["battleship", "destroyer", "submarine"], aiSkill: .82 },
-  { id: 2, level: 1, title: "ECHO STRAIT", subtitle: "反応を読み、敵の追撃を断て", fleet: ["battleship", "destroyer", "submarine"], aiSkill: .88 },
-  { id: 3, level: 5, title: "ESCORT LINE", subtitle: "護衛艦を加えた近海防衛線", fleet: ["battleship", "destroyer", "escort", "submarine"], aiSkill: .92 },
-  { id: 4, level: 5, title: "SILENT WAKE", subtitle: "発射音が潜水艦を追い詰める", fleet: ["battleship", "destroyer", "escort", "submarine"], aiSkill: .96 },
-  { id: 5, level: 9, title: "CRUISER GAP", subtitle: "巡洋艦と範囲兵装が戦線を拡大", fleet: ["battleship", "cruiser", "destroyer", "escort", "submarine"], aiSkill: 1 },
-  { id: 6, level: 9, title: "CROSS FIRE", subtitle: "複数兵装を温存し敵中枢を狙え", fleet: ["battleship", "cruiser", "destroyer", "escort", "submarine"], aiSkill: 1.04 },
-  { id: 7, level: 13, title: "CARRIER SCREEN", subtitle: "全6艦種による総力海戦", fleet: ["carrier", "battleship", "cruiser", "destroyer", "escort", "submarine"], aiSkill: 1.08 },
-  { id: 8, level: 13, title: "DEEP BLUE GRID", subtitle: "最終海域。全艦隊を撃沈せよ", fleet: ["carrier", "battleship", "cruiser", "destroyer", "escort", "submarine"], aiSkill: 1.14 },
+  { id: 1, title: "FIRST CONTACT", subtitle: "初期艦隊で索敵の基本を掴め", fleet: ["battleship", "destroyer", "submarine"], aiSkill: .82 },
+  { id: 2, title: "ESCORT LINE", subtitle: "護衛艦を加えた近海防衛線", fleet: ["battleship", "destroyer", "escort", "submarine"], aiSkill: .92 },
+  { id: 3, title: "CRUISER GAP", subtitle: "巡洋艦と範囲兵装が戦線を拡大", fleet: ["battleship", "cruiser", "destroyer", "escort", "submarine"], aiSkill: 1 },
+  { id: 4, title: "CROSS FIRE", subtitle: "複数兵装を温存し敵中枢を狙え", fleet: ["battleship", "cruiser", "destroyer", "escort", "submarine"], aiSkill: 1.05 },
+  { id: 5, title: "CARRIER SCREEN", subtitle: "全6艦種による総力海戦", fleet: ["carrier", "battleship", "cruiser", "destroyer", "escort", "submarine"], aiSkill: 1.1 },
+  { id: 6, title: "DEEP BLUE GRID", subtitle: "最終海域。全艦隊を撃沈せよ", fleet: ["carrier", "battleship", "cruiser", "destroyer", "escort", "submarine"], aiSkill: 1.16 },
 ];
 
 export const HARPOON_PATTERN: ReadonlyArray<Coord> = [
