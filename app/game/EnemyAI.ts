@@ -25,7 +25,8 @@ export class EnemyAI {
 
   decide(ownBoard: Board): AIDecision {
     const unknown = this.unknownCells();
-    if (this.turnsWithoutHit >= 4 && this.arsenal.canUse("radar", ownBoard)) {
+    const radarPatience = this.skill >= 1.25 ? 3 : 4;
+    if (this.turnsWithoutHit >= radarPatience && this.arsenal.canUse("radar", ownBoard)) {
       const origin = this.bestRadarOrigin();
       this.arsenal.spend("radar", ownBoard);
       return { weapon: "radar", targets: [origin], state: this.state };

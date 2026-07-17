@@ -16,5 +16,8 @@ test("server renders the finished game shell", async () => {
   assert.match(html, /<title>DEEP BLUE GRID/);
   assert.match(html, /DEEP/);
   assert.match(html, /FLEET DEPLOY/);
+  assert.match(html, /DIFFICULTY/);
+  assert.match(html, /NORMAL/);
+  assert.match(html, /HARD/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|Your site is taking shape/);
 });

@@ -95,7 +95,16 @@ test("carrier loss disables remaining weapon uses", () => {
   assert.equal(arsenal.canUse("harpoon", b), true);
   for (let x = 0; x < 5; x++) b.attack({ x, y: 0 });
   assert.equal(arsenal.canUse("harpoon", b), false);
-  assert.equal(arsenal.uses.harpoon, 1);
+  assert.equal(arsenal.uses.harpoon, 2);
+});
+
+test("harpoon keeps two symmetric uses per stage", () => {
+  const own = new Board(); own.placeShip("battleship", { x: 0, y: 0 }, "horizontal");
+  const arsenal = new Arsenal();
+  assert.equal(arsenal.uses.harpoon, 2);
+  assert.equal(arsenal.spend("harpoon", own), true);
+  assert.equal(arsenal.spend("harpoon", own), true);
+  assert.equal(arsenal.spend("harpoon", own), false);
 });
 
 test("AI never repeats or leaves the board over a full simulated hunt", () => {
