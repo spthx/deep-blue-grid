@@ -25,7 +25,7 @@ import { EnemyAI } from "./EnemyAI.ts";
 import { AudioManager } from "./AudioManager.ts";
 import { drawBoard, pointerToCoord } from "./Renderer.ts";
 
-type Phase = "placement" | "player" | "enemy" | "victory" | "defeat";
+type Phase = "placement" | "player" | "enemy" | "review" | "victory" | "defeat";
 type Difficulty = "normal" | "hard";
 type Stats = { turns: number; shots: number; hits: number; sunk: number; specials: number; damage: number };
 type LogEntry = { id: number; text: string; tone: "info" | "good" | "bad" };
@@ -55,6 +55,7 @@ export function DeepBlueGrid() {
   const audio = useRef<AudioManager | null>(null);
   const playerCanvas = useRef<HTMLCanvasElement>(null);
   const enemyCanvas = useRef<HTMLCanvasElement>(null);
+  const boardsRef = useRef<HTMLDivElement>(null);
   const animation = useRef(0);
   const playerTraceRef = useRef<AcousticIntel>(emptyAcousticIntel());
   const enemyTraceRef = useRef<AcousticIntel>(emptyAcousticIntel());
@@ -152,6 +153,11 @@ export function DeepBlueGrid() {
   useEffect(() => {
     if (!portraitPhone) return;
     setVisibleBoard(phase === "player" ? "enemy" : "player");
+    if (phase !== "placement") {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => boardsRef.current?.scrollIntoView({ block: "start", behavior: "auto" }));
+      });
+    }
   }, [phase, portraitPhone]);
 
   const startCampaign = (selectedDifficulty: Difficulty) => {
@@ -283,12 +289,12 @@ export function DeepBlueGrid() {
     setFlash("enemy");
     setMessage("敵照準システム作動中…");
     audio.current?.turn(true);
-    await sleep(650);
+    await sleep(900);
     setFlash(null);
     const decision = ai.current.decide(enemy.current);
     setMessage("ENEMY " + decision.state + "： " + decision.weapon.toUpperCase() + " LOCK");
     setActive(decision.targets);
-    await sleep(550);
+    await sleep(750);
 
     if (decision.weapon === "radar") {
       audio.current?.sonar();
@@ -299,7 +305,7 @@ export function DeepBlueGrid() {
       addLog(report, contact ? "bad" : "info");
       exposeEnemyLastShip();
       bump();
-      await sleep(650);
+      await sleep(900);
     } else {
       audio.current?.fire();
       const results: AttackResult[] = [];
@@ -307,7 +313,7 @@ export function DeepBlueGrid() {
         const result = player.current.attack(target);
         if (result.kind !== "ALREADY") results.push(result);
         setActive([target]);
-        await sleep(200);
+        await sleep(260);
         if (result.kind === "HIT" || result.kind === "SUNK") audio.current?.hit();
         else audio.current?.splash();
         if (result.kind === "SUNK") audio.current?.sunk();
@@ -331,33 +337,45 @@ export function DeepBlueGrid() {
 
     setActive([]);
     bump();
-    await sleep(500);
+    await sleep(850);
     if (player.current.allSunk()) {
       setPhase("defeat");
       audio.current?.defeat();
       setLocked(false);
       return;
     }
+    setPhase("review");
+    setMessage("戦況確認：敵の攻撃が終了しました。自軍艦隊の損傷を確認してください。");
+  };
+
+  const continueToPlayer = () => {
     setPhase("player");
     setFlash("player");
     setMessage("COMMAND：兵装と目標を選択してください。");
     audio.current?.turn();
-    setTimeout(() => setFlash(null), 700);
+    setTimeout(() => setFlash(null), 1050);
     setLocked(false);
+  };
+
+  const showBoard = (board: "player" | "enemy") => {
+    setVisibleBoard(board);
+    if (portraitPhone) {
+      requestAnimationFrame(() => boardsRef.current?.scrollIntoView({ block: "start", behavior: "auto" }));
+    }
   };
 
   const resolvePlayerAttack = async (targets: Coord[], special = false) => {
     setLocked(true);
     setActive(targets);
     audio.current?.fire();
-    await sleep(320);
+    await sleep(400);
     const results: AttackResult[] = [];
     for (const target of targets) {
       const result = enemy.current.attack(target);
       if (result.kind === "ALREADY") continue;
       results.push(result);
       setActive([target]);
-      await sleep(165);
+      await sleep(220);
       if (result.kind === "HIT" || result.kind === "SUNK") audio.current?.hit();
       else audio.current?.splash();
       if (result.kind === "SUNK") audio.current?.sunk();
@@ -387,7 +405,7 @@ export function DeepBlueGrid() {
     setActive([]);
     setPicked([]);
     bump();
-    await sleep(480);
+    await sleep(850);
     if (enemy.current.allSunk()) {
       setPhase("victory");
       audio.current?.victory();
@@ -436,7 +454,7 @@ export function DeepBlueGrid() {
       const cells = radarCells(picked[0]);
       setActive(cells);
       audio.current?.sonar();
-      await sleep(650);
+      await sleep(800);
       const contact = enemy.current.radar(picked[0]);
       setStats((current) => ({ ...current, turns: current.turns + 1, specials: current.specials + 1 }));
       const report = contact ? "CONTACT：2×2範囲内に生存艦反応。" : "CLEAR：2×2範囲内に反応なし。";
@@ -446,7 +464,7 @@ export function DeepBlueGrid() {
       setPicked([]);
       setActive([]);
       bump();
-      await sleep(700);
+      await sleep(950);
       await enemyTurn();
       return;
     }
@@ -629,7 +647,7 @@ export function DeepBlueGrid() {
           <h1 className="brand-title" aria-label={GAME_TITLE}>DEEP <span>BLUE</span> GRID</h1>
         </div>
         <div className="phase-badge">
-          <strong>{phase === "placement" ? "FLEET DEPLOY" : phase === "player" ? "COMMAND" : phase === "enemy" ? "ENEMY ACTION" : "MISSION END"}</strong>
+          <strong>{phase === "placement" ? "FLEET DEPLOY" : phase === "player" ? "COMMAND" : phase === "enemy" ? "ENEMY ACTION" : phase === "review" ? "DAMAGE REPORT" : "MISSION END"}</strong>
           <small>STAGE {stage.id} / {difficulty?.toUpperCase() ?? "SELECT MODE"}</small>
         </div>
         <div className="system-info">SEED <b>{seedRef.current.toString(16).toUpperCase()}</b><br />LINK STATUS <b>ONLINE</b></div>
@@ -643,8 +661,8 @@ export function DeepBlueGrid() {
         ))}
       </nav>
 
-      <section className={"status-strip " + (phase === "enemy" ? "enemy" : "")} aria-live="polite">
-        <span className="tag">{phase === "enemy" ? "ALERT" : "OPS"}</span>
+      <section className={"status-strip " + (phase === "enemy" ? "enemy" : phase === "review" ? "review" : "")} aria-live="polite">
+        <span className="tag">{phase === "enemy" ? "ALERT" : phase === "review" ? "REPORT" : "OPS"}</span>
         <p><b>{stage.title}</b> — {message}</p>
         <span className="turn-counter">TURN {String(stats.turns + 1).padStart(2, "0")} / OWN {ownAlive} / HOSTILE {phase === "placement" ? "?" : enemyAlive}</span>
       </section>
@@ -689,20 +707,31 @@ export function DeepBlueGrid() {
 
       <nav className="mobile-field-switch" aria-label="表示する海域">
         <div>
-          <b>{phase === "enemy" ? "敵攻撃中：自軍海域を表示" : phase === "player" ? "自軍攻撃：敵軍海域を表示" : "艦隊配置：自軍海域を表示"}</b>
-          <small>ターンが変わると自動で切り替わります</small>
+          <b>{phase === "enemy" ? "敵攻撃中：自軍海域を表示" : phase === "review" ? "戦況確認：自軍海域を表示" : phase === "player" ? "自軍攻撃：敵軍海域を表示" : "艦隊配置：自軍海域を表示"}</b>
+          <small>{phase === "review" ? "確認後に攻撃へ進みます" : "ターンに合わせて同じ位置へ切り替えます"}</small>
         </div>
-        <button className={visibleBoard === "player" ? "active" : ""} onClick={() => setVisibleBoard("player")}>
+        <button className={visibleBoard === "player" ? "active" : ""} onClick={() => showBoard("player")}>
           自軍海域
         </button>
-        <button className={visibleBoard === "enemy" ? "active" : ""} onClick={() => setVisibleBoard("enemy")} disabled={phase === "placement"}>
+        <button className={visibleBoard === "enemy" ? "active" : ""} onClick={() => showBoard("enemy")} disabled={phase === "placement"}>
           敵軍海域
         </button>
       </nav>
 
-      <div className="boards">
+      <div className="boards" ref={boardsRef}>
         <section className={"tactical-panel " + (portraitPhone && visibleBoard !== "player" ? "mobile-hidden" : "")}>
           <div className="panel-head"><h2>OWN WATERS // 自軍海域</h2><span>DEFENSE GRID</span></div>
+          {phase !== "placement" && (
+            <div className={"enemy-command-help own-field-help " + (phase === "review" ? "reviewing" : "")} aria-live="polite">
+              <div>
+                <span>OWN FLEET STATUS</span>
+                <strong>{phase === "review" ? "戦況確認" : phase === "enemy" ? "被攻撃監視" : "防衛海域"}</strong>
+                <em>損傷 {stats.damage} / {fleetCells}</em>
+              </div>
+              <p>{phase === "review" ? "敵の攻撃が終了しました。艦隊と着弾位置を確認してください。" : phase === "enemy" ? "敵の攻撃と着弾結果を追跡しています。" : "現在の自軍艦隊と損傷状況です。"}</p>
+              <small>{phase === "review" ? "確認後、下の「戦況確認完了」から攻撃へ進みます。" : "自軍海域ボタンでいつでも確認できます。"}</small>
+            </div>
+          )}
           <div className="canvas-wrap">
             <canvas
               ref={playerCanvas}
@@ -735,6 +764,8 @@ export function DeepBlueGrid() {
               <small>
                 {phase === "enemy"
                   ? "敵行動中。自軍海域で着弾を確認してください。"
+                  : phase === "review"
+                    ? "戦況確認中。自軍海域の損傷を確認してください。"
                   : !selectedState.available
                     ? selectedState.reason
                     : ready
@@ -769,6 +800,17 @@ export function DeepBlueGrid() {
           <button className="cmd" onClick={randomize}><b>RANDOM</b><small>自動配置</small></button>
           <button className="cmd primary" onClick={startBattle} disabled={!player.current.allPlaced(stage.fleet)}>
             <b>BATTLE START</b><small>{player.current.ships.length} / {stage.fleet.length} 艦配置</small>
+          </button>
+        </section>
+      ) : phase === "review" ? (
+        <section className="turn-review" aria-label="戦況確認">
+          <div>
+            <span>DAMAGE REPORT</span>
+            <b>自軍海域を確認してください</b>
+            <small>敵の攻撃結果は、確認が終わるまでこの画面に留まります。</small>
+          </div>
+          <button className="cmd primary review-confirm" onClick={continueToPlayer}>
+            <b>戦況確認完了</b><small>敵海域へ切替・攻撃へ</small>
           </button>
         </section>
       ) : !result ? (
