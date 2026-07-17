@@ -30,7 +30,8 @@ type Difficulty = "casual" | "tactics";
 type Stats = { turns: number; shots: number; hits: number; sunk: number; specials: number; damage: number };
 type LogEntry = { id: number; text: string; tone: "info" | "good" | "bad" };
 type ShipCardOptions = { selectable?: boolean; concealDamage?: boolean };
-type PlacementGesture = { pointerId: number; offset: Coord; origin: Coord; moved: boolean; confirm: boolean };
+type PlacementGesture = { pointerId: number; offset: Coord; origin: Coord };
+type PlacementBackup = { id: ShipId; start: Coord; orientation: Orientation };
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const coordName = (coord: Coord) => CELL_LABELS[coord.y] + "-" + (coord.x + 1);
@@ -44,7 +45,7 @@ const WEAPON_META: Record<WeaponId, { label: string; carrier?: ShipId; help: str
   harpoon: { label: "HARPOON", carrier: "battleship", help: "照準を中心にX字5マスを攻撃します。", requirement: "中心 1" },
   sparrow: { label: "SEA SPARROW", carrier: "cruiser", help: "2×2の4マスを同時攻撃します。", requirement: "左上 1" },
   mk45: { label: "MK-45 II", carrier: "destroyer", help: "異なる2マスを連続攻撃します。", requirement: "目標 2" },
-  radar: { label: "SPS-10 RADAR", carrier: "submarine", help: "2×2内の生存艦反応だけを調べます。ダメージはありません。", requirement: "左上 1" },
+  radar: { label: "SPS-10 RADAR", carrier: "submarine", help: "2×2内の未破壊区画を走査します。CONTACTは黄、CLEARは青緑で記録されます。", requirement: "左上 1" },
 };
 
 export function DeepBlueGrid() {
@@ -77,6 +78,7 @@ export function DeepBlueGrid() {
   const [message, setMessage] = useState(stage.subtitle);
   const [selectedShip, setSelectedShip] = useState<ShipId>(stage.fleet[0]);
   const [orientation, setOrientation] = useState<Orientation>("horizontal");
+  const [placementBackup, setPlacementBackup] = useState<PlacementBackup | null>(null);
   const [cursor, setCursor] = useState<Coord>({ x: 1, y: 2 });
   const [weapon, setWeapon] = useState<WeaponId>("fire");
   const [picked, setPicked] = useState<Coord[]>([]);
@@ -91,6 +93,7 @@ export function DeepBlueGrid() {
   const [enemyWakes, setEnemyWakes] = useState<Coord[]>([]);
 
   const placementPreviewActive = phase === "placement" && !player.current.ships.some((ship) => ship.id === selectedShip);
+  const placementValid = placementPreviewActive && player.current.canPlace(selectedShip, cursor, orientation);
 
   const bump = () => setRevision((value) => value + 1);
   const addLog = (text: string, tone: LogEntry["tone"] = "info") => {
@@ -124,6 +127,7 @@ export function DeepBlueGrid() {
     setMessage(nextStage.subtitle);
     setSelectedShip(nextStage.fleet[0]);
     setOrientation("horizontal");
+    setPlacementBackup(null);
     setCursor({ x: 1, y: 2 });
     setWeapon("fire");
     setPicked([]);
@@ -206,6 +210,7 @@ export function DeepBlueGrid() {
   const randomize = () => {
     player.current.randomize(rngRef.current, stage.fleet);
     setSelectedShip(stage.fleet[0]);
+    setPlacementBackup(null);
     setMessage("配置完了。艦隊カードと海図を確認して戦闘を開始してください。");
     addLog("自動配置を実行しました。");
     audio.current?.confirm();
@@ -216,6 +221,7 @@ export function DeepBlueGrid() {
     player.current.reset();
     setSelectedShip(stage.fleet[0]);
     setOrientation("horizontal");
+    setPlacementBackup(null);
     setCursor({ x: 1, y: 2 });
     setMessage("配置を初期化しました。艦を選び直してください。");
     addLog("配置を初期化しました。");
@@ -398,10 +404,17 @@ export function DeepBlueGrid() {
 
   const targetRequirement = weapon === "phantom" ? 4 : weapon === "mk45" ? 2 : 1;
   const confirmTargets = previewTargets.filter((coord) => enemy.current.shots[coord.y]?.[coord.x] === "unknown");
-  const ready = picked.length === targetRequirement && (weapon === "radar" || confirmTargets.length > 0);
+  const ready = picked.length === targetRequirement
+    && (weapon === "radar" ? previewTargets.length === 4 : confirmTargets.length > 0);
 
   const chooseTarget = (coord: Coord) => {
     if (phase !== "player" || locked) return;
+    if (weapon === "radar" && (coord.x >= 7 || coord.y >= 7)) {
+      setPicked([]);
+      setMessage("レーダーは2×2を走査します。右端・下端以外を左上として選んでください。");
+      audio.current?.cancel();
+      return;
+    }
     if (weapon === "fire" && enemy.current.shots[coord.y][coord.x] !== "unknown") {
       setMessage("その座標は攻撃済みです。未攻撃のマスを選んでください。");
       audio.current?.cancel();
@@ -438,7 +451,7 @@ export function DeepBlueGrid() {
       await sleep(800);
       const contact = enemy.current.radar(picked[0]);
       setStats((current) => ({ ...current, turns: current.turns + 1, specials: current.specials + 1 }));
-      const report = contact ? "CONTACT：2×2範囲内に生存艦反応。" : "CLEAR：2×2範囲内に反応なし。";
+      const report = contact ? "CONTACT：黄色の4マス内に未破壊区画反応。" : "CLEAR：青緑の4マス内に未破壊区画なし。";
       setMessage(report);
       addLog("SPS-10 RADAR： " + report, contact ? "good" : "info");
       setPicked([]);
@@ -492,6 +505,7 @@ export function DeepBlueGrid() {
     if (!placementPreviewActive) return;
     if (player.current.canPlace(selectedShip, coord, orientation)) {
       player.current.placeShip(selectedShip, coord, orientation);
+      setPlacementBackup(null);
       audio.current?.confirm();
       const next = stage.fleet.find((id) => !player.current.ships.some((placed) => placed.id === id));
       const placedName = SHIPS.find((ship) => ship.id === selectedShip)!.name;
@@ -523,16 +537,35 @@ export function DeepBlueGrid() {
     audio.current?.cursor();
   };
 
+  const restorePlacement = () => {
+    if (!placementBackup) return;
+    if (player.current.placeShip(placementBackup.id, placementBackup.start, placementBackup.orientation)) {
+      const name = SHIPS.find((ship) => ship.id === placementBackup.id)!.name;
+      setSelectedShip(placementBackup.id);
+      setOrientation(placementBackup.orientation);
+      setCursor(placementBackup.start);
+      setPlacementBackup(null);
+      setMessage(name + "を元の位置へ戻しました。");
+      audio.current?.cancel();
+      bump();
+    }
+  };
+
   const selectPlacementShip = (shipId: ShipId) => {
     if (phase !== "placement") return;
+    if (placementBackup && placementBackup.id !== shipId) {
+      player.current.placeShip(placementBackup.id, placementBackup.start, placementBackup.orientation);
+      setPlacementBackup(null);
+    }
     const placed = player.current.ships.find((ship) => ship.id === shipId);
     if (placed) {
       const start = placed.cells.reduce((best, coord) => ({ x: Math.min(best.x, coord.x), y: Math.min(best.y, coord.y) }), { x: 7, y: 7 });
       player.current.removeShip(shipId);
+      setPlacementBackup({ id: shipId, start, orientation: placed.orientation });
       setSelectedShip(shipId);
       setOrientation(placed.orientation);
       setCursor(start);
-      setMessage(placed.name + "を再配置します。ドラッグで移動し、シルエットをタップして確定してください。");
+      setMessage(placed.name + "を再配置します。ドラッグで移動し、配置ドックで決定してください。");
       audio.current?.cursor();
       bump();
       return;
@@ -545,7 +578,7 @@ export function DeepBlueGrid() {
     setSelectedShip(shipId);
     setOrientation(nextOrientation);
     setCursor(findPlacementStart(shipId, nextOrientation));
-    setMessage("シルエットをドラッグで移動。選択中の艦カードを再タップすると回転します。");
+    setMessage("シルエットをドラッグで移動。配置ドックで回転または決定してください。");
     audio.current?.cursor();
   };
 
@@ -575,8 +608,6 @@ export function DeepBlueGrid() {
         pointerId: event.pointerId,
         offset: onPreview ? { x: coord.x - cursor.x, y: coord.y - cursor.y } : { x: 0, y: 0 },
         origin,
-        moved: false,
-        confirm: onPreview,
       };
     } else if (side === "enemy") {
       setCursor(coord);
@@ -584,11 +615,10 @@ export function DeepBlueGrid() {
     }
   };
 
-  const onPointerRelease = (event: React.PointerEvent<HTMLCanvasElement>, cancelled = false) => {
+  const onPointerRelease = (event: React.PointerEvent<HTMLCanvasElement>) => {
     if (event.pointerType === "touch") touchPointers.current.delete(event.pointerId);
     const gesture = placementGesture.current;
     if (gesture?.pointerId === event.pointerId) {
-      if (!cancelled && !touchRotated.current && !gesture.moved && gesture.confirm) placeAt(gesture.origin);
       placementGesture.current = null;
     }
     if (touchPointers.current.size === 0 && touchRotated.current) {
@@ -606,8 +636,6 @@ export function DeepBlueGrid() {
       const origin = clampPlacementOrigin(selectedShip, orientation, { x: coord.x - gesture.offset.x, y: coord.y - gesture.offset.y });
       if (!sameCoord(origin, gesture.origin)) {
         gesture.origin = origin;
-        gesture.moved = true;
-        gesture.confirm = false;
         setCursor(origin);
       }
       return;
@@ -625,7 +653,10 @@ export function DeepBlueGrid() {
       if (event.key.toLowerCase() === "r" && phase === "placement") {
         rotatePlacement();
       }
-      if (event.key === "Escape") cancelAim();
+      if (event.key === "Escape") {
+        if (phase === "placement" && placementBackup) restorePlacement();
+        else cancelAim();
+      }
       const order: WeaponId[] = ["fire", "phantom", "harpoon", "sparrow", "mk45", "radar"];
       const index = Number(event.key) - 1;
       if (phase === "player" && index >= 0 && index < order.length) selectWeapon(order[index]);
@@ -650,7 +681,7 @@ export function DeepBlueGrid() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [phase, cursor, weapon, picked, locked, ready, selectedShip, orientation, placementPreviewActive]);
+  }, [phase, cursor, weapon, picked, locked, ready, selectedShip, orientation, placementPreviewActive, placementBackup]);
 
   const shipCard = (board: Board, shipId: ShipId, options: ShipCardOptions = {}) => {
     const { selectable = false, concealDamage = false } = options;
@@ -666,7 +697,7 @@ export function DeepBlueGrid() {
         title={definition.weapon === "NONE" ? "特殊兵装なし" : "搭載兵装：" + definition.weapon}
       >
         <strong>{definition.name} / {definition.code}</strong>
-        <small>{ship?.sunk ? "LOST" : ship ? concealDamage ? "HULL DATA MASKED" : selectable ? "配置済み / タップで再配置" : "DEPLOYED" : selectable ? selectedShip === shipId ? "選択中 / 再タップで回転" : "タップして選択" : "UNKNOWN"}</small>
+        <small>{ship?.sunk ? "LOST" : ship ? concealDamage ? "HULL DATA MASKED" : selectable ? "配置済み / タップで再配置" : "DEPLOYED" : selectable ? selectedShip === shipId ? "選択中 / ドックで回転・決定" : "タップして選択" : "UNKNOWN"}</small>
         <span className={"hull-meter " + (!revealDamage ? "concealed" : "")}>
           {Array.from({ length: definition.size }, (_, index) => <i key={index} className={revealDamage && ship && index < ship.hits.size ? "hit" : ""} />)}
         </span>
@@ -809,7 +840,7 @@ export function DeepBlueGrid() {
               onPointerMove={onMove}
               onPointerDown={(event) => onBoardPointer("player", event)}
               onPointerUp={onPointerRelease}
-              onPointerCancel={(event) => onPointerRelease(event, true)}
+              onPointerCancel={onPointerRelease}
               onContextMenu={(event) => {
                 event.preventDefault();
                 if (phase === "placement") rotatePlacement();
@@ -861,7 +892,24 @@ export function DeepBlueGrid() {
 
       {phase === "placement" ? (
         <section className="placement-tools">
-          <div className="placement-help"><b>配置：</b>艦カードで選択・回転 ／ シルエットをドラッグして移動 ／ シルエットをタップして確定</div>
+          <div className="placement-help"><b>配置：</b>艦を選択 → シルエットをドラッグ → 回転または配置決定 <small>二本指・Rで回転／Enterで決定</small></div>
+          {placementPreviewActive && (
+            <div className="placement-dock" aria-label="艦の配置操作">
+              <button className="cmd placement-rotate" onClick={rotatePlacement}>
+                <b>↻ 90°回転</b><small>{orientation === "horizontal" ? "現在：横向き" : "現在：縦向き"}</small>
+              </button>
+              <button
+                className={"cmd primary placement-confirm " + (placementValid ? "ready" : "")}
+                onClick={() => placeAt(cursor)}
+                disabled={!placementValid}
+              >
+                <b>✓ 配置決定</b><small>{placementValid ? coordName(cursor) + " に固定" : "重複または配置範囲外"}</small>
+              </button>
+              {placementBackup && (
+                <button className="placement-restore" onClick={restorePlacement}>元の位置に戻す <span>ESC</span></button>
+              )}
+            </div>
+          )}
           <div className="placement-secondary">
             <button className="cmd" onClick={clearPlacement}><b>CLEAR</b><small>配置をやり直す</small></button>
             <button className="cmd" onClick={randomize}><b>RANDOM</b><small>自動配置</small></button>

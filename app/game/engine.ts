@@ -88,7 +88,10 @@ export class Board {
   }
   radar(origin: Coord) {
     const cells = radarCells(origin);
-    const contact = cells.some((c) => { const ship = this.shipAt(c); return ship && !ship.sunk; });
+    const contact = cells.some((c) => {
+      const ship = this.shipAt(c);
+      return ship && !ship.sunk && !ship.hits.has(keyOf(c));
+    });
     this.radarScans.push({ origin: { ...origin }, contact: !!contact });
     return !!contact;
   }

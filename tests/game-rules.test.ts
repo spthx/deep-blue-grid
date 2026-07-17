@@ -109,6 +109,14 @@ test("weapon patterns clip safely and radar never damages", () => {
   assert.equal(sparrowCells({ x: 7, y: 7 }).length, 1);
 });
 
+test("radar contact only records unbroken enemy sections", () => {
+  const b = new Board(); b.placeShip("destroyer", { x: 1, y: 1 }, "horizontal");
+  b.attack({ x: 1, y: 1 });
+  assert.equal(b.radar({ x: 0, y: 0 }), false);
+  assert.equal(b.radar({ x: 1, y: 1 }), true);
+  assert.deepEqual(b.radarScans.map((scan) => scan.contact), [false, true]);
+});
+
 test("carrier loss disables remaining weapon uses", () => {
   const b = new Board(); b.placeShip("battleship", { x: 0, y: 0 }, "horizontal");
   const arsenal = new Arsenal();

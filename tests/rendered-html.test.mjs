@@ -33,3 +33,17 @@ test("returning from damage review resets the command to normal fire", async () 
   const source = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
   assert.match(source, /const continueToPlayer = \(\) => \{\s*setWeapon\("fire"\);\s*setPicked\(\[\]\);/);
 });
+
+test("placement uses explicit rotate and confirm controls", async () => {
+  const source = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
+  assert.match(source, /placement-dock/);
+  assert.match(source, /90°回転/);
+  assert.match(source, /配置決定/);
+  assert.doesNotMatch(source, /シルエットをタップして確定/);
+});
+
+test("radar contact and clear scans use restrained grid colors", async () => {
+  const source = await readFile(new URL("../app/game/Renderer.ts", import.meta.url), "utf8");
+  assert.match(source, /rgba\(229,215,138,\.18\)/);
+  assert.match(source, /rgba\(76,151,133,\.105\)/);
+});

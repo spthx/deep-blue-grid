@@ -20,7 +20,20 @@ export function drawBoard(canvas: HTMLCanvasElement, board: Board, opts: RenderO
   }
   ctx.fillStyle="#71909b";ctx.font=`bold ${Math.max(9,cell*.2)}px monospace`;ctx.textAlign="center";ctx.textBaseline="middle";
   for(let i=0;i<GRID_SIZE;i++){ctx.fillText(String(i+1),m+i*cell+cell/2,m*.42);ctx.fillText(CELL_LABELS[i],m*.43,m+i*cell+cell/2);}
-  for(const scan of board.radarScans){const cells=radarCells(scan.origin);ctx.fillStyle=scan.contact?"rgba(124,229,223,.09)":"rgba(113,144,155,.055)";for(const c of cells)ctx.fillRect(m+c.x*cell,m+c.y*cell,cell,cell);}
+  const radarMarks=new Map<string,{coord:Coord;contact:boolean}>();
+  for(const scan of board.radarScans){
+    const cells=radarCells(scan.origin);
+    if(cells.every(c=>board.shots[c.y][c.x]!=="unknown"))continue;
+    for(const coord of cells){const key=`${coord.x},${coord.y}`,seen=radarMarks.get(key);radarMarks.set(key,{coord,contact:!!seen?.contact||scan.contact});}
+  }
+  for(const {coord,contact} of radarMarks.values()){
+    ctx.fillStyle=contact?"rgba(229,215,138,.18)":"rgba(76,151,133,.105)";
+    ctx.strokeStyle=contact?"rgba(229,215,138,.62)":"rgba(96,174,153,.3)";
+    ctx.lineWidth=Math.max(1,dpr*1.05);
+    const px=m+coord.x*cell,py=m+coord.y*cell;
+    ctx.fillRect(px+1,py+1,cell-2,cell-2);
+    ctx.strokeRect(px+2,py+2,cell-4,cell-4);
+  }
   for(const ship of board.ships) if(opts.revealShips||ship.sunk) drawShip(ctx,ship.id,ship.cells,ship.orientation,m,cell,ship.sunk,ship.hits);
   for(let y=0;y<GRID_SIZE;y++)for(let x=0;x<GRID_SIZE;x++){const mark=board.shots[y][x];if(mark!=="unknown")drawMark(ctx,{x,y},mark,m,cell,t);}
   for(const [index,wave] of (opts.waves??[]).entries())drawWake(ctx,wave,m,cell,t,index);

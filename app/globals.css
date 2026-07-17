@@ -146,6 +146,24 @@ button { font: inherit; touch-action: manipulation; }
 .placement-tools { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; align-items:stretch; }
 .placement-help { grid-column:1 / -1; text-align:center; color:var(--steel); font-size:10px; line-height:1.5; }
 .placement-help b { color:var(--cyan); }
+.placement-help small { display:block; color:#587984; font-size:8px; }
+.placement-dock { grid-column:1 / -1; display:grid; grid-template-columns:repeat(2,minmax(180px,1fr)); gap:8px; }
+.placement-dock .cmd { width:100%; min-width:0; min-height:58px; }
+.placement-rotate b { color:var(--cyan); }
+.placement-confirm { border-color:#7d7244; }
+.placement-confirm b { color:var(--amber); }
+.placement-confirm.ready {
+  border-color:var(--amber); background:linear-gradient(#6d622e,#2d2a18);
+  box-shadow:inset 0 0 0 2px #151108,0 0 16px #e5d78a55;
+  animation:confirmReady 1.1s ease-in-out infinite alternate;
+}
+.placement-confirm.ready b { color:#fff6bd; }
+.placement-restore {
+  grid-column:1 / -1; min-height:32px; border:1px solid #3f6069; color:var(--steel); background:#081a23;
+  font:inherit; font-size:9px; letter-spacing:.06em; cursor:pointer;
+}
+.placement-restore span { margin-left:8px; color:#587984; font-size:7px; }
+.placement-restore:hover { color:var(--foam); border-color:#62818a; }
 .placement-secondary { display:grid; grid-template-columns:repeat(2,minmax(130px,1fr)); gap:8px; }
 .placement-start { min-width:250px; }
 .command-deck { display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-start; }
@@ -293,8 +311,17 @@ button { font: inherit; touch-action: manipulation; }
   .action-cluster .cmd,.action-cluster .cancel-command,.action-cluster .confirm {
     width:100%; min-width:0; max-width:none;
   }
-  .placement-tools { grid-template-columns:1fr; gap:7px; padding:8px; }
+  .placement-tools {
+    position:sticky; bottom:calc(5px + env(safe-area-inset-bottom,0px)); z-index:20;
+    grid-template-columns:1fr; gap:7px; padding:8px; backdrop-filter:blur(8px);
+  }
   .placement-help { grid-column:1; padding:0 3px; text-align:left; font-size:9px; }
+  .placement-help small { margin-top:2px; font-size:7px; }
+  .placement-dock { grid-column:1; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+  .placement-dock .cmd { min-height:56px; padding:7px 6px; }
+  .placement-dock .cmd b { font-size:10px; white-space:nowrap; }
+  .placement-dock .cmd small { overflow:hidden; text-overflow:ellipsis; font-size:7px; white-space:nowrap; }
+  .placement-restore { min-height:30px; }
   .placement-secondary { grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
   .placement-tools .cmd { width:100%; min-width:0; min-height:46px; }
   .placement-start { min-width:0; }
