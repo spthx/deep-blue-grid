@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 async function render() {
@@ -21,4 +22,9 @@ test("server renders the finished game shell", async () => {
   assert.match(html, /TACTICS/);
   assert.doesNotMatch(html, /NORMAL|HARD|基本戦術・手加減なし/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|Your site is taking shape/);
+});
+
+test("mobile command deck stays four columns by two rows", async () => {
+  const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+  assert.match(css, /grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
 });
