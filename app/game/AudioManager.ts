@@ -14,6 +14,8 @@ export class AudioManager {
   private musicTimer?: number;
   private wakeLock?: WakeLockSentinelLike;
   private wakeLockRequest?: Promise<void>;
+  private wakeRetryTimer?: number;
+  private wakeRetryCount = 0;
   private needsRecovery = false;
   private step = 0;
 
@@ -23,6 +25,7 @@ export class AudioManager {
     window.addEventListener("focus", this.onForeground);
     document.addEventListener("pointerdown", this.onUserActivation, { capture: true, passive: true });
     document.addEventListener("touchend", this.onUserActivation, { capture: true, passive: true });
+    document.addEventListener("keydown", this.onUserActivation, { capture: true });
   }
 
   private onVisibilityChange = () => {
@@ -35,6 +38,7 @@ export class AudioManager {
   };
 
   private onForeground = () => {
+    this.wakeRetryCount = 0;
     void this.requestWakeLock();
     if (!this.ctx || this.muted) return;
     this.needsRecovery = true;
@@ -42,6 +46,8 @@ export class AudioManager {
   };
 
   private onUserActivation = () => {
+    this.wakeRetryCount = 0;
+    if (this.wakeRetryTimer) window.clearTimeout(this.wakeRetryTimer);
     void this.requestWakeLock();
     if (!this.ctx || this.muted || (!this.needsRecovery && this.ctx.state === "running")) return;
     const interrupted = (this.ctx.state as string) === "interrupted";
@@ -101,7 +107,12 @@ export class AudioManager {
         const sentinel = await wakeLock.request("screen");
         this.wakeLock = sentinel;
         sentinel.addEventListener("release", () => {
-          if (this.wakeLock === sentinel) this.wakeLock = undefined;
+          if (this.wakeLock !== sentinel) return;
+          this.wakeLock = undefined;
+          if (document.visibilityState === "visible" && this.wakeRetryCount < 2) {
+            this.wakeRetryCount++;
+            this.wakeRetryTimer = window.setTimeout(() => void this.requestWakeLock(), 500);
+          }
         }, { once: true });
       } catch {
         // Older iOS versions and battery-saving modes can deny wake lock requests.
@@ -113,6 +124,7 @@ export class AudioManager {
   }
 
   private ensure() {
+    void this.requestWakeLock();
     if (!this.ctx) this.ctx = new AudioContext();
     if (this.ctx.state === "suspended" || (this.ctx.state as string) === "interrupted") void this.ctx.resume().catch(() => undefined);
     if (!this.musicTimer) this.startMusic();
