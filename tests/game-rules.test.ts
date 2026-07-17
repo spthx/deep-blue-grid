@@ -3,6 +3,7 @@ import test from "node:test";
 import { SHIPS, STAGES } from "../app/game/constants.ts";
 import { Arsenal, Board, SeededRandom, harpoonCells, radarCells, sparrowCells } from "../app/game/engine.ts";
 import { EnemyAI } from "../app/game/EnemyAI.ts";
+import { nextSubmarineWake, submarineWakeCandidates } from "../app/game/SubmarineWake.ts";
 
 test("random placement is legal and complete across many seeds", () => {
   for (let seed = 1; seed <= 100; seed++) {
@@ -48,6 +49,15 @@ test("placement rejects overlap, duplicates, and out of bounds", () => {
   assert.equal(b.placeShip("destroyer", { x: 7, y: 5 }, "vertical"), true);
 });
 
+test("a placed ship can be picked up for deliberate repositioning", () => {
+  const board = new Board();
+  board.placeShip("destroyer", { x: 1, y: 1 }, "horizontal");
+  const removed = board.removeShip("destroyer");
+  assert.equal(removed?.id, "destroyer");
+  assert.equal(board.ships.length, 0);
+  assert.equal(board.placeShip("destroyer", { x: 2, y: 3 }, "vertical"), true);
+});
+
 test("attacks cannot double damage and sink on the final segment", () => {
   const b = new Board(); b.placeShip("destroyer", { x: 1, y: 1 }, "horizontal");
   assert.equal(b.attack({ x: 1, y: 1 }).kind, "HIT");
@@ -61,6 +71,32 @@ test("near miss reports only a generic echo", () => {
   const b = new Board(); b.placeShip("submarine", { x: 3, y: 3 }, "horizontal");
   assert.deepEqual(b.attack({ x: 2, y: 2 }), { coord: { x: 2, y: 2 }, kind: "ECHO" });
   assert.equal(b.attack({ x: 0, y: 0 }).kind, "MISS");
+});
+
+test("wake marks appear beside the final submarine without revealing its cell", () => {
+  const board = new Board();
+  board.placeShip("battleship", { x: 0, y: 0 }, "horizontal");
+  board.placeShip("submarine", { x: 7, y: 7 }, "horizontal");
+  const rng = new SeededRandom(77);
+  assert.equal(nextSubmarineWake(board, [], rng), null);
+  for (let x = 0; x < 5; x++) board.attack({ x, y: 0 });
+  const first = nextSubmarineWake(board, [], rng)!;
+  const second = nextSubmarineWake(board, [first], rng)!;
+  assert.notDeepEqual(first, { x: 7, y: 7 });
+  assert.notDeepEqual(second, first);
+  assert.ok(Math.abs(first.x - 7) <= 1 && Math.abs(first.y - 7) <= 1);
+  assert.ok(submarineWakeCandidates([first, second]).some((coord) => coord.x === 7 && coord.y === 7));
+});
+
+test("AI receives the same public submarine wake candidates as the player", () => {
+  const own = new Board(); own.placeShip("submarine", { x: 0, y: 0 }, "horizontal");
+  const ai = new EnemyAI(new SeededRandom(88), ["submarine"], 1.7, "tactics");
+  const wave = { x: 3, y: 3 };
+  ai.observeWake(wave);
+  const decision = ai.decide(own);
+  assert.equal(decision.weapon, "fire");
+  assert.ok(Math.abs(decision.targets[0].x - wave.x) <= 1 && Math.abs(decision.targets[0].y - wave.y) <= 1);
+  assert.notDeepEqual(decision.targets[0], wave);
 });
 
 test("weapon patterns clip safely and radar never damages", () => {

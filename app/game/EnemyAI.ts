@@ -1,8 +1,9 @@
 import { GRID_SIZE, SHIPS, type Coord, type ShipId } from "./constants.ts";
 import { Arsenal, Board, SeededRandom, harpoonCells, inBounds, keyOf, radarCells, sparrowCells, type AttackResult, type ShotMark } from "./engine.ts";
+import { submarineWakeCandidates } from "./SubmarineWake.ts";
 
 export type AIState = "HUNT" | "TARGET" | "SEARCH";
-export type AIProfile = "normal" | "hard" | "tactics";
+export type AIProfile = "casual" | "tactics";
 export type AIDecision = { weapon: "fire" | "phantom" | "harpoon" | "sparrow" | "mk45" | "radar"; targets: Coord[]; state: AIState };
 
 export class EnemyAI {
@@ -13,11 +14,12 @@ export class EnemyAI {
   search: Coord[] = [];
   turnsWithoutHit = 0;
   sunkSizes: number[] = [];
+  wakeSignals: Coord[] = [];
   private rng: SeededRandom;
   private targetSizes: number[];
   private skill: number;
   private profile: AIProfile;
-  constructor(rng: SeededRandom, fleet: ShipId[] = SHIPS.map((ship) => ship.id), skill = 1, profile: AIProfile = "normal") {
+  constructor(rng: SeededRandom, fleet: ShipId[] = SHIPS.map((ship) => ship.id), skill = 1, profile: AIProfile = "casual") {
     this.rng = rng;
     this.targetSizes = fleet.map((id) => SHIPS.find((ship) => ship.id === id)!.size);
     this.skill = skill;
@@ -77,6 +79,14 @@ export class EnemyAI {
   observeRadar(origin: Coord, contact: boolean) {
     if (contact) radarCells(origin).forEach((c) => { if (this.knowledge[c.y][c.x] === "unknown") this.search.push(c); });
     this.turnsWithoutHit = contact ? Math.max(0, this.turnsWithoutHit - 2) : this.turnsWithoutHit + 1;
+    this.updateState();
+  }
+
+  observeWake(wave: Coord) {
+    if (!this.wakeSignals.some((seen) => keyOf(seen) === keyOf(wave))) this.wakeSignals.push({ ...wave });
+    const candidates = this.rng.shuffle(submarineWakeCandidates(this.wakeSignals).filter((coord) => this.isUnknown(coord)));
+    const candidateKeys = new Set(candidates.map(keyOf));
+    this.search = [...candidates, ...this.search.filter((coord) => !candidateKeys.has(keyOf(coord)))];
     this.updateState();
   }
 

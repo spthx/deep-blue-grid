@@ -43,6 +43,11 @@ export class Board {
     this.ships.push({ id, name: def.name, size: def.size, orientation, cells: this.cellsFor(start, def.size, orientation, id), hits: new Set(), sunk: false });
     return true;
   }
+  removeShip(id: ShipId) {
+    const index = this.ships.findIndex((ship) => ship.id === id);
+    if (index < 0) return null;
+    return this.ships.splice(index, 1)[0];
+  }
   randomize(rng: SeededRandom, fleet: ShipId[] = SHIPS.map((ship) => ship.id)) {
     this.reset();
     for (const id of fleet) {

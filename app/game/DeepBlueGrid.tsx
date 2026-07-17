@@ -23,18 +23,20 @@ import {
 import { EnemyAI } from "./EnemyAI.ts";
 import { AudioManager } from "./AudioManager.ts";
 import { drawBoard, pointerToCoord } from "./Renderer.ts";
+import { nextSubmarineWake } from "./SubmarineWake.ts";
 
 type Phase = "placement" | "player" | "enemy" | "review" | "victory" | "defeat";
-type Difficulty = "normal" | "hard" | "tactics";
+type Difficulty = "casual" | "tactics";
 type Stats = { turns: number; shots: number; hits: number; sunk: number; specials: number; damage: number };
 type LogEntry = { id: number; text: string; tone: "info" | "good" | "bad" };
 type ShipCardOptions = { selectable?: boolean; concealDamage?: boolean };
+type PlacementGesture = { pointerId: number; offset: Coord; origin: Coord; moved: boolean; confirm: boolean };
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const coordName = (coord: Coord) => CELL_LABELS[coord.y] + "-" + (coord.x + 1);
 const sameCoord = (a: Coord, b: Coord) => a.x === b.x && a.y === b.y;
 const freshStats = (): Stats => ({ turns: 0, shots: 0, hits: 0, sunk: 0, specials: 0, damage: 0 });
-const difficultySkill = (base: number, difficulty: Difficulty) => base * (difficulty === "tactics" ? 1.7 : difficulty === "hard" ? 1.38 : 1.12);
+const difficultySkill = (base: number, difficulty: Difficulty) => base * (difficulty === "tactics" ? 1.7 : 1.38);
 
 const WEAPON_META: Record<WeaponId, { label: string; carrier?: ShipId; help: string; requirement: string }> = {
   fire: { label: "通常砲撃", help: "敵海域の1マスを攻撃します。", requirement: "目標 1" },
@@ -51,16 +53,18 @@ export function DeepBlueGrid() {
   const player = useRef(new Board());
   const enemy = useRef(new Board());
   const arsenal = useRef(new Arsenal());
-  const ai = useRef(new EnemyAI(new SeededRandom(seedRef.current ^ 0x51f15e), STAGES[0].fleet, difficultySkill(STAGES[0].aiSkill, "normal")));
+  const ai = useRef(new EnemyAI(new SeededRandom(seedRef.current ^ 0x51f15e), STAGES[0].fleet, difficultySkill(STAGES[0].aiSkill, "casual"), "casual"));
   const audio = useRef<AudioManager | null>(null);
   const playerCanvas = useRef<HTMLCanvasElement>(null);
   const enemyCanvas = useRef<HTMLCanvasElement>(null);
   const boardsRef = useRef<HTMLDivElement>(null);
   const animation = useRef(0);
-  const difficultyRef = useRef<Difficulty>("normal");
+  const difficultyRef = useRef<Difficulty>("casual");
   const touchPointers = useRef(new Set<number>());
-  const placementTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const placementGesture = useRef<PlacementGesture | null>(null);
   const touchRotated = useRef(false);
+  const playerWakesRef = useRef<Coord[]>([]);
+  const enemyWakesRef = useRef<Coord[]>([]);
 
   if (!audio.current && typeof window !== "undefined") audio.current = new AudioManager();
 
@@ -83,6 +87,10 @@ export function DeepBlueGrid() {
   const [muted, setMuted] = useState(false);
   const [stats, setStats] = useState<Stats>(freshStats);
   const [logs, setLogs] = useState<LogEntry[]>([{ id: Date.now(), text: "艦隊を配置し、BATTLE STARTを押してください。", tone: "info" }]);
+  const [playerWakes, setPlayerWakes] = useState<Coord[]>([]);
+  const [enemyWakes, setEnemyWakes] = useState<Coord[]>([]);
+
+  const placementPreviewActive = phase === "placement" && !player.current.ships.some((ship) => ship.id === selectedShip);
 
   const bump = () => setRevision((value) => value + 1);
   const addLog = (text: string, tone: LogEntry["tone"] = "info") => {
@@ -107,6 +115,10 @@ export function DeepBlueGrid() {
       difficultySkill(nextStage.aiSkill, selectedDifficulty),
       selectedDifficulty,
     );
+    playerWakesRef.current = [];
+    enemyWakesRef.current = [];
+    setPlayerWakes([]);
+    setEnemyWakes([]);
     setStageIndex(nextStageIndex);
     setPhase("placement");
     setMessage(nextStage.subtitle);
@@ -162,13 +174,14 @@ export function DeepBlueGrid() {
     if (playerCanvas.current) {
       drawBoard(playerCanvas.current, player.current, {
         revealShips: true,
-        cursor: phase === "placement" ? cursor : undefined,
-        previewShip: phase === "placement" ? {
+        cursor: placementPreviewActive ? cursor : undefined,
+        previewShip: placementPreviewActive ? {
           id: selectedShip,
           orientation,
           valid: player.current.canPlace(selectedShip, cursor, orientation),
         } : undefined,
         active: phase === "enemy" ? active : [],
+        waves: playerWakes,
         time,
       });
     }
@@ -179,10 +192,11 @@ export function DeepBlueGrid() {
         weapon,
         selected: previewTargets,
         active: phase === "player" ? active : [],
+        waves: enemyWakes,
         time,
       });
     }
-  }, [phase, cursor, selectedShip, orientation, weapon, previewTargets, active, locked, revision]);
+  }, [phase, cursor, selectedShip, orientation, weapon, previewTargets, active, locked, placementPreviewActive, playerWakes, enemyWakes, revision]);
 
   useEffect(() => {
     animation.current = requestAnimationFrame(render);
@@ -201,10 +215,29 @@ export function DeepBlueGrid() {
   const clearPlacement = () => {
     player.current.reset();
     setSelectedShip(stage.fleet[0]);
+    setOrientation("horizontal");
+    setCursor({ x: 1, y: 2 });
     setMessage("配置を初期化しました。艦を選び直してください。");
     addLog("配置を初期化しました。");
     audio.current?.cancel();
     bump();
+  };
+
+  const emitEnemySubmarineWake = () => {
+    const wake = nextSubmarineWake(enemy.current, enemyWakesRef.current, rngRef.current);
+    if (!wake || enemyWakesRef.current.some((seen) => sameCoord(seen, wake))) return;
+    enemyWakesRef.current = [...enemyWakesRef.current, wake];
+    setEnemyWakes(enemyWakesRef.current);
+    addLog("音紋反応：敵潜水艦の周辺に波紋を検知。", "good");
+  };
+
+  const emitPlayerSubmarineWake = () => {
+    const wake = nextSubmarineWake(player.current, playerWakesRef.current, rngRef.current);
+    if (!wake || playerWakesRef.current.some((seen) => sameCoord(seen, wake))) return;
+    playerWakesRef.current = [...playerWakesRef.current, wake];
+    setPlayerWakes(playerWakesRef.current);
+    ai.current.observeWake(wake);
+    addLog("追跡警告：自軍潜水艦の周辺に波紋が発生。", "bad");
   };
 
   const startBattle = () => {
@@ -278,6 +311,7 @@ export function DeepBlueGrid() {
             : "敵弾 MISS。損害なし。";
       setMessage(report);
       addLog(report, hits ? "bad" : "info");
+      emitPlayerSubmarineWake();
     }
 
     setActive([]);
@@ -346,6 +380,7 @@ export function DeepBlueGrid() {
           : "MISS：反応なし。";
     setMessage(report);
     addLog(WEAPON_META[weapon].label + "： " + report, hits ? "good" : "info");
+    emitEnemySubmarineWake();
     setActive([]);
     setPicked([]);
     bump();
@@ -434,14 +469,39 @@ export function DeepBlueGrid() {
     audio.current?.cancel();
   };
 
+  const clampPlacementOrigin = (shipId: ShipId, shipOrientation: Orientation, coord: Coord) => {
+    const definition = SHIPS.find((ship) => ship.id === shipId)!;
+    const width = shipOrientation === "horizontal" ? definition.width : definition.height;
+    const height = shipOrientation === "horizontal" ? definition.height : definition.width;
+    return { x: Math.max(0, Math.min(8 - width, coord.x)), y: Math.max(0, Math.min(8 - height, coord.y)) };
+  };
+
+  const findPlacementStart = (shipId: ShipId, shipOrientation: Orientation, near: Coord = cursor) => {
+    const starts: Coord[] = [];
+    for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) {
+      const coord = { x, y };
+      if (player.current.canPlace(shipId, coord, shipOrientation)) starts.push(coord);
+    }
+    starts.sort((a, b) => Math.abs(a.x - near.x) + Math.abs(a.y - near.y) - Math.abs(b.x - near.x) - Math.abs(b.y - near.y));
+    return starts[0] ?? clampPlacementOrigin(shipId, shipOrientation, near);
+  };
+
   const placeAt = (coord: Coord) => {
+    if (!placementPreviewActive) return;
     if (player.current.canPlace(selectedShip, coord, orientation)) {
       player.current.placeShip(selectedShip, coord, orientation);
       audio.current?.confirm();
       const next = stage.fleet.find((id) => !player.current.ships.some((placed) => placed.id === id));
-      if (next) setSelectedShip(next);
       const placedName = SHIPS.find((ship) => ship.id === selectedShip)!.name;
-      setMessage(next ? placedName + " 配置完了。次の艦を配置してください。" : "全艦配置完了。戦闘を開始できます。");
+      if (next) {
+        const nextOrientation: Orientation = "horizontal";
+        setSelectedShip(next);
+        setOrientation(nextOrientation);
+        setCursor(findPlacementStart(next, nextOrientation, coord));
+        setMessage(placedName + " 配置完了。次の艦を配置してください。");
+      } else {
+        setMessage("全艦配置完了。BATTLE STARTで交戦を開始できます。");
+      }
       bump();
     } else {
       setMessage("配置不可：盤面外、重複、または配置済みです。");
@@ -450,44 +510,85 @@ export function DeepBlueGrid() {
   };
 
   const rotatePlacement = () => {
-    setOrientation((current) => current === "horizontal" ? "vertical" : "horizontal");
+    if (!placementPreviewActive) return;
+    const nextOrientation: Orientation = orientation === "horizontal" ? "vertical" : "horizontal";
+    const nextCursor = player.current.canPlace(selectedShip, cursor, nextOrientation)
+      ? cursor
+      : findPlacementStart(selectedShip, nextOrientation, cursor);
+    setOrientation(nextOrientation);
+    setCursor(nextCursor);
     setMessage("艦の向きを回転しました。");
+    audio.current?.cursor();
+  };
+
+  const selectPlacementShip = (shipId: ShipId) => {
+    if (phase !== "placement") return;
+    const placed = player.current.ships.find((ship) => ship.id === shipId);
+    if (placed) {
+      const start = placed.cells.reduce((best, coord) => ({ x: Math.min(best.x, coord.x), y: Math.min(best.y, coord.y) }), { x: 7, y: 7 });
+      player.current.removeShip(shipId);
+      setSelectedShip(shipId);
+      setOrientation(placed.orientation);
+      setCursor(start);
+      setMessage(placed.name + "を再配置します。ドラッグで移動し、シルエットをタップして確定してください。");
+      audio.current?.cursor();
+      bump();
+      return;
+    }
+    if (selectedShip === shipId) {
+      rotatePlacement();
+      return;
+    }
+    const nextOrientation: Orientation = "horizontal";
+    setSelectedShip(shipId);
+    setOrientation(nextOrientation);
+    setCursor(findPlacementStart(shipId, nextOrientation));
+    setMessage("シルエットをドラッグで移動。選択中の艦カードを再タップすると回転します。");
     audio.current?.cursor();
   };
 
   const onBoardPointer = (side: "player" | "enemy", event: React.PointerEvent<HTMLCanvasElement>) => {
     const coord = pointerToCoord(event.currentTarget, event.clientX, event.clientY);
     if (!coord) return;
-    setCursor(coord);
     if (side === "player" && phase === "placement") {
+      if (!placementPreviewActive) return;
+      event.preventDefault();
+      event.currentTarget.setPointerCapture(event.pointerId);
       if (event.pointerType === "touch") {
-        event.preventDefault();
-        event.currentTarget.setPointerCapture(event.pointerId);
         touchPointers.current.add(event.pointerId);
         if (touchPointers.current.size >= 2) {
-          if (placementTimer.current) clearTimeout(placementTimer.current);
-          placementTimer.current = null;
+          placementGesture.current = null;
           if (!touchRotated.current) {
             touchRotated.current = true;
             rotatePlacement();
           }
           return;
         }
-        if (placementTimer.current) clearTimeout(placementTimer.current);
-        placementTimer.current = setTimeout(() => {
-          if (!touchRotated.current) placeAt(coord);
-          placementTimer.current = null;
-        }, 180);
-        return;
       }
-      placeAt(coord);
+      const previewCells = player.current.cellsFor(cursor, SHIPS.find((ship) => ship.id === selectedShip)!.size, orientation, selectedShip);
+      const onPreview = previewCells.some((cell) => sameCoord(cell, coord));
+      const origin = onPreview ? cursor : clampPlacementOrigin(selectedShip, orientation, coord);
+      if (!onPreview) setCursor(origin);
+      placementGesture.current = {
+        pointerId: event.pointerId,
+        offset: onPreview ? { x: coord.x - cursor.x, y: coord.y - cursor.y } : { x: 0, y: 0 },
+        origin,
+        moved: false,
+        confirm: onPreview,
+      };
     } else if (side === "enemy") {
+      setCursor(coord);
       chooseTarget(coord);
     }
   };
 
-  const onPointerRelease = (event: React.PointerEvent<HTMLCanvasElement>) => {
-    touchPointers.current.delete(event.pointerId);
+  const onPointerRelease = (event: React.PointerEvent<HTMLCanvasElement>, cancelled = false) => {
+    if (event.pointerType === "touch") touchPointers.current.delete(event.pointerId);
+    const gesture = placementGesture.current;
+    if (gesture?.pointerId === event.pointerId) {
+      if (!cancelled && !touchRotated.current && !gesture.moved && gesture.confirm) placeAt(gesture.origin);
+      placementGesture.current = null;
+    }
     if (touchPointers.current.size === 0 && touchRotated.current) {
       setTimeout(() => { touchRotated.current = false; }, 200);
     }
@@ -495,7 +596,21 @@ export function DeepBlueGrid() {
 
   const onMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
     const coord = pointerToCoord(event.currentTarget, event.clientX, event.clientY);
-    if (coord) setCursor(coord);
+    if (!coord) return;
+    if (phase === "placement") {
+      const gesture = placementGesture.current;
+      if (!gesture || gesture.pointerId !== event.pointerId || touchRotated.current) return;
+      event.preventDefault();
+      const origin = clampPlacementOrigin(selectedShip, orientation, { x: coord.x - gesture.offset.x, y: coord.y - gesture.offset.y });
+      if (!sameCoord(origin, gesture.origin)) {
+        gesture.origin = origin;
+        gesture.moved = true;
+        gesture.confirm = false;
+        setCursor(origin);
+      }
+      return;
+    }
+    setCursor(coord);
   };
 
   useEffect(() => {
@@ -506,7 +621,7 @@ export function DeepBlueGrid() {
         return;
       }
       if (event.key.toLowerCase() === "r" && phase === "placement") {
-        setOrientation((current) => current === "horizontal" ? "vertical" : "horizontal");
+        rotatePlacement();
       }
       if (event.key === "Escape") cancelAim();
       const order: WeaponId[] = ["fire", "phantom", "harpoon", "sparrow", "mk45", "radar"];
@@ -529,10 +644,11 @@ export function DeepBlueGrid() {
         if (ready) void confirmAction();
         else chooseTarget(cursor);
       }
+      if ((event.key === "Enter" || event.key === " ") && phase === "placement") placeAt(cursor);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [phase, cursor, weapon, picked, locked, ready]);
+  }, [phase, cursor, weapon, picked, locked, ready, selectedShip, orientation, placementPreviewActive]);
 
   const shipCard = (board: Board, shipId: ShipId, options: ShipCardOptions = {}) => {
     const { selectable = false, concealDamage = false } = options;
@@ -542,13 +658,13 @@ export function DeepBlueGrid() {
     return (
       <button
         key={shipId}
-        className={"ship-card " + (selectable && selectedShip === shipId ? "active " : "") + (ship?.sunk ? "sunk" : "")}
-        onClick={() => selectable && !ship && setSelectedShip(shipId)}
-        disabled={!selectable || !!ship}
+        className={"ship-card " + (selectable && !ship && selectedShip === shipId ? "active " : "") + (ship?.sunk ? "sunk" : "")}
+        onClick={() => selectable && selectPlacementShip(shipId)}
+        disabled={!selectable}
         title={definition.weapon === "NONE" ? "特殊兵装なし" : "搭載兵装：" + definition.weapon}
       >
         <strong>{definition.name} / {definition.code}</strong>
-        <small>{ship?.sunk ? "LOST" : ship ? concealDamage ? "HULL DATA MASKED" : "DEPLOYED" : selectable ? "SELECT TO PLACE" : "UNKNOWN"}</small>
+        <small>{ship?.sunk ? "LOST" : ship ? concealDamage ? "HULL DATA MASKED" : selectable ? "配置済み / タップで再配置" : "DEPLOYED" : selectable ? selectedShip === shipId ? "選択中 / 再タップで回転" : "タップして選択" : "UNKNOWN"}</small>
         <span className={"hull-meter " + (!revealDamage ? "concealed" : "")}>
           {Array.from({ length: definition.size }, (_, index) => <i key={index} className={revealDamage && ship && index < ship.hits.size ? "hit" : ""} />)}
         </span>
@@ -612,7 +728,7 @@ export function DeepBlueGrid() {
 
       <section className="quick-guide">
         <b>NAVY BLUE式 作戦要領</b>
-        <span>1. 自艦を配置（二本指で回転）</span><span>2. 兵装と目標を選択</span><span>3. プレビューを確認して発射</span><span>4. 全区画命中で撃沈</span>
+        <span>1. 艦を選びシルエットを配置</span><span>2. 兵装と目標を選択</span><span>3. プレビューを確認して発射</span><span>4. 全区画命中で撃沈</span>
       </section>
 
       {difficulty && !result && (
@@ -691,7 +807,7 @@ export function DeepBlueGrid() {
               onPointerMove={onMove}
               onPointerDown={(event) => onBoardPointer("player", event)}
               onPointerUp={onPointerRelease}
-              onPointerCancel={onPointerRelease}
+              onPointerCancel={(event) => onPointerRelease(event, true)}
               onContextMenu={(event) => {
                 event.preventDefault();
                 if (phase === "placement") rotatePlacement();
@@ -743,15 +859,16 @@ export function DeepBlueGrid() {
 
       {phase === "placement" ? (
         <section className="placement-tools">
-          <div className="placement-help">艦を選択 → 自軍海域をタップ / タブレットは二本指、右クリックまたは R で回転</div>
-          <button className="cmd" onClick={rotatePlacement}>
-            <b>ROTATE [R]</b><small>{orientation === "horizontal" ? "HORIZONTAL" : "VERTICAL"}</small>
-          </button>
-          <button className="cmd" onClick={clearPlacement}><b>CLEAR</b><small>配置をやり直す</small></button>
-          <button className="cmd" onClick={randomize}><b>RANDOM</b><small>自動配置</small></button>
-          <button className="cmd primary" onClick={startBattle} disabled={!player.current.allPlaced(stage.fleet)}>
-            <b>BATTLE START</b><small>{player.current.ships.length} / {stage.fleet.length} 艦配置</small>
-          </button>
+          <div className="placement-help"><b>配置：</b>艦カードで選択・回転 ／ シルエットをドラッグして移動 ／ シルエットをタップして確定</div>
+          <div className="placement-secondary">
+            <button className="cmd" onClick={clearPlacement}><b>CLEAR</b><small>配置をやり直す</small></button>
+            <button className="cmd" onClick={randomize}><b>RANDOM</b><small>自動配置</small></button>
+          </div>
+          {player.current.allPlaced(stage.fleet) && (
+            <button className="cmd primary placement-start" onClick={startBattle}>
+              <b>BATTLE START</b><small>{player.current.ships.length} / {stage.fleet.length} 艦配置完了</small>
+            </button>
+          )}
         </section>
       ) : phase === "review" ? (
         <section className="turn-review" aria-label="戦況確認">
@@ -804,6 +921,7 @@ export function DeepBlueGrid() {
           </section>
           <div className="legend">
             <span><i className="miss" />MISS</span><span><i className="echo" />ECHO</span><span><i className="hit" />HIT</span><span><i className="sunk" />SUNK</span>
+            {enemyWakes.length > 0 && <span><i className="wake" />潜水艦音紋</span>}
           </div>
         </>
       ) : null}
@@ -815,13 +933,10 @@ export function DeepBlueGrid() {
           <section className="difficulty-card">
             <div className="eyebrow">SELECT ENEMY TACTICS</div>
             <h2>DIFFICULTY</h2>
-            <p>全モードで敵の艦隊・兵装回数は自軍と同じです。TACTICSでは敵先攻と情報秘匿が加わりますが、AIが未発見の配置を読むことはありません。</p>
+            <p>両モードとも敵の艦隊・兵装回数は自軍と同じです。TACTICSでは敵先攻と情報秘匿が加わりますが、AIが未発見の配置を読むことはありません。</p>
             <div className="difficulty-options">
-              <button className="mode-button" onClick={() => startCampaign("normal")}>
-                <span>NORMAL</span><b>標準より少し強め</b><small>的確な追撃と特殊兵装運用。まずはこちら。</small>
-              </button>
-              <button className="mode-button hard" onClick={() => startCampaign("hard")}>
-                <span>HARD</span><b>索敵判断を強化</b><small>レーダー判断が早く、好機に特殊兵装を投入。</small>
+              <button className="mode-button" onClick={() => startCampaign("casual")}>
+                <span>CASUAL</span><small>公開情報を使い、索敵・追撃・特殊兵装をバランスよく運用します。</small>
               </button>
               <button className="mode-button tactics" onClick={() => startCampaign("tactics")}>
                 <span>TACTICS</span><b>敵先攻・情報戦</b><small>敵損傷は撃沈まで非公開。兵装回数は自軍と同じ。公開された戦果だけで最短追撃を狙います。</small>

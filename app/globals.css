@@ -23,8 +23,9 @@ body {
     var(--abyss);
   font-family: "Courier New", "Yu Gothic UI", monospace;
   overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
 }
-button { font: inherit; }
+button { font: inherit; touch-action: manipulation; }
 
 .game-shell {
   width: min(1420px, 100%);
@@ -141,10 +142,15 @@ button { font: inherit; }
 .hull-meter i.hit { background:var(--danger); }
 .hull-meter.concealed i { background:#203a42; opacity:.55; }
 
-.placement-tools, .command-deck { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; padding:10px; border:1px solid #34545e; background:#071821cc; box-shadow:inset 0 0 22px #0006; }
-.command-deck { justify-content:flex-start; }
+.placement-tools,.command-deck { padding:10px; border:1px solid #34545e; background:#071821cc; box-shadow:inset 0 0 22px #0006; }
+.placement-tools { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; align-items:stretch; }
+.placement-help { grid-column:1 / -1; text-align:center; color:var(--steel); font-size:10px; line-height:1.5; }
+.placement-help b { color:var(--cyan); }
+.placement-secondary { display:grid; grid-template-columns:repeat(2,minmax(130px,1fr)); gap:8px; }
+.placement-start { min-width:250px; }
+.command-deck { display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-start; }
 .turn-review {
-  position:sticky; bottom:5px; z-index:21; display:flex; align-items:center; gap:12px; padding:10px 12px;
+  position:sticky; bottom:calc(5px + env(safe-area-inset-bottom,0px)); z-index:21; display:flex; align-items:center; gap:12px; padding:10px 12px;
   border:1px solid #8d793f; background:linear-gradient(90deg,#302916ee,#071821ee); box-shadow:inset 0 0 22px #0007,0 8px 22px #0009;
   backdrop-filter:blur(8px);
 }
@@ -153,7 +159,6 @@ button { font: inherit; }
 .turn-review > div b { display:block; margin:3px 0; color:var(--foam); font-size:12px; }
 .turn-review > div small { display:block; color:#d1cda9; font-size:9px; }
 .turn-review .review-confirm { flex:0 0 auto; min-width:230px; }
-.placement-help { flex-basis:100%; text-align:center; color:var(--steel); font-size:10px; }
 .cmd {
   position:relative; min-width:112px; min-height:46px; padding:6px 10px; border:1px solid #52727a; border-bottom-color:#203b43;
   color:var(--foam); background:linear-gradient(#183b45,#0a222c); box-shadow:inset 0 0 0 2px #07171f, 0 3px 0 #041015; cursor:pointer;
@@ -212,6 +217,7 @@ button { font: inherit; }
 .legend { display:flex; justify-content:center; gap:16px; margin:8px 0 0; color:var(--steel); font-size:9px; }
 .legend i { display:inline-block; width:7px; height:7px; margin-right:4px; border-radius:50%; }
 .legend .miss{background:var(--steel)} .legend .echo{border:1px solid var(--cyan)} .legend .hit{background:var(--danger)} .legend .sunk{background:var(--amber)}
+.legend .wake { border:1px solid var(--cyan); background:#7ce5df33; box-shadow:0 0 6px #7ce5df88; }
 
 .turn-flash { position:fixed; inset:0; display:grid; place-items:center; z-index:25; pointer-events:none; background:#06131daa; animation:turnFlash 1.05s both; }
 .turn-flash div { border-block:1px solid currentColor; width:100%; padding:15px; text-align:center; color:var(--cyan); font-size:clamp(22px,5vw,52px); letter-spacing:.25em; text-shadow:0 0 22px currentColor; }
@@ -244,7 +250,7 @@ button { font: inherit; }
 .difficulty-card .eyebrow { color:var(--steel); font-size:9px; letter-spacing:.3em; }
 .difficulty-card h2 { margin:8px 0; color:var(--cyan); font-size:clamp(28px,6vw,54px); letter-spacing:.15em; }
 .difficulty-card > p { max-width:560px; margin:0 auto 22px; color:var(--steel); font-size:11px; line-height:1.7; }
-.difficulty-options { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+.difficulty-options { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
 .mode-button {
   min-height:135px; padding:18px; text-align:left; cursor:pointer; color:var(--foam);
   border:1px solid var(--cyan); background:linear-gradient(#1b4b56,#0a252e);
@@ -254,13 +260,12 @@ button { font: inherit; }
 .mode-button span { display:block; color:var(--cyan); font-size:22px; font-weight:900; letter-spacing:.12em; }
 .mode-button b { display:block; margin:6px 0; font-size:12px; }
 .mode-button small { display:block; color:var(--steel); font-size:9px; line-height:1.5; }
-.mode-button.hard { border-color:var(--danger); background:linear-gradient(#542f35,#26161c); }
-.mode-button.hard span { color:var(--danger); }
+.mode-button span + small { margin-top:10px; }
 .mode-button.tactics { border-color:var(--amber); background:linear-gradient(#594d22,#241f12); }
 .mode-button.tactics span { color:var(--amber); }
 
 @media (max-width: 760px) {
-  .game-shell { padding:10px 8px 16px; }
+  .game-shell { padding:10px 8px calc(16px + env(safe-area-inset-bottom,0px)); }
   .masthead { grid-template-columns:1fr auto; align-items:center; }
   .phase-badge { min-width:132px; padding:6px 8px; }
   .phase-badge strong { font-size:10px; }
@@ -277,17 +282,30 @@ button { font: inherit; }
   .tactical-panel.enemy-board { order:-1; }
   .canvas-wrap { width:min(100%,520px); }
   .command-deck {
-    position:sticky; bottom:5px; z-index:20; display:grid;
-    grid-template-columns:repeat(4,minmax(0,1fr)); gap:5px; padding:7px; backdrop-filter:blur(8px);
+    position:sticky; bottom:calc(5px + env(safe-area-inset-bottom,0px)); z-index:20; display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; padding:7px; backdrop-filter:blur(8px);
   }
-  .cmd { width:100%; min-width:0; min-height:43px; padding:5px 6px; }
-  .cmd b { font-size:10px; }
-  .cmd small { font-size:7px; white-space:nowrap; }
-  .cmd.confirm { min-width:0; }
+  .command-deck > .cmd,.command-deck .action-cluster .cmd { width:100%; min-width:0; min-height:48px; padding:6px 8px; }
+  .command-deck .cmd b { font-size:10px; }
+  .command-deck .cmd small { overflow:hidden; text-overflow:ellipsis; font-size:7px; white-space:nowrap; }
+  .command-deck .cmd.confirm { min-width:0; }
   .action-cluster { display:contents; }
   .action-cluster .cmd,.action-cluster .cancel-command,.action-cluster .confirm {
     width:100%; min-width:0; max-width:none;
   }
+  .placement-tools { grid-template-columns:1fr; gap:7px; padding:8px; }
+  .placement-help { grid-column:1; padding:0 3px; text-align:left; font-size:9px; }
+  .placement-secondary { grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+  .placement-tools .cmd { width:100%; min-width:0; min-height:46px; }
+  .placement-start { min-width:0; }
+  .fleet-row { gap:5px; }
+  .ship-card { min-height:54px; padding:6px; cursor:pointer; }
+  .ship-card strong { overflow:hidden; text-overflow:ellipsis; font-size:9px; }
+  .ship-card small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:7px; }
+  .turn-review { display:grid; grid-template-columns:minmax(0,1fr); gap:7px; padding:8px; }
+  .turn-review .review-confirm { width:100%; min-width:0; }
+  .turn-review > div b { font-size:10px; }
+  .turn-review > div small { font-size:8px; line-height:1.45; }
   .utility-overlay { top:7px; right:7px; gap:3px; padding:3px; }
   .utility-overlay button { width:34px; height:34px; font-size:15px; }
   .utility-overlay button.retry { font-size:22px; }
@@ -301,19 +319,19 @@ button { font: inherit; }
 @media (max-width: 760px) and (orientation: portrait) {
   .utility-overlay { display:none; }
   .mobile-field-switch {
-    display:grid; grid-template-columns:1fr auto auto auto; align-items:center; gap:5px;
+    display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto; align-items:center; gap:5px;
     position:sticky; top:4px; z-index:22; margin:8px 0 6px; padding:6px;
     border:1px solid #456873; background:#061821ee; backdrop-filter:blur(9px);
     box-shadow:0 5px 18px #0009;
   }
-  .mobile-field-switch div { min-width:0; padding-left:3px; }
+  .mobile-field-switch > div { grid-column:1 / -1; min-width:0; padding:0 3px 2px; }
   .mobile-field-switch b,.mobile-field-switch small {
     display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   }
   .mobile-field-switch b { color:var(--cyan); font-size:9px; }
   .mobile-field-switch small { color:var(--steel); font-size:7px; margin-top:2px; }
   .mobile-field-switch button {
-    min-height:38px; padding:5px 8px; border:1px solid #486973;
+    width:100%; min-height:40px; padding:5px 8px; border:1px solid #486973;
     color:var(--steel); background:#0a2029; font-size:9px; font-weight:900; cursor:pointer;
   }
   .mobile-field-switch button.active {
@@ -341,10 +359,6 @@ button { font: inherit; }
   .enemy-command-help small { font-size:8px; }
   .enemy-command-help { height:68px; min-height:68px; }
   .enemy-command-help p,.enemy-command-help small { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .turn-review { gap:7px; padding:7px; margin-bottom:210px; }
-  .turn-review > div b { font-size:10px; }
-  .turn-review > div small { font-size:7px; }
-  .turn-review .review-confirm { min-width:148px; }
   .command-detail { display:none; }
 }
 
