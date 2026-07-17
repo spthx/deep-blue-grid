@@ -114,6 +114,18 @@ button { font: inherit; }
 .panel-head { display: flex; align-items: center; justify-content: space-between; padding: 2px 4px 7px; }
 .panel-head h2 { margin: 0; font-size: 12px; letter-spacing: .18em; color: var(--cyan); }
 .panel-head span { font-size: 9px; color: var(--steel); }
+.enemy-command-help {
+  margin:0 3px 9px; padding:8px 10px; border:1px solid #3d6872; border-left:3px solid var(--cyan);
+  background:linear-gradient(90deg,#0d2a34,#071a23); box-shadow:inset 0 0 16px #0006;
+}
+.enemy-command-help > div { display:flex; align-items:baseline; gap:9px; min-width:0; }
+.enemy-command-help span { color:var(--steel); font-size:7px; letter-spacing:.14em; }
+.enemy-command-help strong { color:var(--cyan); font-size:12px; letter-spacing:.08em; }
+.enemy-command-help em { margin-left:auto; color:var(--amber); font-size:9px; font-style:normal; white-space:nowrap; }
+.enemy-command-help p { margin:4px 0 2px; color:var(--foam); font-size:9px; }
+.enemy-command-help small { display:block; color:var(--steel); font-size:8px; }
+.enemy-command-help.armed { border-color:var(--amber); border-left-color:var(--amber); background:linear-gradient(90deg,#302914,#0a1b22); }
+.enemy-command-help.armed strong,.enemy-command-help.armed small { color:#fff1a8; }
 .canvas-wrap { position: relative; aspect-ratio: 1 / 1; width: min(100%, 570px); margin: auto; overflow: hidden; background: #092934; border: 2px solid #52757d; box-shadow: inset 0 0 30px #001, 0 0 0 4px #07131a; touch-action: none; }
 .canvas-wrap::after { content:""; position:absolute; inset:0; pointer-events:none; box-shadow: inset 0 0 40px #000b; }
 .board-canvas { display:block; width:100%; height:100%; image-rendering: pixelated; cursor: crosshair; }
@@ -277,6 +289,13 @@ button { font: inherit; }
   .tactical-panel.enemy-board { order:initial; }
   .tactical-panel.mobile-hidden { display:none; }
   .boards { margin-top:6px; }
+  .enemy-command-help { margin-bottom:7px; padding:7px 8px; }
+  .enemy-command-help > div { gap:6px; }
+  .enemy-command-help span { display:none; }
+  .enemy-command-help strong { font-size:11px; }
+  .enemy-command-help p { font-size:8px; }
+  .enemy-command-help small { font-size:8px; }
+  .command-detail { display:none; }
 }
 
 @media (max-height: 760px) and (min-width: 761px) {

@@ -703,6 +703,27 @@ export function DeepBlueGrid() {
 
         <section className={"tactical-panel enemy-board " + (portraitPhone && visibleBoard !== "enemy" ? "mobile-hidden" : "")}>
           <div className="panel-head"><h2>HOSTILE WATERS // 敵軍海域</h2><span>CONTACT GRID</span></div>
+          {phase !== "placement" && (
+            <div className={"enemy-command-help " + (ready ? "armed" : "")} aria-live="polite">
+              <div>
+                <span>SELECTED WEAPON</span>
+                <strong>{selectedMeta.label}</strong>
+                <em>{weapon === "fire" ? "使用回数 ∞" : selectedState.status}</em>
+              </div>
+              <p>{selectedMeta.help}</p>
+              <small>
+                {phase === "enemy"
+                  ? "敵行動中。自軍海域で着弾を確認してください。"
+                  : !selectedState.available
+                    ? selectedState.reason
+                    : ready
+                      ? "照準確定。" + confirmLabel + "ボタンで実行します。"
+                      : picked.length
+                        ? "目標選択 " + picked.length + "/" + targetRequirement + "。残りの目標を選んでください。"
+                        : "敵海域をタップして" + selectedMeta.requirement + "を選んでください。"}
+              </small>
+            </div>
+          )}
           <div className="canvas-wrap">
             <canvas
               ref={enemyCanvas}
