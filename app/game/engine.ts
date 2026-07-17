@@ -24,23 +24,29 @@ export class Board {
   radarScans: Array<{ origin: Coord; contact: boolean }> = [];
 
   reset() { this.ships = []; this.shots = Array.from({ length: GRID_SIZE }, () => Array<ShotMark>(GRID_SIZE).fill("unknown")); this.radarScans = []; }
-  cellsFor(start: Coord, size: number, orientation: Orientation): Coord[] {
-    return Array.from({ length: size }, (_, i) => ({ x: start.x + (orientation === "horizontal" ? i : 0), y: start.y + (orientation === "vertical" ? i : 0) }));
+  cellsFor(start: Coord, size: number, orientation: Orientation, id?: ShipId): Coord[] {
+    const def = id ? SHIPS.find((s) => s.id === id) : undefined;
+    const width = def ? (orientation === "horizontal" ? def.width : def.height) : (orientation === "horizontal" ? size : 1);
+    const height = def ? (orientation === "horizontal" ? def.height : def.width) : (orientation === "horizontal" ? 1 : size);
+    const cells: Coord[] = [];
+    for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) cells.push({ x: start.x + x, y: start.y + y });
+    return cells;
   }
   canPlace(id: ShipId, start: Coord, orientation: Orientation) {
     const def = SHIPS.find((s) => s.id === id)!;
-    const cells = this.cellsFor(start, def.size, orientation);
+    const cells = this.cellsFor(start, def.size, orientation, id);
     return !this.ships.some((s) => s.id === id) && cells.every(inBounds) && cells.every((c) => !this.shipAt(c));
   }
   placeShip(id: ShipId, start: Coord, orientation: Orientation) {
     if (!this.canPlace(id, start, orientation)) return false;
     const def = SHIPS.find((s) => s.id === id)!;
-    this.ships.push({ id, name: def.name, size: def.size, orientation, cells: this.cellsFor(start, def.size, orientation), hits: new Set(), sunk: false });
+    this.ships.push({ id, name: def.name, size: def.size, orientation, cells: this.cellsFor(start, def.size, orientation, id), hits: new Set(), sunk: false });
     return true;
   }
-  randomize(rng: SeededRandom) {
+  randomize(rng: SeededRandom, fleet: ShipId[] = SHIPS.map((ship) => ship.id)) {
     this.reset();
-    for (const def of SHIPS) {
+    for (const id of fleet) {
+      const def = SHIPS.find((ship) => ship.id === id)!;
       const candidates: Array<{ start: Coord; orientation: Orientation }> = [];
       for (let y = 0; y < GRID_SIZE; y++) for (let x = 0; x < GRID_SIZE; x++) for (const orientation of ["horizontal", "vertical"] as Orientation[]) {
         if (this.canPlace(def.id, { x, y }, orientation)) candidates.push({ start: { x, y }, orientation });
@@ -81,20 +87,21 @@ export class Board {
     this.radarScans.push({ origin: { ...origin }, contact: !!contact });
     return !!contact;
   }
-  allPlaced() { return this.ships.length === SHIPS.length; }
-  allSunk() { return this.allPlaced() && this.ships.every((ship) => ship.sunk); }
-  alive(id: ShipId) { return !this.ships.find((ship) => ship.id === id)?.sunk; }
+  allPlaced(fleet: ShipId[] = SHIPS.map((ship) => ship.id)) { return fleet.every((id) => this.ships.some((ship) => ship.id === id)); }
+  allSunk() { return this.ships.length > 0 && this.ships.every((ship) => ship.sunk); }
+  alive(id: ShipId) { const ship = this.ships.find((candidate) => candidate.id === id); return !!ship && !ship.sunk; }
   damageCount() { return this.ships.reduce((n, ship) => n + ship.hits.size, 0); }
 }
 
 export function harpoonCells(center: Coord) { return HARPOON_PATTERN.map((o) => ({ x: center.x + o.x, y: center.y + o.y })).filter(inBounds); }
 export function radarCells(origin: Coord) { return [{ x: origin.x, y: origin.y }, { x: origin.x + 1, y: origin.y }, { x: origin.x, y: origin.y + 1 }, { x: origin.x + 1, y: origin.y + 1 }].filter(inBounds); }
+export const sparrowCells = radarCells;
 
 export class Arsenal {
   uses = { ...WEAPON_MAX };
   reset() { this.uses = { ...WEAPON_MAX }; }
   canUse(id: keyof typeof WEAPON_MAX, board: Board) {
-    const carrier = id === "harpoon" ? "battleship" : id === "mk45" ? "destroyer" : "submarine";
+    const carrier = id === "phantom" ? "carrier" : id === "harpoon" ? "battleship" : id === "sparrow" ? "cruiser" : id === "mk45" ? "destroyer" : "submarine";
     return this.uses[id] > 0 && board.alive(carrier);
   }
   spend(id: keyof typeof WEAPON_MAX, board: Board) { if (!this.canUse(id, board)) return false; this.uses[id]--; return true; }

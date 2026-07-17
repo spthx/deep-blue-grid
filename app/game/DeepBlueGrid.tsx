@@ -1,108 +1,670 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { CELL_LABELS, GAME_TITLE, SHIPS, WEAPON_MAX, type Coord, type Orientation, type ShipId, type WeaponId } from "./constants.ts";
-import { Arsenal, Board, SeededRandom, harpoonCells, radarCells, type AttackResult } from "./engine.ts";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  CELL_LABELS,
+  GAME_TITLE,
+  SHIPS,
+  STAGES,
+  WEAPON_MAX,
+  type Coord,
+  type Orientation,
+  type ShipId,
+  type WeaponId,
+} from "./constants.ts";
+import {
+  Arsenal,
+  Board,
+  SeededRandom,
+  harpoonCells,
+  radarCells,
+  sparrowCells,
+  type AttackResult,
+} from "./engine.ts";
+import { advanceAcousticTrace, emptyAcousticIntel, type AcousticIntel } from "./AcousticTrace.ts";
 import { EnemyAI } from "./EnemyAI.ts";
 import { AudioManager } from "./AudioManager.ts";
 import { drawBoard, pointerToCoord } from "./Renderer.ts";
 
-type Phase="placement"|"player"|"enemy"|"victory"|"defeat";
-type Stats={turns:number;shots:number;hits:number;sunk:number;specials:number;damage:number};
-const sleep=(ms:number)=>new Promise(r=>setTimeout(r,ms));
-const coordName=(c:Coord)=>`${CELL_LABELS[c.y]}-${c.x+1}`;
+type Phase = "placement" | "player" | "enemy" | "victory" | "defeat";
+type Stats = { turns: number; shots: number; hits: number; sunk: number; specials: number; damage: number };
+type LogEntry = { id: number; text: string; tone: "info" | "good" | "bad" };
 
-export function DeepBlueGrid(){
-  const seedRef=useRef(0); const rngRef=useRef(new SeededRandom(seedRef.current));
-  const player=useRef(new Board()); const enemy=useRef(new Board()); const arsenal=useRef(new Arsenal()); const ai=useRef(new EnemyAI(new SeededRandom(seedRef.current^0x51f15e)));
-  const audio=useRef<AudioManager|null>(null); if(!audio.current&&typeof window!=="undefined")audio.current=new AudioManager();
-  const playerCanvas=useRef<HTMLCanvasElement>(null),enemyCanvas=useRef<HTMLCanvasElement>(null);
-  const [phase,setPhase]=useState<Phase>("placement"),[message,setMessage]=useState("艦艇を選択し、海域へ配置せよ。"),[selectedShip,setSelectedShip]=useState<ShipId>("battleship");
-  const [orientation,setOrientation]=useState<Orientation>("horizontal"),[cursor,setCursor]=useState<Coord>({x:1,y:2}),[weapon,setWeapon]=useState<WeaponId>("fire"),[picked,setPicked]=useState<Coord[]>([]);
-  const [locked,setLocked]=useState(false),[revision,setRevision]=useState(0),[active,setActive]=useState<Coord[]>([]),[flash,setFlash]=useState<"player"|"enemy"|null>(null),[muted,setMuted]=useState(false);
-  const [stats,setStats]=useState<Stats>({turns:0,shots:0,hits:0,sunk:0,specials:0,damage:0}); const animation=useRef(0);
-  const bump=()=>setRevision(v=>v+1);
-  const alivePlayer=player.current.ships.filter(s=>!s.sunk).length,aliveEnemy=enemy.current.ships.filter(s=>!s.sunk).length;
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const coordName = (coord: Coord) => CELL_LABELS[coord.y] + "-" + (coord.x + 1);
+const sameCoord = (a: Coord, b: Coord) => a.x === b.x && a.y === b.y;
+const freshStats = (): Stats => ({ turns: 0, shots: 0, hits: 0, sunk: 0, specials: 0, damage: 0 });
 
-  useEffect(()=>{
-    seedRef.current=Date.now();
-    rngRef.current=new SeededRandom(seedRef.current);
-    ai.current=new EnemyAI(new SeededRandom(seedRef.current^0x51f15e));
+const WEAPON_META: Record<WeaponId, { label: string; carrier?: ShipId; help: string; requirement: string }> = {
+  fire: { label: "通常砲撃", help: "敵海域の1マスを攻撃します。", requirement: "目標 1" },
+  phantom: { label: "F-4 PHANTOM", carrier: "carrier", help: "異なる4マスへ航空攻撃を行います。", requirement: "目標 4" },
+  harpoon: { label: "HARPOON", carrier: "battleship", help: "照準を中心にX字5マスを攻撃します。", requirement: "中心 1" },
+  sparrow: { label: "SEA SPARROW", carrier: "cruiser", help: "2×2の4マスを同時攻撃します。", requirement: "左上 1" },
+  mk45: { label: "MK-45 II", carrier: "destroyer", help: "異なる2マスを連続攻撃します。", requirement: "目標 2" },
+  radar: { label: "SPS-10 RADAR", carrier: "submarine", help: "2×2内の生存艦反応だけを調べます。ダメージはありません。", requirement: "左上 1" },
+};
+
+export function DeepBlueGrid() {
+  const seedRef = useRef(Date.now());
+  const rngRef = useRef(new SeededRandom(seedRef.current));
+  const player = useRef(new Board());
+  const enemy = useRef(new Board());
+  const arsenal = useRef(new Arsenal());
+  const ai = useRef(new EnemyAI(new SeededRandom(seedRef.current ^ 0x51f15e), STAGES[0].fleet, STAGES[0].aiSkill));
+  const audio = useRef<AudioManager | null>(null);
+  const playerCanvas = useRef<HTMLCanvasElement>(null);
+  const enemyCanvas = useRef<HTMLCanvasElement>(null);
+  const animation = useRef(0);
+  const playerTraceRef = useRef<AcousticIntel>(emptyAcousticIntel());
+  const enemyTraceRef = useRef<AcousticIntel>(emptyAcousticIntel());
+
+  if (!audio.current && typeof window !== "undefined") audio.current = new AudioManager();
+
+  const [stageIndex, setStageIndex] = useState(0);
+  const stage = STAGES[stageIndex];
+  const [phase, setPhase] = useState<Phase>("placement");
+  const [message, setMessage] = useState(stage.subtitle);
+  const [selectedShip, setSelectedShip] = useState<ShipId>(stage.fleet[0]);
+  const [orientation, setOrientation] = useState<Orientation>("horizontal");
+  const [cursor, setCursor] = useState<Coord>({ x: 1, y: 2 });
+  const [weapon, setWeapon] = useState<WeaponId>("fire");
+  const [picked, setPicked] = useState<Coord[]>([]);
+  const [locked, setLocked] = useState(false);
+  const [revision, setRevision] = useState(0);
+  const [active, setActive] = useState<Coord[]>([]);
+  const [flash, setFlash] = useState<"player" | "enemy" | null>(null);
+  const [muted, setMuted] = useState(false);
+  const [stats, setStats] = useState<Stats>(freshStats);
+  const [logs, setLogs] = useState<LogEntry[]>([{ id: Date.now(), text: "艦隊を配置し、BATTLE STARTを押してください。", tone: "info" }]);
+  const [playerTrace, setPlayerTrace] = useState<AcousticIntel>(emptyAcousticIntel());
+  const [enemyTrace, setEnemyTrace] = useState<AcousticIntel>(emptyAcousticIntel());
+
+  const bump = () => setRevision((value) => value + 1);
+  const addLog = (text: string, tone: LogEntry["tone"] = "info") => {
+    setLogs((current) => [...current, { id: Date.now() + Math.random(), text, tone }].slice(-8));
+  };
+
+  const ownAlive = player.current.ships.filter((ship) => !ship.sunk).length;
+  const enemyAlive = enemy.current.ships.filter((ship) => !ship.sunk).length;
+  const fleetCells = stage.fleet.reduce((total, id) => total + SHIPS.find((ship) => ship.id === id)!.size, 0);
+  const onlySubmarine = (board: Board) => {
+    const alive = board.ships.filter((ship) => !ship.sunk);
+    return alive.length === 1 && alive[0].id === "submarine";
+  };
+
+  const initStage = useCallback((nextStageIndex: number) => {
+    const nextStage = STAGES[nextStageIndex];
+    seedRef.current = Date.now() + nextStageIndex * 7919;
+    rngRef.current = new SeededRandom(seedRef.current);
+    player.current = new Board();
+    enemy.current = new Board();
+    arsenal.current = new Arsenal();
+    ai.current = new EnemyAI(new SeededRandom(seedRef.current ^ 0x51f15e), nextStage.fleet, nextStage.aiSkill);
+    playerTraceRef.current = emptyAcousticIntel();
+    enemyTraceRef.current = emptyAcousticIntel();
+    setPlayerTrace(emptyAcousticIntel());
+    setEnemyTrace(emptyAcousticIntel());
+    setStageIndex(nextStageIndex);
+    setPhase("placement");
+    setMessage(nextStage.subtitle);
+    setSelectedShip(nextStage.fleet[0]);
+    setOrientation("horizontal");
+    setCursor({ x: 1, y: 2 });
+    setWeapon("fire");
+    setPicked([]);
+    setLocked(false);
+    setActive([]);
+    setStats(freshStats());
+    setLogs([{ id: Date.now(), text: "STAGE " + nextStage.id + "：艦隊を配置してください。", tone: "info" }]);
     bump();
-  },[]);
+  }, []);
 
-  const render=useCallback((time:number)=>{
-    animation.current=requestAnimationFrame(render);
-    if(playerCanvas.current)drawBoard(playerCanvas.current,player.current,{revealShips:true,cursor:phase==="placement"?cursor:undefined,previewShip:phase==="placement"?{id:selectedShip,orientation,valid:player.current.canPlace(selectedShip,cursor,orientation)}:undefined,active:phase==="enemy"?active:[],time});
-    if(enemyCanvas.current)drawBoard(enemyCanvas.current,enemy.current,{revealShips:false,cursor:phase==="player"&&!locked?cursor:undefined,weapon,selected:picked,active:phase==="player"?active:[],time});
-  },[phase,cursor,selectedShip,orientation,weapon,picked,active,locked,revision]);
-  useEffect(()=>{animation.current=requestAnimationFrame(render);return()=>cancelAnimationFrame(animation.current);},[render]);
+  useEffect(() => {
+    initStage(0);
+  }, [initStage]);
 
-  const reset=useCallback(()=>{
-    seedRef.current=Date.now();rngRef.current=new SeededRandom(seedRef.current);player.current=new Board();enemy.current=new Board();arsenal.current=new Arsenal();ai.current=new EnemyAI(new SeededRandom(seedRef.current^0x51f15e));
-    setPhase("placement");setMessage("艦艇を選択し、海域へ配置せよ。");setSelectedShip("battleship");setOrientation("horizontal");setWeapon("fire");setPicked([]);setLocked(false);setActive([]);setStats({turns:0,shots:0,hits:0,sunk:0,specials:0,damage:0});bump();
-  },[]);
-  const randomize=()=>{player.current.randomize(rngRef.current);setSelectedShip("battleship");setMessage("配置完了。戦闘開始を押してください。");audio.current?.confirm();bump();};
-  const clearPlacement=()=>{player.current.reset();setSelectedShip("battleship");setMessage("配置を初期化しました。");audio.current?.cancel();bump();};
-  const startBattle=()=>{if(!player.current.allPlaced()){setMessage("全3隻を配置してください。");return;}enemy.current.randomize(rngRef.current);setPhase("player");setMessage("敵海域を指定。攻撃コマンドを実行せよ。");setFlash("player");setTimeout(()=>setFlash(null),700);audio.current?.confirm();audio.current?.turn();bump();};
+  const previewTargets = useMemo(() => {
+    if (!picked.length) return [];
+    if (weapon === "harpoon") return harpoonCells(picked[0]);
+    if (weapon === "sparrow" || weapon === "radar") return radarCells(picked[0]);
+    return picked;
+  }, [picked, weapon]);
 
-  const resolvePlayerAttack=async(targets:Coord[],special=false)=>{
-    setLocked(true);setActive(targets);audio.current?.fire();await sleep(350);const results:AttackResult[]=[];
-    for(const target of targets){const result=enemy.current.attack(target);if(result.kind==="ALREADY")continue;results.push(result);setActive([target]);await sleep(180);if(result.kind==="HIT"||result.kind==="SUNK")audio.current?.hit();else audio.current?.splash();if(result.kind==="SUNK")audio.current?.sunk();bump();}
-    const valid=results.filter(r=>r.kind!=="ALREADY");const hits=valid.filter(r=>r.kind==="HIT"||r.kind==="SUNK").length;const sunk=valid.filter(r=>r.kind==="SUNK").length;
-    setStats(s=>({...s,turns:s.turns+1,shots:s.shots+valid.length,hits:s.hits+hits,sunk:s.sunk+sunk,specials:s.specials+(special?1:0)}));
-    const last=valid.at(-1);setMessage(last?.kind==="SUNK"?`${last.shipName} — SUNK!`:hits?`命中 ${hits} / ${valid.length}。敵艦に損傷。`:valid.some(r=>r.kind==="ECHO")?"SONAR ECHO — 周辺に反応あり。":"MISS — 反応なし。");
-    setActive([]);setPicked([]);bump();await sleep(520);if(enemy.current.allSunk()){setPhase("victory");audio.current?.victory();setLocked(false);return;}await enemyTurn();
-  };
-  const enemyTurn=async()=>{
-    setPhase("enemy");setFlash("enemy");setMessage("敵照準システム作動中…");audio.current?.turn(true);await sleep(700);setFlash(null);
-    const decision=ai.current.decide(enemy.current);setMessage(`ENEMY ${decision.state} — ${decision.weapon.toUpperCase()} LOCK`);setActive(decision.targets);await sleep(650);
-    if(decision.weapon==="radar"){
-      audio.current?.sonar();const contact=player.current.radar(decision.targets[0]);ai.current.observeRadar(decision.targets[0],contact);setMessage(contact?"敵ソナーが接触反応を捕捉。":"敵レーダー走査 — CLEAR");bump();await sleep(700);
-    }else{
-      audio.current?.fire();const results:AttackResult[]=[];
-      for(const target of decision.targets){const result=player.current.attack(target);if(result.kind!=="ALREADY")results.push(result);setActive([target]);await sleep(230);if(result.kind==="HIT"||result.kind==="SUNK")audio.current?.hit();else audio.current?.splash();if(result.kind==="SUNK")audio.current?.sunk();bump();}
-      ai.current.observe(results);const hits=results.filter(r=>r.kind==="HIT"||r.kind==="SUNK").length;setStats(s=>({...s,damage:s.damage+hits}));const sunk=results.find(r=>r.kind==="SUNK");setMessage(sunk?`警告：${sunk.shipName} 撃沈。`:hits?`被弾 ${hits}。敵は追撃態勢へ移行。`:results.some(r=>r.kind==="ECHO")?"敵弾 MISS — ただし反応を捕捉された。":"敵弾 MISS。損害なし。");
+  const render = useCallback((time: number) => {
+    animation.current = requestAnimationFrame(render);
+    if (playerCanvas.current) {
+      drawBoard(playerCanvas.current, player.current, {
+        revealShips: true,
+        cursor: phase === "placement" ? cursor : undefined,
+        previewShip: phase === "placement" ? {
+          id: selectedShip,
+          orientation,
+          valid: player.current.canPlace(selectedShip, cursor, orientation),
+        } : undefined,
+        active: phase === "enemy" ? active : [],
+        acoustic: playerTrace,
+        time,
+      });
     }
-    setActive([]);bump();await sleep(520);if(player.current.allSunk()){setPhase("defeat");audio.current?.defeat();setLocked(false);return;}setPhase("player");setFlash("player");setMessage("COMMAND — 攻撃方法と目標を選択。");audio.current?.turn();setTimeout(()=>setFlash(null),700);setLocked(false);
+    if (enemyCanvas.current) {
+      drawBoard(enemyCanvas.current, enemy.current, {
+        revealShips: false,
+        cursor: phase === "player" && !locked ? cursor : undefined,
+        weapon,
+        selected: previewTargets,
+        active: phase === "player" ? active : [],
+        acoustic: enemyTrace,
+        time,
+      });
+    }
+  }, [phase, cursor, selectedShip, orientation, weapon, previewTargets, active, locked, playerTrace, enemyTrace, revision]);
+
+  useEffect(() => {
+    animation.current = requestAnimationFrame(render);
+    return () => cancelAnimationFrame(animation.current);
+  }, [render]);
+
+  const randomize = () => {
+    player.current.randomize(rngRef.current, stage.fleet);
+    setSelectedShip(stage.fleet[0]);
+    setMessage("配置完了。艦隊カードと海図を確認して戦闘を開始してください。");
+    addLog("自動配置を実行しました。");
+    audio.current?.confirm();
+    bump();
   };
 
-  const useAt=async(c:Coord)=>{
-    if(phase!=="player"||locked)return;
-    if(weapon==="fire"){if(enemy.current.shots[c.y][c.x]!=="unknown"){setMessage("その座標は攻撃済みです。");audio.current?.cancel();return;}await resolvePlayerAttack([c]);}
-    if(weapon==="harpoon"){if(!arsenal.current.spend("harpoon",player.current)){setMessage("HARPOON 使用不能。");return;}await resolvePlayerAttack(harpoonCells(c),true);}
-    if(weapon==="radar"){
-      if(!arsenal.current.spend("radar",player.current)){setMessage("SPS-10 RADAR 使用不能。");return;}setLocked(true);setActive(radarCells(c));audio.current?.sonar();await sleep(750);const contact=enemy.current.radar(c);setStats(s=>({...s,turns:s.turns+1,specials:s.specials+1}));setMessage(contact?"CONTACT — 2×2範囲内に生存艦反応。":"CLEAR — 範囲内に反応なし。");bump();await sleep(850);setActive([]);await enemyTurn();
+  const clearPlacement = () => {
+    player.current.reset();
+    setSelectedShip(stage.fleet[0]);
+    setMessage("配置を初期化しました。艦を選び直してください。");
+    addLog("配置を初期化しました。");
+    audio.current?.cancel();
+    bump();
+  };
+
+  const startBattle = () => {
+    if (!player.current.allPlaced(stage.fleet)) {
+      setMessage("このステージの全艦を配置してください。");
+      return;
     }
-    if(weapon==="mk45"){
-      if(enemy.current.shots[c.y][c.x]!=="unknown"||picked.some(p=>p.x===c.x&&p.y===c.y)){setMessage("異なる未攻撃座標を選択してください。");return;}
-      const next=[...picked,c];setPicked(next);audio.current?.cursor();setMessage(next.length===1?`第1目標 ${coordName(c)}。第2目標を選択。`:`2目標選択完了。MK-45 発射ボタンで決定。`);
+    enemy.current.randomize(rngRef.current, stage.fleet);
+    setPhase("player");
+    setMessage("COMMAND：兵装を選び、敵海域に照準を置いてください。");
+    addLog("交戦開始。先攻は自艦隊です。");
+    setFlash("player");
+    setTimeout(() => setFlash(null), 700);
+    audio.current?.confirm();
+    audio.current?.turn();
+    bump();
+  };
+
+  const exposePlayerSubmarine = () => {
+    if (!onlySubmarine(player.current)) return;
+    const submarine = player.current.ships.find((ship) => ship.id === "submarine")!;
+    const next = advanceAcousticTrace(playerTraceRef.current, submarine.cells[0], rngRef.current);
+    playerTraceRef.current = next;
+    setPlayerTrace(next);
+    ai.current.observeAcoustic(next);
+    addLog("警告：発射音から自艦の音紋が解析されました（" + next.level + "/5）。", "bad");
+  };
+
+  const exposeEnemySubmarine = () => {
+    if (!onlySubmarine(enemy.current)) return;
+    const submarine = enemy.current.ships.find((ship) => ship.id === "submarine")!;
+    const next = advanceAcousticTrace(enemyTraceRef.current, submarine.cells[0], rngRef.current);
+    enemyTraceRef.current = next;
+    setEnemyTrace(next);
+    addLog(next.level === 5 ? "音紋解析：敵潜水艦の強反応を捕捉。" : "音紋解析が進行（" + next.level + "/5）。", "good");
+  };
+
+  const enemyTurn = async () => {
+    setPhase("enemy");
+    setFlash("enemy");
+    setMessage("敵照準システム作動中…");
+    audio.current?.turn(true);
+    await sleep(650);
+    setFlash(null);
+    const decision = ai.current.decide(enemy.current);
+    setMessage("ENEMY " + decision.state + "： " + decision.weapon.toUpperCase() + " LOCK");
+    setActive(decision.targets);
+    await sleep(550);
+
+    if (decision.weapon === "radar") {
+      audio.current?.sonar();
+      const contact = player.current.radar(decision.targets[0]);
+      ai.current.observeRadar(decision.targets[0], contact);
+      const report = contact ? "敵レーダーが生存艦反応を捕捉。" : "敵レーダー走査：反応なし。";
+      setMessage(report);
+      addLog(report, contact ? "bad" : "info");
+      bump();
+      await sleep(650);
+    } else {
+      audio.current?.fire();
+      const results: AttackResult[] = [];
+      for (const target of decision.targets) {
+        const result = player.current.attack(target);
+        if (result.kind !== "ALREADY") results.push(result);
+        setActive([target]);
+        await sleep(200);
+        if (result.kind === "HIT" || result.kind === "SUNK") audio.current?.hit();
+        else audio.current?.splash();
+        if (result.kind === "SUNK") audio.current?.sunk();
+        bump();
+      }
+      ai.current.observe(results);
+      const hits = results.filter((result) => result.kind === "HIT" || result.kind === "SUNK").length;
+      const sunk = results.find((result) => result.kind === "SUNK");
+      setStats((current) => ({ ...current, damage: current.damage + hits }));
+      const report = sunk
+        ? "警告：" + sunk.shipName + " 撃沈。"
+        : hits
+          ? "被弾 " + hits + "。敵は追撃態勢へ移行。"
+          : results.some((result) => result.kind === "ECHO")
+            ? "敵弾は外れたが近接反応を検知。"
+            : "敵弾 MISS。損害なし。";
+      setMessage(report);
+      addLog(report, hits ? "bad" : "info");
+      exposeEnemySubmarine();
+    }
+
+    setActive([]);
+    bump();
+    await sleep(500);
+    if (player.current.allSunk()) {
+      setPhase("defeat");
+      audio.current?.defeat();
+      setLocked(false);
+      return;
+    }
+    setPhase("player");
+    setFlash("player");
+    setMessage("COMMAND：兵装と目標を選択してください。");
+    audio.current?.turn();
+    setTimeout(() => setFlash(null), 700);
+    setLocked(false);
+  };
+
+  const resolvePlayerAttack = async (targets: Coord[], special = false) => {
+    setLocked(true);
+    setActive(targets);
+    audio.current?.fire();
+    await sleep(320);
+    const results: AttackResult[] = [];
+    for (const target of targets) {
+      const result = enemy.current.attack(target);
+      if (result.kind === "ALREADY") continue;
+      results.push(result);
+      setActive([target]);
+      await sleep(165);
+      if (result.kind === "HIT" || result.kind === "SUNK") audio.current?.hit();
+      else audio.current?.splash();
+      if (result.kind === "SUNK") audio.current?.sunk();
+      bump();
+    }
+    const hits = results.filter((result) => result.kind === "HIT" || result.kind === "SUNK").length;
+    const sunk = results.filter((result) => result.kind === "SUNK").length;
+    setStats((current) => ({
+      ...current,
+      turns: current.turns + 1,
+      shots: current.shots + results.length,
+      hits: current.hits + hits,
+      sunk: current.sunk + sunk,
+      specials: current.specials + (special ? 1 : 0),
+    }));
+    const lastSunk = [...results].reverse().find((result) => result.kind === "SUNK");
+    const report = lastSunk
+      ? lastSunk.shipName + " — SUNK!"
+      : hits
+        ? "命中 " + hits + " / " + results.length + "。敵艦に損傷。"
+        : results.some((result) => result.kind === "ECHO")
+          ? "SONAR ECHO：近傍に生存艦反応。"
+          : "MISS：反応なし。";
+    setMessage(report);
+    addLog(WEAPON_META[weapon].label + "： " + report, hits ? "good" : "info");
+    exposePlayerSubmarine();
+    setActive([]);
+    setPicked([]);
+    bump();
+    await sleep(480);
+    if (enemy.current.allSunk()) {
+      setPhase("victory");
+      audio.current?.victory();
+      setLocked(false);
+      return;
+    }
+    await enemyTurn();
+  };
+
+  const targetRequirement = weapon === "phantom" ? 4 : weapon === "mk45" ? 2 : 1;
+  const confirmTargets = previewTargets.filter((coord) => enemy.current.shots[coord.y]?.[coord.x] === "unknown");
+  const ready = picked.length === targetRequirement && (weapon === "radar" || confirmTargets.length > 0);
+
+  const chooseTarget = (coord: Coord) => {
+    if (phase !== "player" || locked) return;
+    if (weapon === "fire" && enemy.current.shots[coord.y][coord.x] !== "unknown") {
+      setMessage("その座標は攻撃済みです。未攻撃のマスを選んでください。");
+      audio.current?.cancel();
+      return;
+    }
+    if (weapon === "mk45" || weapon === "phantom") {
+      if (enemy.current.shots[coord.y][coord.x] !== "unknown") {
+        setMessage("攻撃済みの座標は選択できません。");
+        return;
+      }
+      const exists = picked.some((candidate) => sameCoord(candidate, coord));
+      const next = exists
+        ? picked.filter((candidate) => !sameCoord(candidate, coord))
+        : picked.length < targetRequirement
+          ? [...picked, coord]
+          : [...picked.slice(1), coord];
+      setPicked(next);
+      setMessage(WEAPON_META[weapon].label + "：目標 " + next.length + " / " + targetRequirement + "。");
+    } else {
+      setPicked([coord]);
+      setMessage(WEAPON_META[weapon].label + "：照準 " + coordName(coord) + "。内容を確認して発射してください。");
+    }
+    audio.current?.cursor();
+  };
+
+  const confirmAction = async () => {
+    if (!ready || locked) return;
+    if (weapon === "radar") {
+      if (!arsenal.current.spend("radar", player.current)) return;
+      setLocked(true);
+      const cells = radarCells(picked[0]);
+      setActive(cells);
+      audio.current?.sonar();
+      await sleep(650);
+      const contact = enemy.current.radar(picked[0]);
+      setStats((current) => ({ ...current, turns: current.turns + 1, specials: current.specials + 1 }));
+      const report = contact ? "CONTACT：2×2範囲内に生存艦反応。" : "CLEAR：2×2範囲内に反応なし。";
+      setMessage(report);
+      addLog("SPS-10 RADAR： " + report, contact ? "good" : "info");
+      setPicked([]);
+      setActive([]);
+      bump();
+      await sleep(700);
+      await enemyTurn();
+      return;
+    }
+    if (weapon !== "fire") {
+      if (!arsenal.current.spend(weapon, player.current)) {
+        setMessage("兵装を使用できません。搭載艦の状態と残数を確認してください。");
+        return;
+      }
+    }
+    await resolvePlayerAttack(confirmTargets, weapon !== "fire");
+  };
+
+  const selectWeapon = (nextWeapon: WeaponId) => {
+    if (phase !== "player" || locked) return;
+    setPicked([]);
+    setWeapon(nextWeapon);
+    setMessage(WEAPON_META[nextWeapon].label + "： " + WEAPON_META[nextWeapon].help);
+    audio.current?.cursor();
+  };
+
+  const cancelAim = () => {
+    setPicked([]);
+    setMessage("照準を解除しました。兵装または目標を選び直してください。");
+    audio.current?.cancel();
+  };
+
+  const onBoardPointer = (side: "player" | "enemy", event: React.PointerEvent<HTMLCanvasElement>) => {
+    const coord = pointerToCoord(event.currentTarget, event.clientX, event.clientY);
+    if (!coord) return;
+    setCursor(coord);
+    if (side === "player" && phase === "placement") {
+      if (player.current.canPlace(selectedShip, coord, orientation)) {
+        player.current.placeShip(selectedShip, coord, orientation);
+        audio.current?.confirm();
+        const next = stage.fleet.find((id) => !player.current.ships.some((placed) => placed.id === id));
+        if (next) setSelectedShip(next);
+        const placedName = SHIPS.find((ship) => ship.id === selectedShip)!.name;
+        setMessage(next ? placedName + " 配置完了。次の艦を配置してください。" : "全艦配置完了。戦闘を開始できます。");
+        bump();
+      } else {
+        setMessage("配置不可：盤面外、重複、または配置済みです。");
+        audio.current?.cancel();
+      }
+    } else if (side === "enemy") {
+      chooseTarget(coord);
     }
   };
-  const fireMk45=async()=>{if(picked.length!==2||!arsenal.current.spend("mk45",player.current))return;await resolvePlayerAttack(picked,true);};
-  const selectWeapon=(w:WeaponId)=>{if(phase!=="player"||locked)return;setPicked([]);setWeapon(w);audio.current?.cursor();setMessage(w==="fire"?"FIRE — 未攻撃の1マスを指定。":w==="harpoon"?"HARPOON — 3×3内の5地点を同時爆撃。":w==="mk45"?"MK-45 II — 異なる2地点を選択。":"RADAR — 2×2範囲を索敵（攻撃力なし）。");};
 
-  const onBoardPointer=(side:"player"|"enemy",e:React.PointerEvent<HTMLCanvasElement>)=>{const canvas=e.currentTarget,c=pointerToCoord(canvas,e.clientX,e.clientY);if(!c)return;setCursor(c);if(side==="player"&&phase==="placement"){
-      if(player.current.canPlace(selectedShip,c,orientation)){player.current.placeShip(selectedShip,c,orientation);audio.current?.confirm();const next=SHIPS.find(s=>!player.current.ships.some(p=>p.id===s.id));if(next)setSelectedShip(next.id);setMessage(next?`${SHIPS.find(s=>s.id===selectedShip)?.name} 配置完了。次の艦を配置。`:"全艦配置完了。戦闘開始できます。");bump();}else{setMessage("配置不可：盤面外または他艦と重なっています。");audio.current?.cancel();}
-    }else if(side==="enemy")void useAt(c);};
-  const onMove=(e:React.PointerEvent<HTMLCanvasElement>)=>{const c=pointerToCoord(e.currentTarget,e.clientX,e.clientY);if(c)setCursor(c);};
+  const onMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    const coord = pointerToCoord(event.currentTarget, event.clientX, event.clientY);
+    if (coord) setCursor(coord);
+  };
 
-  useEffect(()=>{const key=(e:KeyboardEvent)=>{if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(e.key))e.preventDefault();if(e.key.toLowerCase()==="m"){setMuted(audio.current?.toggle()??false);return;}if(e.key.toLowerCase()==="r"&&phase==="placement")setOrientation(o=>o==="horizontal"?"vertical":"horizontal");if(e.key==="Escape"){setPicked([]);setWeapon("fire");audio.current?.cancel();}if(phase==="player"){if(e.key==="1")selectWeapon("fire");if(e.key==="2")selectWeapon("harpoon");if(e.key==="3")selectWeapon("mk45");if(e.key==="4")selectWeapon("radar");}const d:{[k:string]:Coord}={ArrowLeft:{x:-1,y:0},a:{x:-1,y:0},ArrowRight:{x:1,y:0},d:{x:1,y:0},ArrowUp:{x:0,y:-1},w:{x:0,y:-1},ArrowDown:{x:0,y:1},s:{x:0,y:1}};const delta=d[e.key];if(delta)setCursor(c=>({x:Math.max(0,Math.min(7,c.x+delta.x)),y:Math.max(0,Math.min(7,c.y+delta.y))}));if((e.key==="Enter"||e.key===" ")&&phase==="player")void useAt(cursor);};window.addEventListener("keydown",key);return()=>window.removeEventListener("keydown",key);},[phase,cursor,weapon,picked,locked]);
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(event.key)) event.preventDefault();
+      if (event.key.toLowerCase() === "m") {
+        setMuted(audio.current?.toggle() ?? false);
+        return;
+      }
+      if (event.key.toLowerCase() === "r" && phase === "placement") {
+        setOrientation((current) => current === "horizontal" ? "vertical" : "horizontal");
+      }
+      if (event.key === "Escape") cancelAim();
+      const order: WeaponId[] = ["fire", "phantom", "harpoon", "sparrow", "mk45", "radar"];
+      const index = Number(event.key) - 1;
+      if (phase === "player" && index >= 0 && index < order.length) selectWeapon(order[index]);
+      const directions: Record<string, Coord> = {
+        ArrowLeft: { x: -1, y: 0 }, a: { x: -1, y: 0 },
+        ArrowRight: { x: 1, y: 0 }, d: { x: 1, y: 0 },
+        ArrowUp: { x: 0, y: -1 }, w: { x: 0, y: -1 },
+        ArrowDown: { x: 0, y: 1 }, s: { x: 0, y: 1 },
+      };
+      const delta = directions[event.key];
+      if (delta) {
+        setCursor((current) => ({
+          x: Math.max(0, Math.min(7, current.x + delta.x)),
+          y: Math.max(0, Math.min(7, current.y + delta.y)),
+        }));
+      }
+      if ((event.key === "Enter" || event.key === " ") && phase === "player") {
+        if (ready) void confirmAction();
+        else chooseTarget(cursor);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [phase, cursor, weapon, picked, locked, ready]);
 
-  const shipCard=(board:Board,shipId:ShipId,selectable=false)=>{const def=SHIPS.find(s=>s.id===shipId)!,ship=board.ships.find(s=>s.id===shipId);return <button key={shipId} className={`ship-card ${selectable&&selectedShip===shipId?"active":""} ${ship?.sunk?"sunk":""}`} onClick={()=>selectable&&!ship&&setSelectedShip(shipId)} disabled={!selectable||!!ship}><strong>{def.name} / {def.code}</strong><small>{ship?.sunk?"LOST":ship?"DEPLOYED":selectable?"SELECT TO PLACE":"UNKNOWN"}</small><span className="hull-meter">{Array.from({length:def.size},(_,i)=><i key={i} className={ship&&i<ship.hits.size?"hit":""}/>)}</span></button>};
-  const canWeapon=(id:"harpoon"|"mk45"|"radar")=>arsenal.current.canUse(id,player.current);
-  const carrierStatus=(id:"harpoon"|"mk45"|"radar")=>{const carrier=id==="harpoon"?"battleship":id==="mk45"?"destroyer":"submarine";return player.current.alive(carrier)?`${arsenal.current.uses[id]} / ${WEAPON_MAX[id]}`:"CARRIER LOST";};
-  const result=phase==="victory"||phase==="defeat";
-  return <main className={`game-shell ${active.length?"shake":""}`}><div className="noise"/>
-    <header className="masthead"><div><div className="brand-kicker">TACTICAL SONAR / ONE STAGE</div><h1 className="brand-title" aria-label={GAME_TITLE}>DEEP <span>BLUE</span> GRID</h1></div><div className="phase-badge"><strong>{phase==="placement"?"FLEET DEPLOY":phase==="player"?"COMMAND":phase==="enemy"?"ENEMY ACTION":result?"MISSION END":""}</strong><small>8×8 NAVAL TACTICAL DISPLAY</small></div><div className="system-info">SEED <b>{seedRef.current.toString(16).toUpperCase()}</b><br/>LINK STATUS <b>ONLINE</b></div></header>
-    <section className={`status-strip ${phase==="enemy"?"enemy":""}`} aria-live="polite"><span className="tag">{phase==="enemy"?"ALERT":"OPS"}</span><p>{message}</p><span className="turn-counter">TURN {String(stats.turns+1).padStart(2,"0")} / OWN {alivePlayer} / HOSTILE {phase==="placement"?"?":aliveEnemy}</span></section>
-    <div className="boards">
-      <section className="tactical-panel"><div className="panel-head"><h2>OWN WATERS // 自軍海域</h2><span>DEFENSE GRID</span></div><div className="canvas-wrap"><canvas ref={playerCanvas} className={`board-canvas ${locked?"locked":""}`} aria-label="自軍海域8×8盤面" onPointerMove={onMove} onPointerDown={e=>onBoardPointer("player",e)} onContextMenu={e=>{e.preventDefault();if(phase==="placement")setOrientation(o=>o==="horizontal"?"vertical":"horizontal");}}/><div className="radar-line"/></div><div className="fleet-row">{SHIPS.map(s=>shipCard(player.current,s.id,phase==="placement"))}</div></section>
-      <section className="tactical-panel enemy-board"><div className="panel-head"><h2>HOSTILE WATERS // 敵海域</h2><span>CONTACT GRID</span></div><div className="canvas-wrap"><canvas ref={enemyCanvas} className={`board-canvas ${locked?"locked":""}`} aria-label="敵海域8×8盤面" onPointerMove={onMove} onPointerDown={e=>onBoardPointer("enemy",e)}/><div className="radar-line"/></div><div className="fleet-row">{SHIPS.map(s=>shipCard(enemy.current,s.id))}</div></section>
-    </div>
-    {phase==="placement"?<section className="placement-tools"><div className="placement-help">艦を選択 → 海図をタップ / 右クリックまたは R で回転</div><button className="cmd" onClick={()=>{setOrientation(o=>o==="horizontal"?"vertical":"horizontal");audio.current?.cursor();}}><b>ROTATE [R]</b><small>{orientation==="horizontal"?"HORIZONTAL":"VERTICAL"}</small></button><button className="cmd" onClick={clearPlacement}><b>CLEAR</b><small>配置やり直し</small></button><button className="cmd" onClick={randomize}><b>RANDOM</b><small>自動配置</small></button><button className="cmd primary" onClick={startBattle} disabled={!player.current.allPlaced()}><b>BATTLE START</b><small>交戦を開始</small></button></section>
-    :!result?<><section className="command-deck"><button className={`cmd ${weapon==="fire"?"selected":""}`} onClick={()=>selectWeapon("fire")} disabled={phase!=="player"||locked}><b>1 / FIRE</b><small>通常砲撃</small></button><button className={`cmd ${weapon==="harpoon"?"selected":""}`} onClick={()=>selectWeapon("harpoon")} disabled={phase!=="player"||locked||!canWeapon("harpoon")}><b>2 / HARPOON</b><small>{carrierStatus("harpoon")}</small></button><button className={`cmd ${weapon==="mk45"?"selected":""}`} onClick={()=>selectWeapon("mk45")} disabled={phase!=="player"||locked||!canWeapon("mk45")}><b>3 / MK-45 II</b><small>{carrierStatus("mk45")}</small></button><button className={`cmd ${weapon==="radar"?"selected":""}`} onClick={()=>selectWeapon("radar")} disabled={phase!=="player"||locked||!canWeapon("radar")}><b>4 / RADAR</b><small>{carrierStatus("radar")}</small></button>{weapon==="mk45"&&<button className="cmd primary" onClick={()=>void fireMk45()} disabled={picked.length!==2||locked}><b>MK-45 発射</b><small>{picked.length} / 2 TARGETS</small></button>}<button className="cmd" onClick={()=>{setPicked([]);setWeapon("fire");audio.current?.cancel();}} disabled={locked}><b>CANCEL</b><small>ESC</small></button><button className="cmd" onClick={()=>setMuted(audio.current?.toggle()??false)}><b>{muted?"SOUND ON":"MUTE"}</b><small>KEY M</small></button><button className="cmd danger" onClick={reset} disabled={locked}><b>RESTART</b><small>配置へ戻る</small></button></section><div className="legend"><span><i className="miss"/>MISS</span><span><i className="echo"/>ECHO</span><span><i className="hit"/>HIT</span><span><i className="sunk"/>SUNK</span></div></>:null}
-    {flash&&<div className={`turn-flash ${flash}`}><div>{flash==="player"?"COMMAND":"ENEMY ACTION"}</div></div>}
-    {result&&<div className="result-modal"><section className={`result-card ${phase==="defeat"?"loss":""}`}><div className="eyebrow">OPERATION AFTER ACTION REPORT</div><h2>{phase==="victory"?"VICTORY":"DEFEAT"}</h2><p>{phase==="victory"?"敵艦隊の全目標を排除。海域を確保しました。":"自軍艦隊は戦闘能力を喪失。再配置を要請します。"}</p><div className="stats"><div>TOTAL TURNS<b>{stats.turns}</b></div><div>ACCURACY<b>{stats.shots?Math.round(stats.hits/stats.shots*100):0}%</b></div><div>SHIPS SUNK<b>{stats.sunk} / 3</b></div><div>SPECIAL USED<b>{stats.specials}</b></div><div>DAMAGE TAKEN<b>{stats.damage} / 9</b></div><div>SEED<b>{seedRef.current.toString(16).toUpperCase()}</b></div></div><button className="cmd primary" onClick={reset}><b>REMATCH</b><small>新しい海域で再戦</small></button></section></div>}
-  </main>;
+  const shipCard = (board: Board, shipId: ShipId, selectable = false) => {
+    const definition = SHIPS.find((ship) => ship.id === shipId)!;
+    const ship = board.ships.find((candidate) => candidate.id === shipId);
+    return (
+      <button
+        key={shipId}
+        className={"ship-card " + (selectable && selectedShip === shipId ? "active " : "") + (ship?.sunk ? "sunk" : "")}
+        onClick={() => selectable && !ship && setSelectedShip(shipId)}
+        disabled={!selectable || !!ship}
+        title={definition.weapon === "NONE" ? "特殊兵装なし" : "搭載兵装：" + definition.weapon}
+      >
+        <strong>{definition.name} / {definition.code}</strong>
+        <small>{ship?.sunk ? "LOST" : ship ? "DEPLOYED" : selectable ? "SELECT TO PLACE" : "UNKNOWN"}</small>
+        <span className="hull-meter">
+          {Array.from({ length: definition.size }, (_, index) => <i key={index} className={ship && index < ship.hits.size ? "hit" : ""} />)}
+        </span>
+      </button>
+    );
+  };
+
+  const weaponState = (id: WeaponId) => {
+    if (id === "fire") return { available: true, status: "∞", reason: "" };
+    const meta = WEAPON_META[id];
+    if (!meta.carrier || !stage.fleet.includes(meta.carrier)) return { available: false, status: "未配備", reason: "搭載艦は後のステージで配備されます。" };
+    if (!player.current.alive(meta.carrier)) return { available: false, status: "搭載艦喪失", reason: "搭載艦が撃沈されたため使用不能です。" };
+    const uses = arsenal.current.uses[id];
+    return { available: uses > 0, status: uses + " / " + WEAPON_MAX[id], reason: uses > 0 ? "" : "このステージでの使用回数を使い切りました。" };
+  };
+
+  const result = phase === "victory" || phase === "defeat";
+  const campaignClear = phase === "victory" && stageIndex === STAGES.length - 1;
+  const selectedMeta = WEAPON_META[weapon];
+  const selectedState = weaponState(weapon);
+  const confirmLabel = weapon === "radar" ? "走査実行" : selectedMeta.label + " 発射";
+
+  return (
+    <main className={"game-shell " + (active.length ? "shake" : "")}>
+      <div className="noise" />
+      <header className="masthead">
+        <div>
+          <div className="brand-kicker">TACTICAL SONAR / CAMPAIGN</div>
+          <h1 className="brand-title" aria-label={GAME_TITLE}>DEEP <span>BLUE</span> GRID</h1>
+        </div>
+        <div className="phase-badge">
+          <strong>{phase === "placement" ? "FLEET DEPLOY" : phase === "player" ? "COMMAND" : phase === "enemy" ? "ENEMY ACTION" : "MISSION END"}</strong>
+          <small>STAGE {stage.id} / LEVEL {stage.level}</small>
+        </div>
+        <div className="system-info">SEED <b>{seedRef.current.toString(16).toUpperCase()}</b><br />LINK STATUS <b>ONLINE</b></div>
+      </header>
+
+      <nav className="campaign-track" aria-label="作戦進行">
+        {STAGES.map((item, index) => (
+          <span key={item.id} className={index < stageIndex ? "cleared" : index === stageIndex ? "current" : ""}>
+            <i>{item.id}</i><b>{item.title}</b>
+          </span>
+        ))}
+      </nav>
+
+      <section className={"status-strip " + (phase === "enemy" ? "enemy" : "")} aria-live="polite">
+        <span className="tag">{phase === "enemy" ? "ALERT" : "OPS"}</span>
+        <p><b>{stage.title}</b> — {message}</p>
+        <span className="turn-counter">TURN {String(stats.turns + 1).padStart(2, "0")} / OWN {ownAlive} / HOSTILE {phase === "placement" ? "?" : enemyAlive}</span>
+      </section>
+
+      <section className="quick-guide">
+        <b>NAVY BLUE式 作戦要領</b>
+        <span>1. 自艦を配置</span><span>2. 兵装と目標を選択</span><span>3. プレビューを確認して発射</span><span>4. 全区画命中で撃沈</span>
+      </section>
+
+      <div className="boards">
+        <section className="tactical-panel">
+          <div className="panel-head"><h2>OWN WATERS // 自軍海域</h2><span>DEFENSE GRID</span></div>
+          <div className="canvas-wrap">
+            <canvas
+              ref={playerCanvas}
+              className={"board-canvas " + (locked ? "locked" : "")}
+              aria-label="自軍海域8×8盤面"
+              onPointerMove={onMove}
+              onPointerDown={(event) => onBoardPointer("player", event)}
+              onContextMenu={(event) => {
+                event.preventDefault();
+                if (phase === "placement") setOrientation((current) => current === "horizontal" ? "vertical" : "horizontal");
+              }}
+            />
+            <div className="radar-line" />
+          </div>
+          <div className="fleet-row">{stage.fleet.map((id) => shipCard(player.current, id, phase === "placement"))}</div>
+        </section>
+
+        <section className="tactical-panel enemy-board">
+          <div className="panel-head"><h2>HOSTILE WATERS // 敵軍海域</h2><span>CONTACT GRID</span></div>
+          <div className="canvas-wrap">
+            <canvas
+              ref={enemyCanvas}
+              className={"board-canvas " + (locked ? "locked" : "")}
+              aria-label="敵軍海域8×8盤面"
+              onPointerMove={onMove}
+              onPointerDown={(event) => onBoardPointer("enemy", event)}
+            />
+            <div className="radar-line" />
+          </div>
+          <div className="fleet-row">{stage.fleet.map((id) => shipCard(enemy.current, id))}</div>
+        </section>
+      </div>
+
+      {phase === "placement" ? (
+        <section className="placement-tools">
+          <div className="placement-help">艦を選択 → 自軍海域をタップ / 右クリックまたは R で回転</div>
+          <button className="cmd" onClick={() => { setOrientation((current) => current === "horizontal" ? "vertical" : "horizontal"); audio.current?.cursor(); }}>
+            <b>ROTATE [R]</b><small>{orientation === "horizontal" ? "HORIZONTAL" : "VERTICAL"}</small>
+          </button>
+          <button className="cmd" onClick={clearPlacement}><b>CLEAR</b><small>配置をやり直す</small></button>
+          <button className="cmd" onClick={randomize}><b>RANDOM</b><small>自動配置</small></button>
+          <button className="cmd primary" onClick={startBattle} disabled={!player.current.allPlaced(stage.fleet)}>
+            <b>BATTLE START</b><small>{player.current.ships.length} / {stage.fleet.length} 艦配置</small>
+          </button>
+        </section>
+      ) : !result ? (
+        <>
+          <section className="command-deck">
+            {(["fire", "phantom", "harpoon", "sparrow", "mk45", "radar"] as WeaponId[]).map((id, index) => {
+              const state = weaponState(id);
+              return (
+                <button
+                  key={id}
+                  className={"cmd " + (weapon === id ? "selected" : "")}
+                  onClick={() => selectWeapon(id)}
+                  disabled={phase !== "player" || locked || !state.available}
+                  title={state.reason || WEAPON_META[id].help}
+                >
+                  <b>{index + 1} / {WEAPON_META[id].label}</b><small>{state.status}</small>
+                </button>
+              );
+            })}
+            <button className={"cmd confirm " + (ready ? "ready" : "")} onClick={() => void confirmAction()} disabled={!ready || locked}>
+              <b>{confirmLabel}</b><small>{picked.length} / {targetRequirement} SELECTED</small>
+            </button>
+            <button className="cmd" onClick={cancelAim} disabled={locked || !picked.length}><b>CANCEL</b><small>照準解除 / ESC</small></button>
+            <button className="cmd" onClick={() => setMuted(audio.current?.toggle() ?? false)}><b>{muted ? "SOUND ON" : "MUTE"}</b><small>KEY M</small></button>
+            <button className="cmd danger" onClick={() => initStage(stageIndex)} disabled={locked}><b>RETRY</b><small>現在のステージを再開</small></button>
+          </section>
+          <section className="ops-lower">
+            <div className="command-detail">
+              <span>SELECTED COMMAND</span>
+              <h3>{selectedMeta.label}</h3>
+              <p>{selectedMeta.help}</p>
+              <small>{selectedState.available ? selectedMeta.requirement + "を選択後、発射ボタンで確定。" : selectedState.reason}</small>
+            </div>
+            <div className="battle-log">
+              <span>ACTION LOG / LAST {logs.length}</span>
+              <ol>{[...logs].reverse().map((entry) => <li key={entry.id} className={entry.tone}>{entry.text}</li>)}</ol>
+            </div>
+          </section>
+          <div className="legend">
+            <span><i className="miss" />MISS</span><span><i className="echo" />ECHO</span><span><i className="hit" />HIT</span><span><i className="sunk" />SUNK</span>
+            <span><i className="trace" />音紋候補 {enemyTrace.level}/5</span>
+          </div>
+        </>
+      ) : null}
+
+      {flash && <div className={"turn-flash " + flash}><div>{flash === "player" ? "COMMAND" : "ENEMY ACTION"}</div></div>}
+
+      {result && (
+        <div className="result-modal">
+          <section className={"result-card " + (phase === "defeat" ? "loss" : "")}>
+            <div className="eyebrow">OPERATION AFTER ACTION REPORT</div>
+            <h2>{campaignClear ? "CAMPAIGN CLEAR" : phase === "victory" ? "VICTORY" : "DEFEAT"}</h2>
+            <p>
+              {campaignClear
+                ? "全8海域を制圧しました。DEEP BLUE GRID 作戦完了。"
+                : phase === "victory"
+                  ? "敵艦隊を撃破。次の海域へ進出できます。"
+                  : "自軍艦隊が戦闘能力を喪失。配置と兵装運用を再検討してください。"}
+            </p>
+            <div className="stats">
+              <div>TOTAL TURNS<b>{stats.turns}</b></div>
+              <div>ACCURACY<b>{stats.shots ? Math.round(stats.hits / stats.shots * 100) : 0}%</b></div>
+              <div>SHIPS SUNK<b>{stats.sunk} / {stage.fleet.length}</b></div>
+              <div>SPECIAL USED<b>{stats.specials}</b></div>
+              <div>DAMAGE TAKEN<b>{stats.damage} / {fleetCells}</b></div>
+              <div>STAGE<b>{stage.id} / {STAGES.length}</b></div>
+            </div>
+            <button
+              className="cmd primary"
+              onClick={() => initStage(phase === "victory" ? (campaignClear ? 0 : stageIndex + 1) : stageIndex)}
+            >
+              <b>{phase === "victory" ? (campaignClear ? "NEW CAMPAIGN" : "NEXT STAGE") : "RETRY STAGE"}</b>
+              <small>{phase === "victory" && !campaignClear ? STAGES[stageIndex + 1].title : "艦隊を再配置"}</small>
+            </button>
+          </section>
+        </div>
+      )}
+    </main>
+  );
 }

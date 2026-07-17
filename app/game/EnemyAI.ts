@@ -1,8 +1,9 @@
-import { GRID_SIZE, SHIPS, type Coord } from "./constants.ts";
-import { Arsenal, Board, SeededRandom, harpoonCells, inBounds, keyOf, radarCells, type AttackResult, type ShotMark } from "./engine.ts";
+import { GRID_SIZE, SHIPS, type Coord, type ShipId } from "./constants.ts";
+import { Arsenal, Board, SeededRandom, harpoonCells, inBounds, keyOf, radarCells, sparrowCells, type AttackResult, type ShotMark } from "./engine.ts";
+import { acousticCandidateKeys, emptyAcousticIntel, type AcousticIntel } from "./AcousticTrace.ts";
 
 export type AIState = "HUNT" | "TARGET" | "SEARCH";
-export type AIDecision = { weapon: "fire" | "harpoon" | "mk45" | "radar"; targets: Coord[]; state: AIState };
+export type AIDecision = { weapon: "fire" | "phantom" | "harpoon" | "sparrow" | "mk45" | "radar"; targets: Coord[]; state: AIState };
 
 export class EnemyAI {
   state: AIState = "HUNT";
@@ -12,8 +13,15 @@ export class EnemyAI {
   search: Coord[] = [];
   turnsWithoutHit = 0;
   sunkSizes: number[] = [];
+  acoustic: AcousticIntel = emptyAcousticIntel();
   private rng: SeededRandom;
-  constructor(rng: SeededRandom) { this.rng = rng; }
+  private targetSizes: number[];
+  private skill: number;
+  constructor(rng: SeededRandom, fleet: ShipId[] = SHIPS.map((ship) => ship.id), skill = 1) {
+    this.rng = rng;
+    this.targetSizes = fleet.map((id) => SHIPS.find((ship) => ship.id === id)!.size);
+    this.skill = skill;
+  }
 
   decide(ownBoard: Board): AIDecision {
     const unknown = this.unknownCells();
@@ -22,11 +30,19 @@ export class EnemyAI {
       this.arsenal.spend("radar", ownBoard);
       return { weapon: "radar", targets: [origin], state: this.state };
     }
-    if (this.targetHits.length && this.arsenal.canUse("harpoon", ownBoard) && this.rng.next() < .36) {
+    if (this.arsenal.canUse("phantom", ownBoard) && this.turnsWithoutHit >= 1 && this.rng.next() < .18 * this.skill) {
+      this.arsenal.spend("phantom", ownBoard);
+      return { weapon: "phantom", targets: this.rankCandidates().slice(0, 4), state: this.state };
+    }
+    if ((this.targetHits.length || this.search.length) && this.arsenal.canUse("sparrow", ownBoard) && this.rng.next() < .24 * this.skill) {
+      this.arsenal.spend("sparrow", ownBoard);
+      return { weapon: "sparrow", targets: sparrowCells(this.bestAreaOrigin()).filter((c) => this.isUnknown(c)), state: this.state };
+    }
+    if (this.targetHits.length && this.arsenal.canUse("harpoon", ownBoard) && this.rng.next() < .32 * this.skill) {
       this.arsenal.spend("harpoon", ownBoard);
       return { weapon: "harpoon", targets: harpoonCells(this.bestHarpoonCenter()).filter((c) => this.isUnknown(c)), state: "TARGET" };
     }
-    if (this.turnsWithoutHit >= 2 && this.arsenal.canUse("mk45", ownBoard) && unknown.length > 1 && this.rng.next() < .44) {
+    if (this.turnsWithoutHit >= 2 && this.arsenal.canUse("mk45", ownBoard) && unknown.length > 1 && this.rng.next() < .4 * this.skill) {
       this.arsenal.spend("mk45", ownBoard);
       const ranked = this.rankCandidates();
       return { weapon: "mk45", targets: ranked.slice(0, 2), state: this.state };
@@ -61,6 +77,13 @@ export class EnemyAI {
     this.updateState();
   }
 
+  observeAcoustic(intel: AcousticIntel) {
+    this.acoustic = { level: intel.level, weak: intel.weak.map((coord) => ({ ...coord })), candidates: intel.candidates.map((coord) => ({ ...coord })), strong: intel.strong ? { ...intel.strong } : undefined };
+    if (this.acoustic.strong && this.isUnknown(this.acoustic.strong)) this.search.unshift(this.acoustic.strong);
+    else this.acoustic.candidates.forEach((coord) => { if (this.isUnknown(coord)) this.search.push(coord); });
+    this.updateState();
+  }
+
   private chooseShot() {
     const targets = this.orientedTargets().filter((c) => this.isUnknown(c));
     if (targets.length) { this.state = "TARGET"; return targets[0]; }
@@ -81,8 +104,9 @@ export class EnemyAI {
     return this.targetHits.flatMap((c) => this.cardinals(c));
   }
   private rankCandidates() {
-    const remainingSizes = SHIPS.map((s) => s.size).filter((size) => !this.sunkSizes.includes(size));
+    const remainingSizes = this.targetSizes.filter((size) => !this.sunkSizes.includes(size));
     const submarineOnly = remainingSizes.every((s) => s === 1);
+    const acousticKeys = acousticCandidateKeys(this.acoustic);
     const scored = this.unknownCells().map((coord) => {
       let score = this.rng.next() * .4;
       if (!submarineOnly && (coord.x + coord.y) % 2 === 0) score += 2;
@@ -91,6 +115,8 @@ export class EnemyAI {
         if (cells.every(inBounds) && cells.every((c) => !["miss", "echo", "sunk"].includes(this.knowledge[c.y][c.x]))) score += 1;
       }
       for (const echo of this.findMarks("echo")) if (Math.abs(echo.x - coord.x) <= 1 && Math.abs(echo.y - coord.y) <= 1) score += 4;
+      if (acousticKeys.has(keyOf(coord))) score += this.acoustic.level >= 4 ? 14 : 7;
+      if (this.acoustic.strong && keyOf(this.acoustic.strong) === keyOf(coord)) score += 100;
       return { coord, score };
     });
     scored.sort((a, b) => b.score - a.score);
@@ -100,6 +126,15 @@ export class EnemyAI {
     const options: Array<{ c: Coord; score: number }> = [];
     for (let y = 0; y < GRID_SIZE - 1; y++) for (let x = 0; x < GRID_SIZE - 1; x++) {
       const c = { x, y }; const cells = radarCells(c); const score = cells.filter((p) => this.isUnknown(p)).length + this.rng.next();
+      options.push({ c, score });
+    }
+    return options.sort((a, b) => b.score - a.score)[0].c;
+  }
+  private bestAreaOrigin() {
+    const options: Array<{ c: Coord; score: number }> = [];
+    for (let y = 0; y < GRID_SIZE - 1; y++) for (let x = 0; x < GRID_SIZE - 1; x++) {
+      const c = { x, y }; const cells = sparrowCells(c);
+      const score = cells.filter((p) => this.isUnknown(p)).length + cells.filter((p) => this.search.some((s) => keyOf(s) === keyOf(p))).length * 3 + this.rng.next();
       options.push({ c, score });
     }
     return options.sort((a, b) => b.score - a.score)[0].c;
