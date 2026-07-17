@@ -25,15 +25,16 @@ import { AudioManager } from "./AudioManager.ts";
 import { drawBoard, pointerToCoord } from "./Renderer.ts";
 
 type Phase = "placement" | "player" | "enemy" | "review" | "victory" | "defeat";
-type Difficulty = "normal" | "hard";
+type Difficulty = "normal" | "hard" | "tactics";
 type Stats = { turns: number; shots: number; hits: number; sunk: number; specials: number; damage: number };
 type LogEntry = { id: number; text: string; tone: "info" | "good" | "bad" };
+type ShipCardOptions = { selectable?: boolean; concealDamage?: boolean };
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const coordName = (coord: Coord) => CELL_LABELS[coord.y] + "-" + (coord.x + 1);
 const sameCoord = (a: Coord, b: Coord) => a.x === b.x && a.y === b.y;
 const freshStats = (): Stats => ({ turns: 0, shots: 0, hits: 0, sunk: 0, specials: 0, damage: 0 });
-const difficultySkill = (base: number, difficulty: Difficulty) => base * (difficulty === "hard" ? 1.38 : 1.12);
+const difficultySkill = (base: number, difficulty: Difficulty) => base * (difficulty === "tactics" ? 1.7 : difficulty === "hard" ? 1.38 : 1.12);
 
 const WEAPON_META: Record<WeaponId, { label: string; carrier?: ShipId; help: string; requirement: string }> = {
   fire: { label: "通常砲撃", help: "敵海域の1マスを攻撃します。", requirement: "目標 1" },
@@ -104,6 +105,7 @@ export function DeepBlueGrid() {
       new SeededRandom(seedRef.current ^ 0x51f15e),
       nextStage.fleet,
       difficultySkill(nextStage.aiSkill, selectedDifficulty),
+      selectedDifficulty,
     );
     setStageIndex(nextStageIndex);
     setPhase("placement");
@@ -211,6 +213,14 @@ export function DeepBlueGrid() {
       return;
     }
     enemy.current.randomize(rngRef.current, stage.fleet);
+    if (difficultyRef.current === "tactics") {
+      setLocked(true);
+      addLog("TACTICS：敵艦隊が先制攻撃を開始。", "bad");
+      audio.current?.confirm();
+      bump();
+      void enemyTurn();
+      return;
+    }
     setPhase("player");
     setMessage("COMMAND：兵装を選び、敵海域に照準を置いてください。");
     addLog("交戦開始。先攻は自艦隊です。");
@@ -524,9 +534,11 @@ export function DeepBlueGrid() {
     return () => window.removeEventListener("keydown", onKey);
   }, [phase, cursor, weapon, picked, locked, ready]);
 
-  const shipCard = (board: Board, shipId: ShipId, selectable = false) => {
+  const shipCard = (board: Board, shipId: ShipId, options: ShipCardOptions = {}) => {
+    const { selectable = false, concealDamage = false } = options;
     const definition = SHIPS.find((ship) => ship.id === shipId)!;
     const ship = board.ships.find((candidate) => candidate.id === shipId);
+    const revealDamage = !concealDamage || Boolean(ship?.sunk);
     return (
       <button
         key={shipId}
@@ -536,9 +548,9 @@ export function DeepBlueGrid() {
         title={definition.weapon === "NONE" ? "特殊兵装なし" : "搭載兵装：" + definition.weapon}
       >
         <strong>{definition.name} / {definition.code}</strong>
-        <small>{ship?.sunk ? "LOST" : ship ? "DEPLOYED" : selectable ? "SELECT TO PLACE" : "UNKNOWN"}</small>
-        <span className="hull-meter">
-          {Array.from({ length: definition.size }, (_, index) => <i key={index} className={ship && index < ship.hits.size ? "hit" : ""} />)}
+        <small>{ship?.sunk ? "LOST" : ship ? concealDamage ? "HULL DATA MASKED" : "DEPLOYED" : selectable ? "SELECT TO PLACE" : "UNKNOWN"}</small>
+        <span className={"hull-meter " + (!revealDamage ? "concealed" : "")}>
+          {Array.from({ length: definition.size }, (_, index) => <i key={index} className={revealDamage && ship && index < ship.hits.size ? "hit" : ""} />)}
         </span>
       </button>
     );
@@ -635,6 +647,26 @@ export function DeepBlueGrid() {
         <button className={visibleBoard === "enemy" ? "active" : ""} onClick={() => showBoard("enemy")} disabled={phase === "placement"}>
           敵軍海域
         </button>
+        {difficulty && !result && (
+          <span className="mobile-switch-utilities" aria-label="ゲーム設定">
+            <button
+              onClick={() => setMuted(audio.current?.toggle() ?? false)}
+              aria-label={muted ? "サウンドを有効にする" : "サウンドをミュートする"}
+              title={muted ? "サウンドを有効にする" : "サウンドをミュートする"}
+            >
+              <span aria-hidden="true">{muted ? "🔇" : "🔊"}</span>
+            </button>
+            <button
+              className="retry"
+              onClick={() => initStage(stageIndex)}
+              disabled={locked}
+              aria-label="現在のステージをリトライ"
+              title="現在のステージをリトライ"
+            >
+              <span aria-hidden="true">↻</span>
+            </button>
+          </span>
+        )}
       </nav>
 
       <div className="boards" ref={boardsRef}>
@@ -667,7 +699,7 @@ export function DeepBlueGrid() {
             />
             <div className="radar-line" />
           </div>
-          <div className="fleet-row">{stage.fleet.map((id) => shipCard(player.current, id, phase === "placement"))}</div>
+          <div className="fleet-row">{stage.fleet.map((id) => shipCard(player.current, id, { selectable: phase === "placement" }))}</div>
         </section>
 
         <section className={"tactical-panel enemy-board " + (portraitPhone && visibleBoard !== "enemy" ? "mobile-hidden" : "")}>
@@ -705,7 +737,7 @@ export function DeepBlueGrid() {
             />
             <div className="radar-line" />
           </div>
-          <div className="fleet-row">{stage.fleet.map((id) => shipCard(enemy.current, id))}</div>
+          <div className="fleet-row">{stage.fleet.map((id) => shipCard(enemy.current, id, { concealDamage: difficulty === "tactics" }))}</div>
         </section>
       </div>
 
@@ -783,13 +815,16 @@ export function DeepBlueGrid() {
           <section className="difficulty-card">
             <div className="eyebrow">SELECT ENEMY TACTICS</div>
             <h2>DIFFICULTY</h2>
-            <p>敵も同じ艦隊・兵装回数・公開情報で戦います。違いは判断の鋭さだけです。</p>
+            <p>NORMALとHARDは同じ艦隊・兵装回数で交戦。TACTICSでは敵先攻と増強兵装が加わりますが、AIが未発見の配置を読むことはありません。</p>
             <div className="difficulty-options">
               <button className="mode-button" onClick={() => startCampaign("normal")}>
                 <span>NORMAL</span><b>標準より少し強め</b><small>的確な追撃と特殊兵装運用。まずはこちら。</small>
               </button>
               <button className="mode-button hard" onClick={() => startCampaign("hard")}>
                 <span>HARD</span><b>索敵判断を強化</b><small>レーダー判断が早く、好機に特殊兵装を投入。</small>
+              </button>
+              <button className="mode-button tactics" onClick={() => startCampaign("tactics")}>
+                <span>TACTICS</span><b>敵先攻・情報戦</b><small>敵損傷は撃沈まで非公開。敵レーダー3回、MK-45は2回。公開された戦果だけで最短追撃を狙います。</small>
               </button>
             </div>
           </section>

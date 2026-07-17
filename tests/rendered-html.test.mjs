@@ -19,5 +19,6 @@ test("server renders the finished game shell", async () => {
   assert.match(html, /DIFFICULTY/);
   assert.match(html, /NORMAL/);
   assert.match(html, /HARD/);
+  assert.match(html, /TACTICS/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|Your site is taking shape/);
 });

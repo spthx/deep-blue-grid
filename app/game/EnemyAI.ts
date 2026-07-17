@@ -2,6 +2,7 @@ import { GRID_SIZE, SHIPS, type Coord, type ShipId } from "./constants.ts";
 import { Arsenal, Board, SeededRandom, harpoonCells, inBounds, keyOf, radarCells, sparrowCells, type AttackResult, type ShotMark } from "./engine.ts";
 
 export type AIState = "HUNT" | "TARGET" | "SEARCH";
+export type AIProfile = "normal" | "hard" | "tactics";
 export type AIDecision = { weapon: "fire" | "phantom" | "harpoon" | "sparrow" | "mk45" | "radar"; targets: Coord[]; state: AIState };
 
 export class EnemyAI {
@@ -15,33 +16,40 @@ export class EnemyAI {
   private rng: SeededRandom;
   private targetSizes: number[];
   private skill: number;
-  constructor(rng: SeededRandom, fleet: ShipId[] = SHIPS.map((ship) => ship.id), skill = 1) {
+  private profile: AIProfile;
+  constructor(rng: SeededRandom, fleet: ShipId[] = SHIPS.map((ship) => ship.id), skill = 1, profile: AIProfile = "normal") {
     this.rng = rng;
     this.targetSizes = fleet.map((id) => SHIPS.find((ship) => ship.id === id)!.size);
     this.skill = skill;
+    this.profile = profile;
+    if (profile === "tactics") {
+      this.arsenal.uses.radar += 1;
+      this.arsenal.uses.mk45 += 1;
+    }
   }
 
   decide(ownBoard: Board): AIDecision {
     const unknown = this.unknownCells();
-    const radarPatience = this.skill >= 1.25 ? 3 : 4;
+    const radarPatience = this.profile === "tactics" ? 2 : this.skill >= 1.25 ? 3 : 4;
+    const tacticsPressure = this.profile === "tactics" ? 1.2 : 1;
     if (this.turnsWithoutHit >= radarPatience && this.arsenal.canUse("radar", ownBoard)) {
       const origin = this.bestRadarOrigin();
       this.arsenal.spend("radar", ownBoard);
       return { weapon: "radar", targets: [origin], state: this.state };
     }
-    if (this.arsenal.canUse("phantom", ownBoard) && this.turnsWithoutHit >= 1 && this.rng.next() < .18 * this.skill) {
+    if (this.arsenal.canUse("phantom", ownBoard) && this.turnsWithoutHit >= 1 && this.rng.next() < .18 * this.skill * tacticsPressure) {
       this.arsenal.spend("phantom", ownBoard);
       return { weapon: "phantom", targets: this.rankCandidates().slice(0, 4), state: this.state };
     }
-    if ((this.targetHits.length || this.search.length) && this.arsenal.canUse("sparrow", ownBoard) && this.rng.next() < .24 * this.skill) {
+    if ((this.targetHits.length || this.search.length) && this.arsenal.canUse("sparrow", ownBoard) && this.rng.next() < .24 * this.skill * tacticsPressure) {
       this.arsenal.spend("sparrow", ownBoard);
       return { weapon: "sparrow", targets: sparrowCells(this.bestAreaOrigin()).filter((c) => this.isUnknown(c)), state: this.state };
     }
-    if (this.targetHits.length && this.arsenal.canUse("harpoon", ownBoard) && this.rng.next() < .32 * this.skill) {
+    if (this.targetHits.length && this.arsenal.canUse("harpoon", ownBoard) && this.rng.next() < .32 * this.skill * tacticsPressure) {
       this.arsenal.spend("harpoon", ownBoard);
       return { weapon: "harpoon", targets: harpoonCells(this.bestHarpoonCenter()).filter((c) => this.isUnknown(c)), state: "TARGET" };
     }
-    if (this.turnsWithoutHit >= 2 && this.arsenal.canUse("mk45", ownBoard) && unknown.length > 1 && this.rng.next() < .4 * this.skill) {
+    if (this.turnsWithoutHit >= 2 && this.arsenal.canUse("mk45", ownBoard) && unknown.length > 1 && this.rng.next() < .4 * this.skill * tacticsPressure) {
       this.arsenal.spend("mk45", ownBoard);
       const ranked = this.rankCandidates();
       return { weapon: "mk45", targets: ranked.slice(0, 2), state: this.state };
