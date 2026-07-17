@@ -57,3 +57,14 @@ test("radar contact and clear scans use restrained grid colors", async () => {
   assert.match(source, /contactResolved/);
   assert.match(source, /board\.shots\[coord\.y\]\[coord\.x\]!=="unknown"/);
 });
+
+test("tactics identification masks contacts and marks critical sections", async () => {
+  const game = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
+  const renderer = await readFile(new URL("../app/game/Renderer.ts", import.meta.url), "utf8");
+  assert.match(game, /UNKNOWN CONTACT/);
+  assert.match(game, /SIGNATURE UNKNOWN/);
+  assert.match(game, /IMPORTANT SECTION HIT/);
+  assert.match(game, /IDENTIFIED \/ HULL DATA MASKED/);
+  assert.match(renderer, /drawCritical/);
+  assert.match(renderer, /drawIdentification/);
+});

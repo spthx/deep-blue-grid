@@ -29,7 +29,7 @@ import { FULL_FLEET, playerFleetFor, survivingFleet, usesTacticsRules, type Game
 type Phase = "placement" | "player" | "enemy" | "review" | "victory" | "defeat";
 type Stats = { turns: number; shots: number; hits: number; sunk: number; specials: number; damage: number };
 type LogEntry = { id: number; text: string; tone: "info" | "good" | "bad" };
-type ShipCardOptions = { selectable?: boolean; concealDamage?: boolean };
+type ShipCardOptions = { selectable?: boolean; concealDamage?: boolean; concealIdentity?: boolean; identified?: boolean; contactIndex?: number };
 type PlacementGesture = { pointerId: number; offset: Coord; origin: Coord };
 type PlacementBackup = { id: ShipId; start: Coord; orientation: Orientation };
 
@@ -67,6 +67,7 @@ export function DeepBlueGrid() {
   const touchRotated = useRef(false);
   const playerWakesRef = useRef<Coord[]>([]);
   const enemyWakesRef = useRef<Coord[]>([]);
+  const identificationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   if (!audio.current && typeof window !== "undefined") audio.current = new AudioManager();
 
@@ -94,7 +95,11 @@ export function DeepBlueGrid() {
   const [logs, setLogs] = useState<LogEntry[]>([{ id: Date.now(), text: "艦隊を配置し、BATTLE STARTを押してください。", tone: "info" }]);
   const [playerWakes, setPlayerWakes] = useState<Coord[]>([]);
   const [enemyWakes, setEnemyWakes] = useState<Coord[]>([]);
+  const [enemyIdentified, setEnemyIdentified] = useState<ShipId[]>([]);
+  const [enemyContactOrder, setEnemyContactOrder] = useState<ShipId[]>([...STAGES[0].fleet]);
+  const [identificationAlert, setIdentificationAlert] = useState<{ hostile: boolean; id: ShipId } | null>(null);
 
+  const identificationRules = difficulty !== null && usesTacticsRules(difficulty);
   const placementPreviewActive = phase === "placement" && !player.current.ships.some((ship) => ship.id === selectedShip);
   const placementValid = placementPreviewActive && player.current.canPlace(selectedShip, cursor, orientation);
 
@@ -126,6 +131,11 @@ export function DeepBlueGrid() {
     enemyWakesRef.current = [];
     setPlayerWakes([]);
     setEnemyWakes([]);
+    setEnemyIdentified([]);
+    setEnemyContactOrder(usesTacticsRules(selectedDifficulty)
+      ? new SeededRandom(seedRef.current ^ 0x19c4a7).shuffle([...nextStage.fleet])
+      : [...nextStage.fleet]);
+    setIdentificationAlert(null);
     setStageIndex(nextStageIndex);
     setPhase("placement");
     setMessage(nextStage.subtitle);
@@ -180,6 +190,12 @@ export function DeepBlueGrid() {
     return picked;
   }, [picked, weapon]);
 
+  const showIdentificationAlert = (id: ShipId, hostile: boolean) => {
+    if (identificationTimer.current) clearTimeout(identificationTimer.current);
+    setIdentificationAlert({ id, hostile });
+    identificationTimer.current = setTimeout(() => setIdentificationAlert(null), 1650);
+  };
+
   const render = useCallback((time: number) => {
     animation.current = requestAnimationFrame(render);
     if (playerCanvas.current) {
@@ -193,6 +209,7 @@ export function DeepBlueGrid() {
         } : undefined,
         active: phase === "enemy" ? active : [],
         waves: playerWakes,
+        showCritical: identificationRules,
         time,
       });
     }
@@ -204,15 +221,25 @@ export function DeepBlueGrid() {
         selected: previewTargets,
         active: phase === "player" ? active : [],
         waves: enemyWakes,
+        identifications: identificationRules
+          ? enemyIdentified.flatMap((id) => {
+              const ship = enemy.current.ships.find((candidate) => candidate.id === id);
+              return ship ? [{ id, coord: ship.critical }] : [];
+            })
+          : [],
         time,
       });
     }
-  }, [phase, cursor, selectedShip, orientation, weapon, previewTargets, active, locked, placementPreviewActive, playerWakes, enemyWakes, revision]);
+  }, [phase, cursor, selectedShip, orientation, weapon, previewTargets, active, locked, placementPreviewActive, playerWakes, enemyWakes, enemyIdentified, identificationRules, revision]);
 
   useEffect(() => {
     animation.current = requestAnimationFrame(render);
     return () => cancelAnimationFrame(animation.current);
   }, [render]);
+
+  useEffect(() => () => {
+    if (identificationTimer.current) clearTimeout(identificationTimer.current);
+  }, []);
 
   const randomize = () => {
     player.current.randomize(rngRef.current, playerFleet);
@@ -314,9 +341,13 @@ export function DeepBlueGrid() {
       ai.current.observe(results);
       const hits = results.filter((result) => result.kind === "HIT" || result.kind === "SUNK").length;
       const sunk = results.find((result) => result.kind === "SUNK");
+      const identifications = identificationRules ? results.filter((result) => result.criticalHit && result.shipId) : [];
+      const identified = identifications[identifications.length - 1];
       setStats((current) => ({ ...current, damage: current.damage + hits }));
       const report = sunk
         ? "警告：" + sunk.shipName + " 撃沈。"
+        : identified
+          ? "IMPORTANT SECTION HIT：敵に識別されました：" + identified.shipName
         : hits
           ? "被弾 " + hits + "。敵は追撃態勢へ移行。"
           : results.some((result) => result.kind === "ECHO")
@@ -324,6 +355,11 @@ export function DeepBlueGrid() {
             : "敵弾 MISS。損害なし。";
       setMessage(report);
       addLog(report, hits ? "bad" : "info");
+      for (const contact of identifications) {
+        const definition = SHIPS.find((ship) => ship.id === contact.shipId)!;
+        addLog("重要区画被弾：敵に識別されました：" + definition.name + " / " + definition.code, "bad");
+      }
+      if (identified?.shipId) showIdentificationAlert(identified.shipId, true);
       emitPlayerSubmarineWake();
     }
 
@@ -386,8 +422,23 @@ export function DeepBlueGrid() {
       specials: current.specials + (special ? 1 : 0),
     }));
     const lastSunk = [...results].reverse().find((result) => result.kind === "SUNK");
+    const identifications = identificationRules
+      ? results.filter((result) => result.criticalHit && result.shipId)
+      : [];
+    if (identifications.length) {
+      const ids = identifications.map((result) => result.shipId!);
+      setEnemyIdentified((current) => [...new Set([...current, ...ids])]);
+      for (const identified of identifications) {
+        const definition = SHIPS.find((ship) => ship.id === identified.shipId)!;
+        addLog("CONTACT IDENTIFIED：" + definition.name + " / " + definition.code, "good");
+      }
+      showIdentificationAlert(identifications[identifications.length - 1].shipId!, false);
+    }
+    const lastIdentified = identifications[identifications.length - 1];
     const report = lastSunk
       ? lastSunk.shipName + " — SUNK!"
+      : lastIdentified
+        ? "CONTACT IDENTIFIED：" + lastIdentified.shipName + " / " + SHIPS.find((ship) => ship.id === lastIdentified.shipId)!.code
       : hits
         ? "命中 " + hits + " / " + results.length + "。敵艦に損傷。"
         : results.some((result) => result.kind === "ECHO")
@@ -691,22 +742,24 @@ export function DeepBlueGrid() {
   }, [phase, cursor, weapon, picked, locked, ready, selectedShip, orientation, placementPreviewActive, placementBackup, playerFleet]);
 
   const shipCard = (board: Board, shipId: ShipId, options: ShipCardOptions = {}) => {
-    const { selectable = false, concealDamage = false } = options;
+    const { selectable = false, concealDamage = false, concealIdentity = false, identified = false, contactIndex = 0 } = options;
     const definition = SHIPS.find((ship) => ship.id === shipId)!;
     const ship = board.ships.find((candidate) => candidate.id === shipId);
     const revealDamage = !concealDamage || Boolean(ship?.sunk);
+    const revealIdentity = !concealIdentity || identified || Boolean(ship?.sunk);
+    const meterLength = concealDamage && !ship?.sunk ? 5 : definition.size;
     return (
       <button
         key={shipId}
         className={"ship-card " + (selectable && !ship && selectedShip === shipId ? "active " : "") + (ship?.sunk ? "sunk" : "")}
         onClick={() => selectable && selectPlacementShip(shipId)}
         disabled={!selectable}
-        title={definition.weapon === "NONE" ? "特殊兵装なし" : "搭載兵装：" + definition.weapon}
+        title={!revealIdentity ? "未識別艦" : definition.weapon === "NONE" ? "特殊兵装なし" : "搭載兵装：" + definition.weapon}
       >
-        <strong>{definition.name} / {definition.code}</strong>
-        <small>{ship?.sunk ? "LOST" : ship ? concealDamage ? "HULL DATA MASKED" : selectable ? "配置済み / タップで再配置" : "DEPLOYED" : selectable ? selectedShip === shipId ? "選択中 / ドックで回転・決定" : "タップして選択" : "UNKNOWN"}</small>
+        <strong>{revealIdentity ? definition.name + " / " + definition.code : "UNKNOWN CONTACT / " + String(contactIndex + 1).padStart(2, "0")}</strong>
+        <small>{ship?.sunk ? "LOST" : !revealIdentity ? "SIGNATURE UNKNOWN" : ship ? concealDamage ? "IDENTIFIED / HULL DATA MASKED" : selectable ? "配置済み / タップで再配置" : "DEPLOYED" : selectable ? selectedShip === shipId ? "選択中 / ドックで回転・決定" : "タップして選択" : concealDamage ? "HULL DATA MASKED" : "UNKNOWN"}</small>
         <span className={"hull-meter " + (!revealDamage ? "concealed" : "")}>
-          {Array.from({ length: definition.size }, (_, index) => <i key={index} className={revealDamage && ship && index < ship.hits.size ? "hit" : ""} />)}
+          {Array.from({ length: meterLength }, (_, index) => <i key={index} className={revealDamage && ship && index < ship.hits.size ? "hit" : ""} />)}
         </span>
       </button>
     );
@@ -905,13 +958,18 @@ export function DeepBlueGrid() {
             />
             <div className="radar-line" />
           </div>
-          <div className="fleet-row">{stage.fleet.map((id) => shipCard(enemy.current, id, { concealDamage: difficulty === "tactics" || difficulty === "survival" }))}</div>
+          <div className="fleet-row">{enemyContactOrder.map((id, index) => shipCard(enemy.current, id, {
+            concealDamage: identificationRules,
+            concealIdentity: identificationRules,
+            identified: enemyIdentified.includes(id),
+            contactIndex: index,
+          }))}</div>
         </section>
       </div>
 
       {phase === "placement" ? (
         <section className="placement-tools">
-          <div className="placement-help"><b>配置：</b>艦を選択 → シルエットをドラッグ → 回転または配置決定 <small>二本指・Rで回転／Enterで決定</small></div>
+          <div className="placement-help"><b>配置：</b>艦を選択 → シルエットをドラッグ → 回転または配置決定 <small>{identificationRules ? "◆は重要区画／" : ""}二本指・Rで回転／Enterで決定</small></div>
           {placementPreviewActive && (
             <div className="placement-dock" aria-label="艦の配置操作">
               <button className="cmd placement-rotate" onClick={rotatePlacement}>
@@ -990,28 +1048,36 @@ export function DeepBlueGrid() {
           </section>
           <div className="legend">
             <span><i className="miss" />MISS</span><span><i className="echo" />ECHO</span><span><i className="hit" />HIT</span><span><i className="sunk" />SUNK</span>
+            {identificationRules && <span className="critical-legend">◆ 重要区画 / IDENTIFIED</span>}
             {enemyWakes.length > 0 && <span><i className="wake" />潜水艦音紋</span>}
           </div>
         </>
       ) : null}
 
       {flash && <div className={"turn-flash " + flash}><div>{flash === "player" ? "COMMAND" : "ENEMY ACTION"}</div></div>}
+      {identificationAlert && (() => {
+        const definition = SHIPS.find((ship) => ship.id === identificationAlert.id)!;
+        return <div className={"identification-alert " + (identificationAlert.hostile ? "hostile" : "friendly")}>
+          <b>{identificationAlert.hostile ? "IMPORTANT SECTION HIT" : "CONTACT IDENTIFIED"}</b>
+          <span>{identificationAlert.hostile ? "敵に識別されました：" : "敵艦識別："}{definition.name} / {definition.code}</span>
+        </div>;
+      })()}
 
       {!difficulty && (
         <div className="difficulty-modal">
           <section className="difficulty-card">
             <div className="eyebrow">SELECT ENEMY TACTICS</div>
             <h2>DIFFICULTY</h2>
-            <p>全6海域を攻略します。TACTICSとSURVIVALは敵先攻・損傷秘匿ですが、AIが未発見の配置を読むことはありません。</p>
+            <p>全6海域を攻略します。TACTICSとSURVIVALは敵先攻・艦種／損傷秘匿。重要区画への命中で識別しますが、AIが未発見の配置を読むことはありません。</p>
             <div className="difficulty-options">
               <button className="mode-button" onClick={() => startCampaign("casual")}>
                 <span>CASUAL</span><small>公開情報を使い、索敵・追撃・特殊兵装をバランスよく運用します。</small>
               </button>
               <button className="mode-button tactics" onClick={() => startCampaign("tactics")}>
-                <span>TACTICS</span><b>敵先攻・情報戦</b><small>敵損傷は撃沈まで非公開。兵装回数は自軍と同じ。公開された戦果だけで最短追撃を狙います。</small>
+                <span>TACTICS</span><b>敵先攻・識別戦</b><small>敵艦種と損傷は秘匿。重要区画への命中で艦種を識別し、公開された戦果だけで追撃します。</small>
               </button>
               <button className="mode-button survival" onClick={() => startCampaign("survival")}>
-                <span>SURVIVAL</span><b>全艦出撃・永久喪失</b><small>全6隻で開始。生存艦は各海域後に修復、兵装も回復しますが、撃沈艦と搭載兵装は戻りません。</small>
+                <span>SURVIVAL</span><b>全艦出撃・永久喪失</b><small>TACTICSの識別戦に全6隻で挑戦。修復と兵装は回復しますが、撃沈艦と搭載兵装は戻りません。</small>
               </button>
             </div>
           </section>

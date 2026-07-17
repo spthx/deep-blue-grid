@@ -1,9 +1,10 @@
 import { CELL_LABELS, GRID_SIZE, SHIPS, type Coord, type Orientation, type ShipId } from "./constants.ts";
-import { Board, harpoonCells, radarCells } from "./engine.ts";
+import { Board, criticalCoordFor, harpoonCells, keyOf, radarCells } from "./engine.ts";
 
 export type RenderOptions = {
   revealShips: boolean; cursor?: Coord; previewShip?: { id: ShipId; orientation: Orientation; valid: boolean };
   weapon?: "fire"|"phantom"|"harpoon"|"sparrow"|"mk45"|"radar"; selected?: Coord[]; active?: Coord[]; waves?: Coord[]; time?: number;
+  showCritical?: boolean; identifications?: Array<{ coord: Coord; id: ShipId }>;
 };
 
 export function drawBoard(canvas: HTMLCanvasElement, board: Board, opts: RenderOptions) {
@@ -39,17 +40,34 @@ export function drawBoard(canvas: HTMLCanvasElement, board: Board, opts: RenderO
     ctx.strokeRect(px+2,py+2,cell-4,cell-4);
   }
   for(const ship of board.ships) if(opts.revealShips||ship.sunk) drawShip(ctx,ship.id,ship.cells,ship.orientation,m,cell,ship.sunk,ship.hits);
+  if(opts.showCritical)for(const ship of board.ships)if(!ship.hits.has(keyOf(ship.critical)))drawCritical(ctx,ship.critical,m,cell,false,t);
   for(let y=0;y<GRID_SIZE;y++)for(let x=0;x<GRID_SIZE;x++){const mark=board.shots[y][x];if(mark!=="unknown")drawMark(ctx,{x,y},mark,m,cell,t);}
+  if(opts.showCritical)for(const ship of board.ships)if(ship.hits.has(keyOf(ship.critical)))drawCritical(ctx,ship.critical,m,cell,true,t);
+  for(const identification of opts.identifications??[])drawIdentification(ctx,identification.coord,identification.id,m,cell,t);
   for(const [index,wave] of (opts.waves??[]).entries())drawWake(ctx,wave,m,cell,t,index);
   if(opts.cursor){
     let cells=[opts.cursor]; if(opts.previewShip){const def=SHIPS.find(s=>s.id===opts.previewShip!.id)!;cells=board.cellsFor(opts.cursor,def.size,opts.previewShip.orientation,opts.previewShip.id);}
     else if(opts.weapon==="harpoon")cells=harpoonCells(opts.cursor); else if(opts.weapon==="radar"||opts.weapon==="sparrow")cells=radarCells(opts.cursor);
     ctx.fillStyle=opts.previewShip&&!opts.previewShip.valid?"rgba(255,80,90,.28)":"rgba(124,229,223,.17)";ctx.strokeStyle=opts.previewShip&&!opts.previewShip.valid?"#ff8585":"#7ce5df";ctx.lineWidth=Math.max(1,dpr*1.4);
     for(const c of cells)if(c.x>=0&&c.y>=0&&c.x<8&&c.y<8){ctx.fillRect(m+c.x*cell,m+c.y*cell,cell,cell);ctx.strokeRect(m+c.x*cell+2,m+c.y*cell+2,cell-4,cell-4);}
-    if(opts.previewShip&&cells.every(c=>c.x>=0&&c.y>=0&&c.x<8&&c.y<8))drawShip(ctx,opts.previewShip.id,cells,opts.previewShip.orientation,m,cell,false,new Set(),opts.previewShip.valid?"valid":"invalid");
+    if(opts.previewShip&&cells.every(c=>c.x>=0&&c.y>=0&&c.x<8&&c.y<8)){
+      drawShip(ctx,opts.previewShip.id,cells,opts.previewShip.orientation,m,cell,false,new Set(),opts.previewShip.valid?"valid":"invalid");
+      if(opts.showCritical)drawCritical(ctx,criticalCoordFor(opts.previewShip.id,opts.cursor,opts.previewShip.orientation),m,cell,false,t);
+    }
   }
   for(const c of opts.selected??[]){ctx.strokeStyle="#e5d78a";ctx.lineWidth=Math.max(2,dpr*2);ctx.strokeRect(m+c.x*cell+4,m+c.y*cell+4,cell-8,cell-8);}
   for(const c of opts.active??[]){const p=.5+.5*Math.sin(t*12);ctx.strokeStyle=`rgba(255,240,190,${.5+p*.5})`;ctx.lineWidth=Math.max(2,dpr*2.3);ctx.beginPath();ctx.arc(m+(c.x+.5)*cell,m+(c.y+.5)*cell,cell*(.22+p*.18),0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(m+c.x*cell+cell*.12,m+(c.y+.5)*cell);ctx.lineTo(m+(c.x+.88)*cell,m+(c.y+.5)*cell);ctx.moveTo(m+(c.x+.5)*cell,m+c.y*cell+cell*.12);ctx.lineTo(m+(c.x+.5)*cell,m+(c.y+.88)*cell);ctx.stroke();}
+}
+
+function drawCritical(ctx:CanvasRenderingContext2D,c:Coord,m:number,cell:number,hit:boolean,t:number){
+  const x=m+(c.x+.5)*cell,y=m+(c.y+.5)*cell,r=cell*(hit ? .31 : .17);ctx.save();ctx.translate(x,y);ctx.rotate(Math.PI/4);
+  ctx.strokeStyle=hit?"#ff8585":"#7ce5df";ctx.fillStyle=hit?"rgba(255,133,133,.08)":"rgba(124,229,223,.68)";ctx.lineWidth=Math.max(1,cell*(hit ? .045 : .035));ctx.globalAlpha=hit ? .78+.2*Math.sin(t*7) : .92;
+  if(!hit)ctx.fillRect(-r*.48,-r*.48,r*.96,r*.96);ctx.strokeRect(-r,-r,r*2,r*2);ctx.restore();
+}
+
+function drawIdentification(ctx:CanvasRenderingContext2D,c:Coord,id:ShipId,m:number,cell:number,t:number){
+  const def=SHIPS.find(ship=>ship.id===id)!,label=def.code.split("-")[0],x=m+(c.x+.5)*cell,y=m+(c.y+.5)*cell,r=cell*.34;ctx.save();ctx.translate(x,y);ctx.rotate(Math.PI/4);
+  ctx.strokeStyle="#e5d78a";ctx.lineWidth=Math.max(1.5,cell*.045);ctx.globalAlpha=.82+.16*Math.sin(t*5);ctx.strokeRect(-r,-r,r*2,r*2);ctx.rotate(-Math.PI/4);ctx.globalAlpha=1;ctx.fillStyle="#fff0b5";ctx.font=`bold ${Math.max(8,cell*.18)}px monospace`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(label,0,-cell*.35);ctx.restore();
 }
 
 function drawShip(ctx:CanvasRenderingContext2D,id:ShipId,cells:Coord[],orientation:Orientation,m:number,cell:number,sunk:boolean,hits:Set<string>,ghost?:"valid"|"invalid"){

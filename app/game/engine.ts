@@ -2,8 +2,8 @@ import { GRID_SIZE, HARPOON_PATTERN, SHIPS, WEAPON_MAX, type Coord, type Orienta
 
 export type ShotMark = "unknown" | "miss" | "echo" | "hit" | "sunk";
 export type AttackKind = "MISS" | "ECHO" | "HIT" | "SUNK" | "ALREADY";
-export type Ship = { id: ShipId; name: string; size: number; orientation: Orientation; cells: Coord[]; hits: Set<string>; sunk: boolean };
-export type AttackResult = { coord: Coord; kind: AttackKind; shipId?: ShipId; shipName?: string; revealed?: Coord[] };
+export type Ship = { id: ShipId; name: string; size: number; orientation: Orientation; cells: Coord[]; critical: Coord; hits: Set<string>; sunk: boolean };
+export type AttackResult = { coord: Coord; kind: AttackKind; shipId?: ShipId; shipName?: string; revealed?: Coord[]; criticalHit?: boolean };
 export type RadarScan = { origin: Coord; contact: boolean; candidates: Coord[] };
 
 export class SeededRandom {
@@ -18,6 +18,12 @@ export class SeededRandom {
 export const keyOf = ({ x, y }: Coord) => `${x},${y}`;
 export const inBounds = ({ x, y }: Coord) => x >= 0 && y >= 0 && x < GRID_SIZE && y < GRID_SIZE;
 export const sameCoord = (a: Coord, b: Coord) => a.x === b.x && a.y === b.y;
+export function criticalCoordFor(id: ShipId, start: Coord, orientation: Orientation) {
+  const def = SHIPS.find((ship) => ship.id === id)!;
+  return orientation === "horizontal"
+    ? { x: start.x + def.critical.x, y: start.y + def.critical.y }
+    : { x: start.x + def.height - 1 - def.critical.y, y: start.y + def.critical.x };
+}
 
 export class Board {
   ships: Ship[] = [];
@@ -41,7 +47,7 @@ export class Board {
   placeShip(id: ShipId, start: Coord, orientation: Orientation) {
     if (!this.canPlace(id, start, orientation)) return false;
     const def = SHIPS.find((s) => s.id === id)!;
-    this.ships.push({ id, name: def.name, size: def.size, orientation, cells: this.cellsFor(start, def.size, orientation, id), hits: new Set(), sunk: false });
+    this.ships.push({ id, name: def.name, size: def.size, orientation, cells: this.cellsFor(start, def.size, orientation, id), critical: criticalCoordFor(id, start, orientation), hits: new Set(), sunk: false });
     return true;
   }
   removeShip(id: ShipId) {
@@ -72,12 +78,13 @@ export class Board {
     }
     ship.hits.add(keyOf(coord));
     this.shots[coord.y][coord.x] = "hit";
+    const criticalHit = sameCoord(coord, ship.critical);
     if (ship.hits.size === ship.size) {
       ship.sunk = true;
       ship.cells.forEach((c) => { this.shots[c.y][c.x] = "sunk"; });
-      return { coord, kind: "SUNK", shipId: ship.id, shipName: ship.name, revealed: ship.cells.map((c) => ({ ...c })) };
+      return { coord, kind: "SUNK", shipId: ship.id, shipName: ship.name, revealed: ship.cells.map((c) => ({ ...c })), criticalHit };
     }
-    return { coord, kind: "HIT" };
+    return criticalHit ? { coord, kind: "HIT", shipId: ship.id, shipName: ship.name, criticalHit: true } : { coord, kind: "HIT" };
   }
   hasLiveNeighbor(coord: Coord) {
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {

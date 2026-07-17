@@ -1,5 +1,5 @@
 import { GRID_SIZE, SHIPS, type Coord, type ShipId } from "./constants.ts";
-import { Arsenal, Board, SeededRandom, harpoonCells, inBounds, keyOf, radarCells, sparrowCells, type AttackResult, type ShotMark } from "./engine.ts";
+import { Arsenal, Board, SeededRandom, criticalCoordFor, harpoonCells, inBounds, keyOf, radarCells, sameCoord, sparrowCells, type AttackResult, type ShotMark } from "./engine.ts";
 import { submarineWakeCandidates } from "./SubmarineWake.ts";
 
 export type AIState = "HUNT" | "TARGET" | "SEARCH";
@@ -15,6 +15,7 @@ export class EnemyAI {
   turnsWithoutHit = 0;
   sunkSizes: number[] = [];
   wakeSignals: Coord[] = [];
+  identifiedShips = new Map<ShipId, Coord>();
   private rng: SeededRandom;
   private targetFleet: ShipId[];
   private sunkShipIds: ShipId[] = [];
@@ -63,6 +64,7 @@ export class EnemyAI {
       if (result.kind === "ALREADY") continue;
       this.knowledge[result.coord.y][result.coord.x] = result.kind === "MISS" ? "miss" : result.kind === "ECHO" ? "echo" : result.kind === "HIT" ? "hit" : "sunk";
       if (result.kind === "HIT") { hit = true; this.targetHits.push(result.coord); this.addCardinals(result.coord, this.search); }
+      if (this.profile === "tactics" && result.criticalHit && result.shipId) this.identifiedShips.set(result.shipId, { ...result.coord });
       if (result.kind === "ECHO") this.addNeighbors(result.coord, this.search);
       if (result.kind === "SUNK") {
         hit = true;
@@ -141,9 +143,14 @@ export class EnemyAI {
       ? [[ship.width, ship.height]]
       : [[ship.width, ship.height], [ship.height, ship.width]];
     const placements: Coord[][] = [];
-    for (const [width, height] of dimensions) for (let y = 0; y <= GRID_SIZE - height; y++) for (let x = 0; x <= GRID_SIZE - width; x++) {
+    for (const [index, [width, height]] of dimensions.entries()) for (let y = 0; y <= GRID_SIZE - height; y++) for (let x = 0; x <= GRID_SIZE - width; x++) {
+      const orientation = index === 0 ? "horizontal" : "vertical";
+      const identifiedAt = this.identifiedShips.get(id);
+      if (identifiedAt && !sameCoord(criticalCoordFor(id, { x, y }, orientation), identifiedAt)) continue;
       const cells: Coord[] = [];
       for (let dy = 0; dy < height; dy++) for (let dx = 0; dx < width; dx++) cells.push({ x: x + dx, y: y + dy });
+      const overlapsOtherIdentification = [...this.identifiedShips].some(([identifiedId, coord]) => identifiedId !== id && cells.some((cell) => sameCoord(cell, coord)));
+      if (overlapsOtherIdentification) continue;
       if (cells.every((cell) => !["miss", "echo", "sunk"].includes(this.knowledge[cell.y][cell.x]))) placements.push(cells);
     }
     return placements;

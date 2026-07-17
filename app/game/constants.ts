@@ -7,13 +7,13 @@ export type WeaponId = "fire" | "phantom" | "harpoon" | "sparrow" | "mk45" | "ra
 export type Orientation = "horizontal" | "vertical";
 export type Coord = { x: number; y: number };
 
-export const SHIPS: ReadonlyArray<{ id: ShipId; name: string; code: string; size: number; width: number; height: number; weapon: string }> = [
-  { id: "carrier", name: "空母", code: "CV-08", size: 8, width: 4, height: 2, weapon: "F-4 PHANTOM" },
-  { id: "battleship", name: "戦艦", code: "BB-05", size: 5, width: 5, height: 1, weapon: "HARPOON" },
-  { id: "cruiser", name: "巡洋艦", code: "CA-04", size: 4, width: 4, height: 1, weapon: "SEA SPARROW" },
-  { id: "destroyer", name: "駆逐艦", code: "DD-03", size: 3, width: 3, height: 1, weapon: "MK-45 II" },
-  { id: "escort", name: "護衛艦", code: "DE-02", size: 2, width: 2, height: 1, weapon: "NONE" },
-  { id: "submarine", name: "潜水艦", code: "SS-01", size: 1, width: 1, height: 1, weapon: "SPS-10" },
+export const SHIPS: ReadonlyArray<{ id: ShipId; name: string; code: string; size: number; width: number; height: number; weapon: string; critical: Coord }> = [
+  { id: "carrier", name: "空母", code: "CV-08", size: 8, width: 4, height: 2, weapon: "F-4 PHANTOM", critical: { x: 2, y: 0 } },
+  { id: "battleship", name: "戦艦", code: "BB-05", size: 5, width: 5, height: 1, weapon: "HARPOON", critical: { x: 2, y: 0 } },
+  { id: "cruiser", name: "巡洋艦", code: "CA-04", size: 4, width: 4, height: 1, weapon: "SEA SPARROW", critical: { x: 2, y: 0 } },
+  { id: "destroyer", name: "駆逐艦", code: "DD-03", size: 3, width: 3, height: 1, weapon: "MK-45 II", critical: { x: 1, y: 0 } },
+  { id: "escort", name: "護衛艦", code: "DE-02", size: 2, width: 2, height: 1, weapon: "NONE", critical: { x: 1, y: 0 } },
+  { id: "submarine", name: "潜水艦", code: "SS-01", size: 1, width: 1, height: 1, weapon: "SPS-10", critical: { x: 0, y: 0 } },
 ];
 
 export type StageDefinition = {

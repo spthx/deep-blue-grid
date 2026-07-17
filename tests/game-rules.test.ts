@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { SHIPS, STAGES } from "../app/game/constants.ts";
-import { Arsenal, Board, SeededRandom, harpoonCells, radarCells, sparrowCells } from "../app/game/engine.ts";
+import { Arsenal, Board, SeededRandom, criticalCoordFor, harpoonCells, radarCells, sparrowCells } from "../app/game/engine.ts";
 import { EnemyAI } from "../app/game/EnemyAI.ts";
 import { nextSubmarineWake, submarineWakeCandidates } from "../app/game/SubmarineWake.ts";
 import { FULL_FLEET, playerFleetFor, survivingFleet, usesTacticsRules } from "../app/game/Campaign.ts";
@@ -56,6 +56,30 @@ test("carrier uses a rotatable 2 by 4 footprint", () => {
   assert.equal(new Set(vertical.ships[0].cells.map((cell) => cell.x)).size, 2);
   assert.equal(vertical.placeShip("destroyer", { x: 6, y: 4 }, "horizontal"), false);
   assert.equal(new Board().placeShip("carrier", { x: 5, y: 7 }, "horizontal"), false);
+});
+
+test("critical sections rotate with ships and identify without bonus damage", () => {
+  const horizontal = new Board(); horizontal.placeShip("carrier", { x: 1, y: 1 }, "horizontal");
+  const vertical = new Board(); vertical.placeShip("carrier", { x: 1, y: 1 }, "vertical");
+  assert.deepEqual(horizontal.ships[0].critical, criticalCoordFor("carrier", { x: 1, y: 1 }, "horizontal"));
+  assert.deepEqual(horizontal.ships[0].critical, { x: 3, y: 1 });
+  assert.deepEqual(vertical.ships[0].critical, { x: 2, y: 3 });
+  const report = horizontal.attack(horizontal.ships[0].critical);
+  assert.equal(report.kind, "HIT");
+  assert.equal(report.criticalHit, true);
+  assert.equal(report.shipId, "carrier");
+  assert.equal(horizontal.ships[0].hits.size, 1);
+  const ordinary = horizontal.attack({ x: 1, y: 1 });
+  assert.equal(ordinary.kind, "HIT");
+  assert.equal(ordinary.shipId, undefined);
+});
+
+test("the one-cell submarine identifies and sinks on the same critical hit", () => {
+  const board = new Board(); board.placeShip("submarine", { x: 4, y: 5 }, "horizontal");
+  const report = board.attack({ x: 4, y: 5 });
+  assert.equal(report.kind, "SUNK");
+  assert.equal(report.criticalHit, true);
+  assert.equal(report.shipId, "submarine");
 });
 
 test("placement rejects overlap, duplicates, and out of bounds", () => {
@@ -127,6 +151,15 @@ test("AI finishes a publicly inferred 2 by 4 carrier footprint after five hits",
   const decision = ai.decide(own);
   assert.equal(decision.weapon, "fire");
   assert.equal(remaining.has(`${decision.targets[0].x},${decision.targets[0].y}`), true);
+});
+
+test("tactics AI records a critical-section identification while casual AI ignores it", () => {
+  const report = { coord: { x: 3, y: 2 }, kind: "HIT" as const, criticalHit: true, shipId: "carrier" as const, shipName: "空母" };
+  const tactics = new EnemyAI(new SeededRandom(120), ["carrier"], 1.7, "tactics");
+  const casual = new EnemyAI(new SeededRandom(120), ["carrier"], 1.2, "casual");
+  tactics.observe([report]); casual.observe([report]);
+  assert.deepEqual(tactics.identifiedShips.get("carrier"), report.coord);
+  assert.equal(casual.identifiedShips.has("carrier"), false);
 });
 
 test("weapon patterns clip safely and radar never damages", () => {
