@@ -834,6 +834,7 @@ export function DeepBlueGrid() {
       <section className="quick-guide">
         <b>NAVY BLUE式 作戦要領</b>
         <span>1. 艦を選びシルエットを配置</span><span>2. 兵装と目標を選択</span><span>3. プレビューを確認して発射</span><span>4. 全区画命中で撃沈</span>
+        {identificationRules && <span className="identification-guide"><strong>◆ 識別戦：</strong>自軍の◆は重要区画。敵の重要区画へ命中すると艦種・コードのみ識別し、耐久と向きは秘匿されたままです。</span>}
       </section>
 
       {difficulty && !result && (
@@ -1071,15 +1072,26 @@ export function DeepBlueGrid() {
             <p>全6海域を攻略します。TACTICSとSURVIVALは敵先攻・艦種／損傷秘匿。重要区画への命中で識別しますが、AIが未発見の配置を読むことはありません。</p>
             <div className="difficulty-options">
               <button className="mode-button" onClick={() => startCampaign("casual")}>
-                <span>CASUAL</span><small>公開情報を使い、索敵・追撃・特殊兵装をバランスよく運用します。</small>
+                <span>CASUAL</span><b>自軍先攻・情報公開</b><small>敵艦種と損傷を常に表示。重要区画と識別処理は使用せず、基本の索敵・追撃を楽しむ標準モードです。</small>
               </button>
               <button className="mode-button tactics" onClick={() => startCampaign("tactics")}>
-                <span>TACTICS</span><b>敵先攻・識別戦</b><small>敵艦種と損傷は秘匿。重要区画への命中で艦種を識別し、公開された戦果だけで追撃します。</small>
+                <span>TACTICS</span><b>敵先攻・重要区画識別</b><small>敵艦はUNKNOWN表示。重要区画へ命中すると艦種・コードだけを識別できます。耐久・向き・未命中区画は非公開です。</small>
               </button>
               <button className="mode-button survival" onClick={() => startCampaign("survival")}>
-                <span>SURVIVAL</span><b>全艦出撃・永久喪失</b><small>TACTICSの識別戦に全6隻で挑戦。修復と兵装は回復しますが、撃沈艦と搭載兵装は戻りません。</small>
+                <span>SURVIVAL</span><b>TACTICS＋艦隊損耗</b><small>全6隻で識別戦に挑戦。海域後に生存艦と兵装は回復しますが、撃沈艦とその搭載兵装は以後の海域で戻りません。</small>
               </button>
             </div>
+            <section className="identification-rules" aria-label="重要区画識別ルール">
+              <h3>◆ IMPORTANT SECTION / 重要区画</h3>
+              <ul>
+                <li><b>対象：</b>TACTICSとSURVIVALのみ。各艦に1マス設定されます。</li>
+                <li><b>自軍：</b>◆を常時表示。敵弾が命中すると敵AIに艦種を識別されます。</li>
+                <li><b>敵軍：</b>重要区画は見えません。命中時にその座標へ菱形と艦種略号を記録します。</li>
+                <li><b>開示：</b>艦種とコードのみ。耐久、向き、残り区画は開示しません。</li>
+                <li><b>威力：</b>重要区画でも追加ダメージなし。敵AIも同じ条件で、未発見配置は読みません。</li>
+                <li><b>潜水艦：</b>1マス艦のため、命中・識別・撃沈が同時に発生します。</li>
+              </ul>
+            </section>
           </section>
         </div>
       )}

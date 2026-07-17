@@ -21,6 +21,9 @@ test("server renders the finished game shell", async () => {
   assert.match(html, /CASUAL/);
   assert.match(html, /TACTICS/);
   assert.match(html, /SURVIVAL/);
+  assert.match(html, /IMPORTANT SECTION \/ 重要区画/);
+  assert.match(html, /追加ダメージなし/);
+  assert.match(html, /敵AIも同じ条件/);
   assert.doesNotMatch(html, /NORMAL|HARD|基本戦術・手加減なし/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|Your site is taking shape/);
 });

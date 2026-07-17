@@ -94,6 +94,8 @@ button { font: inherit; touch-action: manipulation; }
   background:#06151db8; font-size:9px;
 }
 .quick-guide b { color:var(--cyan); letter-spacing:.1em; }
+.quick-guide .identification-guide { flex-basis:100%; padding-top:6px; border-top:1px solid #294b55; text-align:center; color:#c4b978; line-height:1.5; }
+.quick-guide .identification-guide strong { color:var(--amber); }
 
 .mobile-field-switch { display:none; }
 .mobile-switch-utilities { display:none; }
@@ -294,6 +296,11 @@ button { font: inherit; touch-action: manipulation; }
 .mode-button.tactics span { color:var(--amber); }
 .mode-button.survival { border-color:var(--danger); background:linear-gradient(#5b2d32,#241317); }
 .mode-button.survival span { color:var(--danger); }
+.identification-rules { margin-top:14px; padding:13px 15px; border:1px solid #596344; background:#0b1819c9; text-align:left; }
+.identification-rules h3 { margin:0 0 9px; color:var(--amber); font-size:12px; letter-spacing:.1em; }
+.identification-rules ul { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px 18px; margin:0; padding:0; list-style:none; }
+.identification-rules li { color:var(--steel); font-size:9px; line-height:1.55; }
+.identification-rules li b { color:var(--foam); }
 
 @media (max-width: 760px) {
   .game-shell { padding:10px 8px calc(16px + env(safe-area-inset-bottom,0px)); }
@@ -309,6 +316,7 @@ button { font: inherit; touch-action: manipulation; }
   .campaign-track b { display:none; }
   .quick-guide { justify-content:flex-start; gap:4px 10px; }
   .quick-guide b { flex-basis:100%; }
+  .quick-guide .identification-guide { text-align:left; }
   .boards { grid-template-columns:1fr; gap:13px; }
   .tactical-panel.enemy-board { order:-1; }
   .canvas-wrap { width:min(100%,520px); }
@@ -354,6 +362,7 @@ button { font: inherit; touch-action: manipulation; }
   .legend { gap:9px; }
   .difficulty-options { grid-template-columns:1fr; }
   .mode-button { min-height:108px; }
+  .identification-rules ul { grid-template-columns:1fr; }
 }
 
 @media (max-width: 760px) and (orientation: portrait) {
