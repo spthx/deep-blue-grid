@@ -815,7 +815,7 @@ export function DeepBlueGrid() {
           <section className="difficulty-card">
             <div className="eyebrow">SELECT ENEMY TACTICS</div>
             <h2>DIFFICULTY</h2>
-            <p>NORMALとHARDは同じ艦隊・兵装回数で交戦。TACTICSでは敵先攻と増強兵装が加わりますが、AIが未発見の配置を読むことはありません。</p>
+            <p>全モードで敵の艦隊・兵装回数は自軍と同じです。TACTICSでは敵先攻と情報秘匿が加わりますが、AIが未発見の配置を読むことはありません。</p>
             <div className="difficulty-options">
               <button className="mode-button" onClick={() => startCampaign("normal")}>
                 <span>NORMAL</span><b>標準より少し強め</b><small>的確な追撃と特殊兵装運用。まずはこちら。</small>
@@ -824,7 +824,7 @@ export function DeepBlueGrid() {
                 <span>HARD</span><b>索敵判断を強化</b><small>レーダー判断が早く、好機に特殊兵装を投入。</small>
               </button>
               <button className="mode-button tactics" onClick={() => startCampaign("tactics")}>
-                <span>TACTICS</span><b>敵先攻・情報戦</b><small>敵損傷は撃沈まで非公開。敵レーダー3回、MK-45は2回。公開された戦果だけで最短追撃を狙います。</small>
+                <span>TACTICS</span><b>敵先攻・情報戦</b><small>敵損傷は撃沈まで非公開。兵装回数は自軍と同じ。公開された戦果だけで最短追撃を狙います。</small>
               </button>
             </div>
           </section>

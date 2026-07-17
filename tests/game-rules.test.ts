@@ -109,15 +109,16 @@ test("AI never repeats or leaves the board over a full simulated hunt", () => {
   assert.ok(Object.values(ai.arsenal.uses).every((uses) => uses >= 0));
 });
 
-test("tactics AI gets disclosed supplies without access to hidden fleet data", () => {
+test("tactics AI keeps equal supplies and does not use hidden fleet data", () => {
   const fleet = SHIPS.map((ship) => ship.id);
   const ownA = new Board(); ownA.randomize(new SeededRandom(101));
   const ownB = new Board(); ownB.randomize(new SeededRandom(101));
   const a = new EnemyAI(new SeededRandom(202), fleet, 1.7, "tactics");
   const b = new EnemyAI(new SeededRandom(202), fleet, 1.7, "tactics");
 
-  assert.equal(a.arsenal.uses.radar, 3);
-  assert.equal(a.arsenal.uses.mk45, 2);
+  assert.equal(a.arsenal.uses.radar, 2);
+  assert.equal(a.arsenal.uses.mk45, 1);
+  assert.deepEqual(a.arsenal.uses, new Arsenal().uses);
   for (let turn = 0; turn < 12; turn++) {
     const decisionA = a.decide(ownA);
     const decisionB = b.decide(ownB);

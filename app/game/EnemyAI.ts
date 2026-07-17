@@ -22,10 +22,6 @@ export class EnemyAI {
     this.targetSizes = fleet.map((id) => SHIPS.find((ship) => ship.id === id)!.size);
     this.skill = skill;
     this.profile = profile;
-    if (profile === "tactics") {
-      this.arsenal.uses.radar += 1;
-      this.arsenal.uses.mk45 += 1;
-    }
   }
 
   decide(ownBoard: Board): AIDecision {
