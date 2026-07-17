@@ -35,6 +35,13 @@ test("returning from damage review resets the command to normal fire", async () 
   assert.match(source, /const continueToPlayer = \(\) => \{\s*setWeapon\("fire"\);\s*setPicked\(\[\]\);/);
 });
 
+test("survival retries the current stage with its entering fleet", async () => {
+  const source = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
+  assert.match(source, /initStage\(stageIndex, "survival", survivalFleetRef\.current\)/);
+  assert.match(source, /現在の残存艦隊で再配置/);
+  assert.doesNotMatch(source, /RESTART SURVIVAL/);
+});
+
 test("placement uses explicit rotate and confirm controls", async () => {
   const source = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
   assert.match(source, /placement-dock/);

@@ -117,6 +117,18 @@ test("AI receives the same public submarine wake candidates as the player", () =
   assert.notDeepEqual(decision.targets[0], wave);
 });
 
+test("AI finishes a publicly inferred 2 by 4 carrier footprint after five hits", () => {
+  const own = new Board(); own.placeShip("submarine", { x: 0, y: 0 }, "horizontal");
+  const ai = new EnemyAI(new SeededRandom(91), ["carrier"], 1.7, "tactics");
+  ai.arsenal.uses = { phantom: 0, harpoon: 0, sparrow: 0, mk45: 0, radar: 0 };
+  const knownHits = [{ x: 1, y: 1 }, { x: 4, y: 1 }, { x: 1, y: 2 }, { x: 2, y: 2 }, { x: 3, y: 2 }];
+  ai.observe(knownHits.map((coord) => ({ coord, kind: "HIT" as const })));
+  const remaining = new Set(["2,1", "3,1", "4,2"]);
+  const decision = ai.decide(own);
+  assert.equal(decision.weapon, "fire");
+  assert.equal(remaining.has(`${decision.targets[0].x},${decision.targets[0].y}`), true);
+});
+
 test("weapon patterns clip safely and radar never damages", () => {
   assert.equal(harpoonCells({ x: 4, y: 4 }).length, 5);
   assert.equal(harpoonCells({ x: 0, y: 0 }).length, 2);

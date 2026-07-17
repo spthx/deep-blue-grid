@@ -16,12 +16,13 @@ export class EnemyAI {
   sunkSizes: number[] = [];
   wakeSignals: Coord[] = [];
   private rng: SeededRandom;
-  private targetSizes: number[];
+  private targetFleet: ShipId[];
+  private sunkShipIds: ShipId[] = [];
   private skill: number;
   private profile: AIProfile;
   constructor(rng: SeededRandom, fleet: ShipId[] = SHIPS.map((ship) => ship.id), skill = 1, profile: AIProfile = "casual") {
     this.rng = rng;
-    this.targetSizes = fleet.map((id) => SHIPS.find((ship) => ship.id === id)!.size);
+    this.targetFleet = [...fleet];
     this.skill = skill;
     this.profile = profile;
   }
@@ -67,6 +68,11 @@ export class EnemyAI {
         hit = true;
         result.revealed?.forEach((c) => { this.knowledge[c.y][c.x] = "sunk"; });
         if (result.revealed) this.sunkSizes.push(result.revealed.length);
+        if (result.shipId && !this.sunkShipIds.includes(result.shipId)) this.sunkShipIds.push(result.shipId);
+        else if (result.revealed) {
+          const inferred = this.targetFleet.find((id) => !this.sunkShipIds.includes(id) && SHIPS.find((ship) => ship.id === id)!.size === result.revealed!.length);
+          if (inferred) this.sunkShipIds.push(inferred);
+        }
         const sunkKeys = new Set(result.revealed?.map(keyOf));
         this.targetHits = this.targetHits.filter((c) => !sunkKeys.has(keyOf(c)));
         this.search = this.search.filter((c) => this.knowledge[c.y][c.x] === "unknown");
@@ -91,39 +97,66 @@ export class EnemyAI {
   }
 
   private chooseShot() {
-    const targets = this.orientedTargets().filter((c) => this.isUnknown(c));
+    const targets = this.rankTargetCandidates();
     if (targets.length) { this.state = "TARGET"; return targets[0]; }
     while (this.search.length) { const c = this.search.shift()!; if (this.isUnknown(c)) { this.state = this.targetHits.length ? "TARGET" : "SEARCH"; return c; } }
     this.state = "HUNT";
     return this.rankCandidates()[0];
   }
-  private orientedTargets() {
-    if (this.targetHits.length < 2) return this.targetHits.flatMap((c) => this.cardinals(c));
-    const sameRow = this.targetHits.every((c) => c.y === this.targetHits[0].y);
-    const sameCol = this.targetHits.every((c) => c.x === this.targetHits[0].x);
-    if (sameRow) {
-      const xs = this.targetHits.map((c) => c.x); return [{ x: Math.min(...xs) - 1, y: this.targetHits[0].y }, { x: Math.max(...xs) + 1, y: this.targetHits[0].y }].filter(inBounds);
-    }
-    if (sameCol) {
-      const ys = this.targetHits.map((c) => c.y); return [{ x: this.targetHits[0].x, y: Math.min(...ys) - 1 }, { x: this.targetHits[0].x, y: Math.max(...ys) + 1 }].filter(inBounds);
-    }
-    return this.targetHits.flatMap((c) => this.cardinals(c));
+  private rankTargetCandidates() {
+    if (!this.targetHits.length) return [];
+    const scores = this.placementScores(true);
+    const ranked = [...scores.entries()]
+      .filter(([key]) => {
+        const [x, y] = key.split(",").map(Number);
+        return this.isUnknown({ x, y });
+      })
+      .sort((a, b) => b[1] - a[1])
+      .map(([key]) => {
+        const [x, y] = key.split(",").map(Number);
+        return { x, y };
+      });
+    if (ranked.length) return ranked;
+    return this.targetHits.flatMap((coord) => this.cardinals(coord)).filter((coord) => this.isUnknown(coord));
   }
   private rankCandidates() {
-    const remainingSizes = this.targetSizes.filter((size) => !this.sunkSizes.includes(size));
-    const submarineOnly = remainingSizes.every((s) => s === 1);
+    const remaining = this.remainingFleet();
+    const submarineOnly = remaining.every((id) => SHIPS.find((ship) => ship.id === id)!.size === 1);
+    const placementScores = this.placementScores(false);
     const scored = this.unknownCells().map((coord) => {
-      let score = this.rng.next() * .4;
+      let score = (placementScores.get(keyOf(coord)) ?? 0) + this.rng.next() * .4;
       if (!submarineOnly && (coord.x + coord.y) % 2 === 0) score += 2;
-      for (const size of remainingSizes) for (const horizontal of [true, false]) for (let offset = 0; offset < size; offset++) {
-        const cells = Array.from({ length: size }, (_, i) => ({ x: coord.x + (horizontal ? i - offset : 0), y: coord.y + (horizontal ? 0 : i - offset) }));
-        if (cells.every(inBounds) && cells.every((c) => !["miss", "echo", "sunk"].includes(this.knowledge[c.y][c.x]))) score += 1;
-      }
       for (const echo of this.findMarks("echo")) if (Math.abs(echo.x - coord.x) <= 1 && Math.abs(echo.y - coord.y) <= 1) score += 4;
       return { coord, score };
     });
     scored.sort((a, b) => b.score - a.score);
     return scored.map((s) => s.coord);
+  }
+  private remainingFleet() {
+    return this.targetFleet.filter((id) => !this.sunkShipIds.includes(id));
+  }
+  private placementsFor(id: ShipId) {
+    const ship = SHIPS.find((candidate) => candidate.id === id)!;
+    const dimensions = ship.width === ship.height
+      ? [[ship.width, ship.height]]
+      : [[ship.width, ship.height], [ship.height, ship.width]];
+    const placements: Coord[][] = [];
+    for (const [width, height] of dimensions) for (let y = 0; y <= GRID_SIZE - height; y++) for (let x = 0; x <= GRID_SIZE - width; x++) {
+      const cells: Coord[] = [];
+      for (let dy = 0; dy < height; dy++) for (let dx = 0; dx < width; dx++) cells.push({ x: x + dx, y: y + dy });
+      if (cells.every((cell) => !["miss", "echo", "sunk"].includes(this.knowledge[cell.y][cell.x]))) placements.push(cells);
+    }
+    return placements;
+  }
+  private placementScores(targetOnly: boolean) {
+    const scores = new Map<string, number>();
+    for (const id of this.remainingFleet()) for (const cells of this.placementsFor(id)) {
+      const coveredHits = cells.filter((cell) => this.knowledge[cell.y][cell.x] === "hit").length;
+      if (targetOnly && coveredHits === 0) continue;
+      const weight = targetOnly ? coveredHits * coveredHits * 20 : 1 + coveredHits * coveredHits * 8;
+      for (const cell of cells) if (this.isUnknown(cell)) scores.set(keyOf(cell), (scores.get(keyOf(cell)) ?? 0) + weight);
+    }
+    return scores;
   }
   private bestRadarOrigin() {
     const options: Array<{ c: Coord; score: number }> = [];

@@ -729,9 +729,7 @@ export function DeepBlueGrid() {
   const advanceFromResult = () => {
     if (phase === "defeat") {
       if (difficulty === "survival") {
-        survivalFleetRef.current = [...FULL_FLEET];
-        setSurvivalFleet([...FULL_FLEET]);
-        initStage(0, "survival", FULL_FLEET);
+        initStage(stageIndex, "survival", survivalFleetRef.current);
       } else {
         initStage(stageIndex);
       }
@@ -794,17 +792,15 @@ export function DeepBlueGrid() {
           >
             <span aria-hidden="true">{muted ? "🔇" : "🔊"}</span>
           </button>
-          {difficulty !== "survival" && (
-            <button
-              className="retry"
-              onClick={() => initStage(stageIndex)}
-              disabled={locked}
-              aria-label="現在のステージをリトライ"
-              title="現在のステージをリトライ"
-            >
-              <span aria-hidden="true">↻</span>
-            </button>
-          )}
+          <button
+            className="retry"
+            onClick={() => initStage(stageIndex, difficulty, difficulty === "survival" ? survivalFleetRef.current : undefined)}
+            disabled={locked}
+            aria-label="現在のステージをリトライ"
+            title="現在のステージをリトライ"
+          >
+            <span aria-hidden="true">↻</span>
+          </button>
         </aside>
       )}
 
@@ -828,17 +824,15 @@ export function DeepBlueGrid() {
             >
               <span aria-hidden="true">{muted ? "🔇" : "🔊"}</span>
             </button>
-            {difficulty !== "survival" && (
-              <button
-                className="retry"
-                onClick={() => initStage(stageIndex)}
-                disabled={locked}
-                aria-label="現在のステージをリトライ"
-                title="現在のステージをリトライ"
-              >
-                <span aria-hidden="true">↻</span>
-              </button>
-            )}
+            <button
+              className="retry"
+              onClick={() => initStage(stageIndex, difficulty, difficulty === "survival" ? survivalFleetRef.current : undefined)}
+              disabled={locked}
+              aria-label="現在のステージをリトライ"
+              title="現在のステージをリトライ"
+            >
+              <span aria-hidden="true">↻</span>
+            </button>
           </span>
         )}
       </nav>
@@ -1050,8 +1044,8 @@ export function DeepBlueGrid() {
               className="cmd primary"
               onClick={advanceFromResult}
             >
-              <b>{phase === "victory" ? (campaignClear ? "NEW CAMPAIGN" : "NEXT STAGE") : difficulty === "survival" ? "RESTART SURVIVAL" : "RETRY STAGE"}</b>
-              <small>{phase === "victory" && !campaignClear ? STAGES[stageIndex + 1].title : difficulty === "survival" ? "全6隻で海域1から再挑戦" : "艦隊を再配置"}</small>
+              <b>{phase === "victory" ? (campaignClear ? "NEW CAMPAIGN" : "NEXT STAGE") : "RETRY STAGE"}</b>
+              <small>{phase === "victory" && !campaignClear ? STAGES[stageIndex + 1].title : difficulty === "survival" ? "現在の残存艦隊で再配置" : "艦隊を再配置"}</small>
             </button>
           </section>
         </div>
