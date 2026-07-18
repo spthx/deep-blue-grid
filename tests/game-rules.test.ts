@@ -200,6 +200,28 @@ test("harpoon keeps two symmetric uses per stage", () => {
   assert.equal(arsenal.spend("harpoon", own), false);
 });
 
+test("escort grants one additional F-4 sortie while both ships survive", () => {
+  const own = new Board();
+  own.placeShip("carrier", { x: 0, y: 0 }, "horizontal");
+  own.placeShip("escort", { x: 0, y: 3 }, "horizontal");
+  const arsenal = new Arsenal();
+  assert.equal(arsenal.availableUses("phantom", own), 2);
+  assert.equal(arsenal.spend("phantom", own), true);
+  assert.equal(arsenal.availableUses("phantom", own), 1);
+  own.attack({ x: 0, y: 3 }); own.attack({ x: 1, y: 3 });
+  assert.equal(arsenal.availableUses("phantom", own), 0);
+  assert.equal(arsenal.spend("phantom", own), false);
+});
+
+test("carrier keeps one F-4 sortie when no escort is deployed", () => {
+  const own = new Board(); own.placeShip("carrier", { x: 0, y: 0 }, "horizontal");
+  const arsenal = new Arsenal();
+  assert.equal(arsenal.maxUses("phantom", own), 1);
+  assert.equal(arsenal.availableUses("phantom", own), 1);
+  assert.equal(arsenal.spend("phantom", own), true);
+  assert.equal(arsenal.spend("phantom", own), false);
+});
+
 test("AI never repeats or leaves the board over a full simulated hunt", () => {
   const target = new Board(); target.randomize(new SeededRandom(30));
   const own = new Board(); own.randomize(new SeededRandom(50));

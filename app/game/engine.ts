@@ -116,9 +116,19 @@ export const sparrowCells = radarCells;
 export class Arsenal {
   uses = { ...WEAPON_MAX };
   reset() { this.uses = { ...WEAPON_MAX }; }
+  maxUses(id: keyof typeof WEAPON_MAX, board: Board) {
+    return id === "phantom" && !board.alive("escort") ? 1 : WEAPON_MAX[id];
+  }
+  availableUses(id: keyof typeof WEAPON_MAX, board: Board) {
+    if (id === "phantom") {
+      const spent = WEAPON_MAX.phantom - this.uses.phantom;
+      return Math.max(0, this.maxUses(id, board) - spent);
+    }
+    return this.uses[id];
+  }
   canUse(id: keyof typeof WEAPON_MAX, board: Board) {
     const carrier = id === "phantom" ? "carrier" : id === "harpoon" ? "battleship" : id === "sparrow" ? "cruiser" : id === "mk45" ? "destroyer" : "submarine";
-    return this.uses[id] > 0 && board.alive(carrier);
+    return this.availableUses(id, board) > 0 && board.alive(carrier);
   }
   spend(id: keyof typeof WEAPON_MAX, board: Board) { if (!this.canUse(id, board)) return false; this.uses[id]--; return true; }
 }

@@ -61,6 +61,15 @@ test("radar contact and clear scans use restrained grid colors", async () => {
   assert.match(source, /board\.shots\[coord\.y\]\[coord\.x\]!=="unknown"/);
 });
 
+test("radar scan announces its binary result over the playfield", async () => {
+  const game = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
+  const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+  assert.match(game, /CONTACT : \{radarAlert\.contact \? "1" : "0"\}/);
+  assert.match(game, /4区画内に敵影あり/);
+  assert.match(game, /4区画内に敵影なし/);
+  assert.match(css, /\.radar-result/);
+});
+
 test("tactics identification masks contacts and marks critical sections", async () => {
   const game = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
   const renderer = await readFile(new URL("../app/game/Renderer.ts", import.meta.url), "utf8");

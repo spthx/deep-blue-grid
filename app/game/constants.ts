@@ -37,4 +37,4 @@ export const HARPOON_PATTERN: ReadonlyArray<Coord> = [
   { x: -1, y: -1 }, { x: 1, y: -1 }, { x: 0, y: 0 }, { x: -1, y: 1 }, { x: 1, y: 1 },
 ];
 
-export const WEAPON_MAX = { phantom: 1, harpoon: 2, sparrow: 1, mk45: 1, radar: 2 } as const;
+export const WEAPON_MAX = { phantom: 2, harpoon: 2, sparrow: 1, mk45: 1, radar: 2 } as const;

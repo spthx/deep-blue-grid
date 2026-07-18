@@ -41,11 +41,11 @@ const difficultySkill = (base: number, mode: GameMode) => base * (usesTacticsRul
 
 const WEAPON_META: Record<WeaponId, { label: string; carrier?: ShipId; help: string; requirement: string }> = {
   fire: { label: "通常砲撃", help: "敵海域の1マスを攻撃します。", requirement: "目標 1" },
-  phantom: { label: "F-4 PHANTOM", carrier: "carrier", help: "異なる4マスへ航空攻撃を行います。", requirement: "目標 4" },
+  phantom: { label: "F-4 PHANTOM", carrier: "carrier", help: "異なる4マスへ航空攻撃。空母と護衛艦の両艦が生存中は2回、護衛艦喪失後は合計1回まで出撃できます。", requirement: "目標 4" },
   harpoon: { label: "HARPOON", carrier: "battleship", help: "照準を中心にX字5マスを攻撃します。", requirement: "中心 1" },
   sparrow: { label: "SEA SPARROW", carrier: "cruiser", help: "2×2の4マスを同時攻撃します。", requirement: "左上 1" },
   mk45: { label: "MK-45 II", carrier: "destroyer", help: "異なる2マスを連続攻撃します。", requirement: "目標 2" },
-  radar: { label: "SPS-10 RADAR", carrier: "submarine", help: "2×2内の未破壊区画を走査します。CONTACTは黄、CLEARは青緑で記録されます。", requirement: "左上 1" },
+  radar: { label: "SPS-10 RADAR", carrier: "submarine", help: "2×2内の未破壊区画を走査します。CONTACT : 1は敵影あり、CONTACT : 0は敵影なしです。", requirement: "左上 1" },
 };
 
 export function DeepBlueGrid() {
@@ -98,6 +98,7 @@ export function DeepBlueGrid() {
   const [enemyIdentified, setEnemyIdentified] = useState<ShipId[]>([]);
   const [enemyContactOrder, setEnemyContactOrder] = useState<ShipId[]>([...STAGES[0].fleet]);
   const [identificationAlert, setIdentificationAlert] = useState<{ hostile: boolean; id: ShipId } | null>(null);
+  const [radarAlert, setRadarAlert] = useState<{ contact: boolean } | null>(null);
 
   const identificationRules = difficulty !== null && usesTacticsRules(difficulty);
   const placementPreviewActive = phase === "placement" && !player.current.ships.some((ship) => ship.id === selectedShip);
@@ -136,6 +137,7 @@ export function DeepBlueGrid() {
       ? new SeededRandom(seedRef.current ^ 0x19c4a7).shuffle([...nextStage.fleet])
       : [...nextStage.fleet]);
     setIdentificationAlert(null);
+    setRadarAlert(null);
     setStageIndex(nextStageIndex);
     setPhase("placement");
     setMessage(nextStage.subtitle);
@@ -513,10 +515,12 @@ export function DeepBlueGrid() {
       const report = contact ? "CONTACT：黄色の4マス内に未破壊区画反応。" : "CLEAR：青緑の4マス内に未破壊区画なし。";
       setMessage(report);
       addLog("SPS-10 RADAR： " + report, contact ? "good" : "info");
+      setRadarAlert({ contact });
       setPicked([]);
       setActive([]);
       bump();
-      await sleep(950);
+      await sleep(1450);
+      setRadarAlert(null);
       await enemyTurn();
       return;
     }
@@ -771,8 +775,9 @@ export function DeepBlueGrid() {
     const meta = WEAPON_META[id];
     if (!meta.carrier || !playerFleet.includes(meta.carrier)) return { available: false, status: difficulty === "survival" ? "永久喪失" : "未配備", reason: difficulty === "survival" ? "搭載艦を以前のステージで喪失したため使用不能です。" : "搭載艦は後のステージで配備されます。" };
     if (!player.current.alive(meta.carrier)) return { available: false, status: "搭載艦喪失", reason: "搭載艦が撃沈されたため使用不能です。" };
-    const uses = arsenal.current.uses[id];
-    return { available: uses > 0, status: "残り " + uses + "/" + WEAPON_MAX[id], reason: uses > 0 ? "" : "このステージでの使用回数を使い切りました。" };
+    const uses = arsenal.current.availableUses(id, player.current);
+    const max = arsenal.current.maxUses(id, player.current);
+    return { available: uses > 0, status: "残り " + uses + "/" + max, reason: uses > 0 ? "" : "このステージでの使用回数を使い切りました。" };
   };
 
   const result = phase === "victory" || phase === "defeat";
@@ -1057,6 +1062,11 @@ export function DeepBlueGrid() {
       ) : null}
 
       {flash && <div className={"turn-flash " + flash}><div>{flash === "player" ? "COMMAND" : "ENEMY ACTION"}</div></div>}
+      {radarAlert && <div className={"radar-result " + (radarAlert.contact ? "contact" : "clear")}>
+        <small>SPS-10 RADAR SCAN</small>
+        <b>CONTACT : {radarAlert.contact ? "1" : "0"}</b>
+        <span>{radarAlert.contact ? "4区画内に敵影あり" : "4区画内に敵影なし"}</span>
+      </div>}
       {identificationAlert && (() => {
         const definition = SHIPS.find((ship) => ship.id === identificationAlert.id)!;
         return <div className={"identification-alert " + (identificationAlert.hostile ? "hostile persistent" : "friendly")}>
