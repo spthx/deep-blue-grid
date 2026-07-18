@@ -92,3 +92,28 @@ test("hostile identification remains until review confirmation and mobile confir
   assert.match(css, /\.identification-alert\.persistent/);
   assert.match(css, /orientation: portrait[\s\S]*?\.turn-review \.review-confirm \{ width:min\(72%,280px\); min-width:0; justify-self:end; \}/);
 });
+
+test("submarine wakes are emitted only after that submarine side acts", async () => {
+  const game = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
+  const enemyTurn = game.slice(game.indexOf("const enemyTurn"), game.indexOf("const continueToPlayer"));
+  const playerAttack = game.slice(game.indexOf("const resolvePlayerAttack"), game.indexOf("const targetRequirement"));
+  const confirmAction = game.slice(game.indexOf("const confirmAction"), game.indexOf("const cancelAim"));
+  assert.match(enemyTurn, /emitEnemySubmarineWake\(\)/);
+  assert.doesNotMatch(enemyTurn, /emitPlayerSubmarineWake\(\)/);
+  assert.match(playerAttack, /emitPlayerSubmarineWake\(\)/);
+  assert.doesNotMatch(playerAttack, /emitEnemySubmarineWake\(\)/);
+  assert.match(confirmAction, /emitPlayerSubmarineWake\(\)/);
+});
+
+test("battle log drawer and victory battlefield review remain accessible", async () => {
+  const game = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
+  const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+  assert.match(game, /バトルログを開く/);
+  assert.match(game, /className="log-drawer"/);
+  assert.match(game, /BATTLEFIELD REVIEW/);
+  assert.match(game, /結果画面へ戻る/);
+  assert.match(game, /slice\(-40\)/);
+  assert.match(css, /\.battle-log ol \{ max-height:76px;[\s\S]*?overflow-y:auto/);
+  assert.match(css, /\.mobile-field-switch \.mobile-switch-utilities \{[\s\S]*?repeat\(3,34px\)/);
+  assert.match(css, /\.result-review-bar/);
+});
