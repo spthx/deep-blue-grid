@@ -235,6 +235,14 @@ button { font: inherit; touch-action: manipulation; }
 .battle-log li time { color:#527984; font-variant-numeric:tabular-nums; }
 .battle-log li.good { color:var(--cyan); }
 .battle-log li.bad { color:var(--danger); }
+.battle-log li.campaign,.battle-log li.stage-start,.battle-log li.stage-end,.battle-log li.withdrawal,.battle-log li.supply {
+  padding:4px 5px; border:1px solid currentColor; background:#0a2028cc; font-weight:800; letter-spacing:.04em;
+}
+.battle-log li.campaign { color:var(--cyan); }
+.battle-log li.stage-start { color:var(--amber); }
+.battle-log li.stage-end { color:#8fe3a5; }
+.battle-log li.withdrawal { color:var(--danger); }
+.battle-log li.supply { color:#9adfd2; }
 
 .legend { display:flex; justify-content:center; gap:16px; margin:8px 0 0; color:var(--steel); font-size:9px; }
 .legend i { display:inline-block; width:7px; height:7px; margin-right:4px; border-radius:50%; }
@@ -277,7 +285,7 @@ button { font: inherit; touch-action: manipulation; }
 
 .log-drawer-backdrop { position:fixed; z-index:48; inset:0; display:grid; align-items:end; background:#01090e99; backdrop-filter:blur(3px); }
 .log-drawer {
-  width:min(760px,100%); max-height:min(48dvh,430px); margin:0 auto; padding:12px;
+  width:min(760px,100%); max-height:min(72dvh,620px); margin:0 auto; padding:12px;
   border:1px solid #52757d; border-bottom:0; background:linear-gradient(145deg,#12313c,#06151e 62%);
   box-shadow:0 -12px 38px #000c,inset 0 0 0 3px #07141b; animation:logDrawerIn .18s ease-out both;
 }
@@ -286,11 +294,19 @@ button { font: inherit; touch-action: manipulation; }
 .log-drawer header span { color:var(--steel); font-size:8px; letter-spacing:.2em; }
 .log-drawer header b { margin-top:2px; color:var(--cyan); font-size:13px; }
 .log-drawer header button { width:36px; height:32px; border:1px solid #52727a; color:var(--cyan); background:#0a222c; font-size:20px; cursor:pointer; }
-.log-drawer ol { max-height:calc(min(48dvh,430px) - 70px); margin:9px 0 0; padding:0 6px 0 0; list-style:none; overflow-y:auto; scrollbar-color:#52757d #06151e; }
+.log-drawer ol { max-height:calc(min(72dvh,620px) - 70px); margin:9px 0 0; padding:0 6px 0 0; list-style:none; overflow-y:auto; scrollbar-color:#52757d #06151e; }
 .log-drawer li { display:grid; grid-template-columns:52px minmax(0,1fr); gap:8px; padding:7px 8px; border-bottom:1px solid #193b45; color:var(--steel); font-size:10px; line-height:1.45; }
 .log-drawer li time { color:#527984; font-variant-numeric:tabular-nums; }
 .log-drawer li.good { color:var(--cyan); }
 .log-drawer li.bad { color:var(--danger); }
+.log-drawer li.campaign,.log-drawer li.stage-start,.log-drawer li.stage-end,.log-drawer li.withdrawal,.log-drawer li.supply {
+  margin:7px 0 3px; border:1px solid currentColor; background:#0a2028e8; font-weight:800; letter-spacing:.06em;
+}
+.log-drawer li.campaign { color:var(--cyan); }
+.log-drawer li.stage-start { color:var(--amber); }
+.log-drawer li.stage-end { color:#8fe3a5; }
+.log-drawer li.withdrawal { color:var(--danger); }
+.log-drawer li.supply { color:#9adfd2; }
 @keyframes logDrawerIn { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
 
 .result-review-bar {
@@ -330,6 +346,7 @@ button { font: inherit; touch-action: manipulation; }
 .result-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
 .result-actions .cmd { width:100%; min-width:0; }
 .result-actions .review-battlefield { border-color:var(--amber); }
+.result-actions .open-operation-log { grid-column:1 / -1; border-color:#668b94; }
 .result-actions .review-battlefield b { color:var(--amber); }
 .stats { display:grid; grid-template-columns:repeat(2,1fr); gap:7px; margin:20px 0; text-align:left; }
 .stats div { border-left:2px solid var(--teal); background:#081b24; padding:9px; color:var(--steel); font-size:9px; }

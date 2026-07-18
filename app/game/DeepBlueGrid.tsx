@@ -24,12 +24,13 @@ import { EnemyAI } from "./EnemyAI.ts";
 import { AudioManager } from "./AudioManager.ts";
 import { drawBoard, pointerToCoord } from "./Renderer.ts";
 import { nextSubmarineWake } from "./SubmarineWake.ts";
-import { FULL_FLEET, playerFleetFor, survivingFleet, usesTacticsRules, type GameMode } from "./Campaign.ts";
+import { FULL_FLEET, aiSkillFor, playerFleetFor, survivingFleet, usesTacticsRules, type GameMode } from "./Campaign.ts";
 import { commandAssessment, formatElapsed, formatLocal, formatZulu, type UnusedSpecial } from "./AfterAction.ts";
 
 type Phase = "placement" | "player" | "enemy" | "review" | "victory" | "defeat";
 type Stats = { turns: number; shots: number; hits: number; sunk: number; specials: number; damage: number };
-type LogEntry = { id: number; at: number; text: string; tone: "info" | "good" | "bad" };
+type LogKind = "event" | "campaign" | "stage-start" | "stage-end" | "withdrawal" | "supply";
+type LogEntry = { id: number; at: number; text: string; tone: "info" | "good" | "bad"; kind: LogKind };
 type ShipCardOptions = { selectable?: boolean; concealDamage?: boolean; concealIdentity?: boolean; identified?: boolean; contactIndex?: number };
 type PlacementGesture = { pointerId: number; offset: Coord; origin: Coord };
 type PlacementBackup = { id: ShipId; start: Coord; orientation: Orientation };
@@ -38,7 +39,15 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const coordName = (coord: Coord) => CELL_LABELS[coord.y] + "-" + (coord.x + 1);
 const sameCoord = (a: Coord, b: Coord) => a.x === b.x && a.y === b.y;
 const freshStats = (): Stats => ({ turns: 0, shots: 0, hits: 0, sunk: 0, specials: 0, damage: 0 });
-const difficultySkill = (base: number, mode: GameMode) => base * (usesTacticsRules(mode) ? 1.7 : 1.38);
+
+const LOST_CAPABILITY: Record<ShipId, string> = {
+  carrier: "航空打撃能力喪失。F-4 PHANTOM使用不能。",
+  battleship: "長距離打撃能力喪失。HARPOON使用不能。",
+  cruiser: "面制圧能力喪失。SEA SPARROW使用不能。",
+  destroyer: "連続射撃能力喪失。MK-45 II使用不能。",
+  escort: "護衛能力喪失。F-4追加出撃不能。",
+  submarine: "音響捜索能力喪失。SPS-10 RADAR使用不能。",
+};
 
 const WEAPON_META: Record<WeaponId, { label: string; carrier?: ShipId; help: string; requirement: string }> = {
   fire: { label: "通常砲撃", help: "敵海域の1マスを攻撃します。", requirement: "目標 1" },
@@ -55,7 +64,7 @@ export function DeepBlueGrid() {
   const player = useRef(new Board());
   const enemy = useRef(new Board());
   const arsenal = useRef(new Arsenal());
-  const ai = useRef(new EnemyAI(new SeededRandom(seedRef.current ^ 0x51f15e), STAGES[0].fleet, difficultySkill(STAGES[0].aiSkill, "casual"), "casual"));
+  const ai = useRef(new EnemyAI(new SeededRandom(seedRef.current ^ 0x51f15e), STAGES[0].fleet, aiSkillFor("casual", STAGES[0].id, STAGES[0].aiSkill), "casual"));
   const audio = useRef<AudioManager | null>(null);
   const playerCanvas = useRef<HTMLCanvasElement>(null);
   const enemyCanvas = useRef<HTMLCanvasElement>(null);
@@ -70,6 +79,7 @@ export function DeepBlueGrid() {
   const enemyWakesRef = useRef<Coord[]>([]);
   const identificationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const playerLossOrderRef = useRef<ShipId[]>([]);
+  const stageAttemptRef = useRef(0);
 
   if (!audio.current && typeof window !== "undefined") audio.current = new AudioManager();
 
@@ -94,7 +104,7 @@ export function DeepBlueGrid() {
   const [flash, setFlash] = useState<"player" | "enemy" | null>(null);
   const [muted, setMuted] = useState(false);
   const [stats, setStats] = useState<Stats>(freshStats);
-  const [logs, setLogs] = useState<LogEntry[]>(() => { const at = Date.now(); return [{ id: at, at, text: "作戦準備。艦隊配置を開始。", tone: "info" }]; });
+  const [logs, setLogs] = useState<LogEntry[]>(() => { const at = Date.now(); return [{ id: at, at, text: "作戦準備。艦隊配置を開始。", tone: "info", kind: "event" }]; });
   const [playerWakes, setPlayerWakes] = useState<Coord[]>([]);
   const [enemyWakes, setEnemyWakes] = useState<Coord[]>([]);
   const [enemyIdentified, setEnemyIdentified] = useState<ShipId[]>([]);
@@ -111,14 +121,14 @@ export function DeepBlueGrid() {
   const placementValid = placementPreviewActive && player.current.canPlace(selectedShip, cursor, orientation);
 
   const bump = () => setRevision((value) => value + 1);
-  const addLog = (text: string, tone: LogEntry["tone"] = "info", at = Date.now()) => {
-    setLogs((current) => [...current, { id: at + Math.random(), at, text, tone }].slice(-40));
+  const addLog = (text: string, tone: LogEntry["tone"] = "info", at = Date.now(), kind: LogKind = "event") => {
+    setLogs((current) => [...current, { id: at + Math.random(), at, text, tone, kind }]);
   };
 
   const ownAlive = player.current.ships.filter((ship) => !ship.sunk).length;
   const enemyAlive = enemy.current.ships.filter((ship) => !ship.sunk).length;
   const fleetCells = playerFleet.reduce((total, id) => total + SHIPS.find((ship) => ship.id === id)!.size, 0);
-  const initStage = useCallback((nextStageIndex: number, nextDifficulty?: GameMode, nextSurvivalFleet?: ShipId[]) => {
+  const initStage = useCallback((nextStageIndex: number, nextDifficulty?: GameMode, nextSurvivalFleet?: ShipId[], retry = false) => {
     const nextStage = STAGES[nextStageIndex];
     const selectedDifficulty = nextDifficulty ?? difficultyRef.current;
     const nextPlayerFleet = playerFleetFor(selectedDifficulty, nextStage.fleet, nextSurvivalFleet ?? survivalFleetRef.current);
@@ -131,12 +141,13 @@ export function DeepBlueGrid() {
     ai.current = new EnemyAI(
       new SeededRandom(seedRef.current ^ 0x51f15e),
       nextPlayerFleet,
-      difficultySkill(nextStage.aiSkill, selectedDifficulty),
+      aiSkillFor(selectedDifficulty, nextStage.id, nextStage.aiSkill),
       usesTacticsRules(selectedDifficulty) ? "tactics" : "casual",
     );
     playerWakesRef.current = [];
     enemyWakesRef.current = [];
     playerLossOrderRef.current = [];
+    if (!retry) stageAttemptRef.current = 0;
     setPlayerWakes([]);
     setEnemyWakes([]);
     setEnemyIdentified([]);
@@ -162,7 +173,6 @@ export function DeepBlueGrid() {
     setLocked(false);
     setActive([]);
     setStats(freshStats());
-    setLogs([{ id: preparedAt, at: preparedAt, text: `作戦準備。STAGE ${nextStage.id} 艦隊配置を開始。`, tone: "info" }]);
     bump();
   }, []);
 
@@ -194,6 +204,8 @@ export function DeepBlueGrid() {
     survivalFleetRef.current = [...FULL_FLEET];
     setSurvivalFleet([...FULL_FLEET]);
     setDifficulty(selectedDifficulty);
+    const startedAt = Date.now();
+    setLogs([{ id: startedAt, at: startedAt, text: `＝ ${selectedDifficulty.toUpperCase()} / 作戦行動開始 ＝`, tone: "info", kind: "campaign" }]);
     initStage(0, selectedDifficulty, startingFleet);
   };
 
@@ -294,6 +306,19 @@ export function DeepBlueGrid() {
     addLog("自軍潜水艦周辺に波紋発生。敵の音響捜索を警戒。", "bad");
   };
 
+  const addStageSummary = (at = Date.now()) => {
+    const enemySunk = enemy.current.ships.filter((ship) => ship.sunk).length;
+    const ownLosses = player.current.ships.filter((ship) => ship.sunk);
+    addLog(`戦果：敵${enemySunk}艦撃沈 / ${enemy.current.damageCount()}区画破壊。`, enemySunk ? "good" : "info", at);
+    addLog(
+      ownLosses.length
+        ? `自軍損失：${ownLosses.map((ship) => ship.name).join(" / ")}。損傷${player.current.damageCount()} / ${fleetCells}区画。`
+        : `自軍損失なし。損傷${player.current.damageCount()} / ${fleetCells}区画。`,
+      ownLosses.length ? "bad" : "good",
+      at,
+    );
+  };
+
   const startBattle = () => {
     if (!player.current.allPlaced(playerFleet)) {
       setMessage("このステージの全艦を配置してください。");
@@ -303,9 +328,16 @@ export function DeepBlueGrid() {
     const startedAt = Date.now();
     setOperationStart(startedAt);
     setOperationEnd(null);
-    setLogs([{ id: startedAt, at: startedAt, text: usesTacticsRules(difficultyRef.current)
-      ? "総員戦闘配置。作戦行動を開始。敵艦隊、先制攻撃。"
-      : "総員戦闘配置。作戦行動を開始。自艦隊、攻撃開始。", tone: usesTacticsRules(difficultyRef.current) ? "bad" : "info" }]);
+    stageAttemptRef.current += 1;
+    addLog(usesTacticsRules(difficultyRef.current)
+      ? "総員戦闘配置。敵艦隊、先制攻撃。"
+      : "総員戦闘配置。自艦隊、攻撃開始。", usesTacticsRules(difficultyRef.current) ? "bad" : "info", startedAt);
+    addLog(
+      `＝ STAGE ${stage.id} / ${stageAttemptRef.current > 1 ? `第${stageAttemptRef.current}次交戦開始` : "交戦開始"} ＝`,
+      "info",
+      startedAt,
+      "stage-start",
+    );
     if (usesTacticsRules(difficultyRef.current)) {
       setLocked(true);
       audio.current?.confirm();
@@ -375,10 +407,21 @@ export function DeepBlueGrid() {
             ? "敵弾近接。音響反応を検知。"
             : "敵弾着弾。自軍損害なし。";
       setMessage(report);
-      addLog(report, hits ? "bad" : "info");
-      for (const contact of identifications) {
-        const definition = SHIPS.find((ship) => ship.id === contact.shipId)!;
-        addLog("自軍重要区画に被弾。敵に" + definition.name + " / " + definition.code + "と識別された。", "bad");
+      if (hits) {
+        for (const result of results) {
+          if (result.kind !== "HIT" && result.kind !== "SUNK") continue;
+          const struckShip = player.current.shipAt(result.coord);
+          if (!struckShip) continue;
+          const definition = SHIPS.find((ship) => ship.id === struckShip.id)!;
+          const critical = result.criticalHit ? "重要区画損傷。敵に艦種を識別された。" : "";
+          const lostCapability = struckShip.id === "escort" && !playerFleet.includes("carrier")
+            ? "護衛能力喪失。"
+            : LOST_CAPABILITY[struckShip.id];
+          const loss = result.kind === "SUNK" ? `撃沈。${lostCapability}` : "";
+          addLog(`敵${WEAPON_META[decision.weapon].label}着弾。${struckShip.name} / ${definition.code} ${coordName(result.coord)} 被弾。${critical}${loss}`, "bad");
+        }
+      } else {
+        addLog(report, "info");
       }
       if (identified?.shipId) showIdentificationAlert(identified.shipId, true);
     }
@@ -392,6 +435,8 @@ export function DeepBlueGrid() {
       addLog("自軍艦隊、戦闘能力喪失。", "bad", endedAt);
       addLog("作戦続行不能。撤退命令を発令。", "bad", endedAt);
       addLog("作戦中止。", "bad", endedAt);
+      addStageSummary(endedAt);
+      addLog(`＝ STAGE ${stage.id} / 交戦終了・作戦中止 ＝`, "bad", endedAt, "stage-end");
       setOperationEnd(endedAt);
       setPhase("defeat");
       audio.current?.defeat();
@@ -480,9 +525,13 @@ export function DeepBlueGrid() {
     await sleep(850);
     if (enemy.current.allSunk()) {
       const endedAt = Date.now();
+      const finalStage = stageIndex === STAGES.length - 1;
       addLog("敵艦隊の戦闘能力喪失を確認。", "good", endedAt);
-      addLog(campaignClear ? "全作戦目標達成。対象海域を制圧。" : "作戦目標達成。対象海域を制圧。", "good", endedAt);
+      addLog(finalStage ? "全作戦目標達成。対象海域を制圧。" : "作戦目標達成。対象海域を制圧。", "good", endedAt);
       addLog("戦闘配置を解除。", "good", endedAt);
+      addStageSummary(endedAt);
+      addLog(`＝ STAGE ${stage.id} / 作戦目標達成 ＝`, "good", endedAt, "stage-end");
+      if (finalStage) addLog(`＝ ${difficultyRef.current.toUpperCase()} / 全作戦終了 ＝`, "good", endedAt, "campaign");
       setOperationEnd(endedAt);
       setPhase("victory");
       audio.current?.victory();
@@ -845,13 +894,36 @@ export function DeepBlueGrid() {
   const selectedMeta = WEAPON_META[weapon];
   const selectedState = weaponState(weapon);
   const confirmLabel = weapon === "radar" ? "走査実行" : selectedMeta.label + " 発射";
+
+  const retryCurrentStage = () => {
+    const at = Date.now();
+    if (phase === "defeat") {
+      addLog("再出撃命令。進入時艦隊を再編。", "info", at, "withdrawal");
+    } else if (phase !== "placement") {
+      addStageSummary(at);
+      addLog("戦術撤退。現在の交戦結果を破棄し、進入時艦隊で再出撃。", "bad", at);
+      addLog(`＝ STAGE ${stage.id} / 交戦中止・戦術撤退 ＝`, "bad", at, "withdrawal");
+    } else {
+      addLog(`STAGE ${stage.id} 艦隊配置を再設定。`, "info", at);
+    }
+    initStage(stageIndex, difficulty ?? difficultyRef.current, difficulty === "survival" ? survivalFleetRef.current : undefined, true);
+  };
+
+  const addSupplyLog = (nextFleet?: ShipId[]) => {
+    const at = Date.now();
+    addLog("生存艦修復完了。兵装再装填完了。", "good", at);
+    if (difficulty === "survival" && nextFleet) {
+      const nextCells = nextFleet.reduce((total, id) => total + SHIPS.find((ship) => ship.id === id)!.size, 0);
+      const lost = FULL_FLEET.filter((id) => !nextFleet.includes(id));
+      if (lost.length) addLog(`撃沈艦、戦列復帰せず。累積損耗${lost.length}艦。`, "bad", at);
+      addLog(`次海域進入戦力：${nextFleet.length}艦 / ${nextCells}区画。`, "info", at);
+    }
+    addLog("＝ FLEET TRAIN / 艦隊補給 ＝", "good", at, "supply");
+  };
+
   const advanceFromResult = () => {
     if (phase === "defeat") {
-      if (difficulty === "survival") {
-        initStage(stageIndex, "survival", survivalFleetRef.current);
-      } else {
-        initStage(stageIndex);
-      }
+      retryCurrentStage();
     } else if (campaignClear) {
       setDifficulty(null);
       initStage(0);
@@ -861,8 +933,10 @@ export function DeepBlueGrid() {
         const nextFleet = survivingFleet(survivalFleetRef.current, sunkThisStage);
         survivalFleetRef.current = nextFleet;
         setSurvivalFleet(nextFleet);
+        addSupplyLog(nextFleet);
         initStage(stageIndex + 1, "survival", nextFleet);
       } else {
+        addSupplyLog();
         initStage(stageIndex + 1);
       }
     }
@@ -917,7 +991,7 @@ export function DeepBlueGrid() {
           </button>
           <button
             className="retry"
-            onClick={() => initStage(stageIndex, difficulty, difficulty === "survival" ? survivalFleetRef.current : undefined)}
+            onClick={retryCurrentStage}
             disabled={locked || result}
             aria-label="現在のステージをリトライ"
             title="現在のステージをリトライ"
@@ -952,7 +1026,7 @@ export function DeepBlueGrid() {
             </button>
             <button
               className="retry"
-              onClick={() => initStage(stageIndex, difficulty, difficulty === "survival" ? survivalFleetRef.current : undefined)}
+              onClick={retryCurrentStage}
               disabled={locked || result}
               aria-label="現在のステージをリトライ"
               title="現在のステージをリトライ"
@@ -1117,8 +1191,8 @@ export function DeepBlueGrid() {
               <small>{selectedState.available ? selectedMeta.requirement + "を選択後、発射ボタンで確定。" : selectedState.reason}</small>
             </div>
           <div className="battle-log">
-              <span>CIC EVENT LOG / ZULU TIME / LAST {logs.length}</span>
-              <ol>{[...logs].reverse().map((entry) => <li key={entry.id} className={entry.tone}><time>{formatZulu(entry.at)}</time><span>{entry.text}</span></li>)}</ol>
+              <span>CIC EVENT LOG / ZULU TIME / ALL {logs.length}</span>
+              <ol>{[...logs].reverse().map((entry) => <li key={entry.id} className={`${entry.tone} ${entry.kind}`}><time>{formatZulu(entry.at)}</time><span>{entry.text}</span></li>)}</ol>
             </div>
           </section>
           <div className="legend">
@@ -1154,8 +1228,8 @@ export function DeepBlueGrid() {
       {logOpen && (
         <div className="log-drawer-backdrop" onClick={() => setLogOpen(false)}>
           <section className="log-drawer" role="dialog" aria-modal="true" aria-label="バトルログ" onClick={(event) => event.stopPropagation()}>
-            <header><div><span>CIC EVENT LOG / ZULU TIME</span><b>戦闘指揮所記録</b></div><button onClick={() => setLogOpen(false)} aria-label="ログを閉じる">×</button></header>
-            <ol>{[...logs].reverse().map((entry) => <li key={entry.id} className={entry.tone}><time>{formatZulu(entry.at)}</time><span>{entry.text}</span></li>)}</ol>
+            <header><div><span>CIC EVENT LOG / ZULU TIME / ALL {logs.length}</span><b>作戦航海日誌</b></div><button onClick={() => setLogOpen(false)} aria-label="ログを閉じる">×</button></header>
+            <ol>{[...logs].reverse().map((entry) => <li key={entry.id} className={`${entry.tone} ${entry.kind}`}><time>{formatZulu(entry.at)}</time><span>{entry.text}</span></li>)}</ol>
           </section>
         </div>
       )}
@@ -1225,6 +1299,10 @@ export function DeepBlueGrid() {
               <p><span>所見</span>{assessment.finding}</p>
             </section>}
             <div className="result-actions">
+              <button className="cmd open-operation-log" onClick={() => setLogOpen(true)}>
+                <b>FULL OPERATION LOG</b>
+                <small>全ステージ・全交戦記録を表示</small>
+              </button>
               <button className="cmd review-battlefield" onClick={() => { setVisibleBoard("player"); setResultReview(true); }}>
                 <b>{phase === "defeat" ? "POST-ACTION INTELLIGENCE" : "BATTLEFIELD REVIEW"}</b>
                 <small>{phase === "defeat" ? "戦後解析：敵配置確認" : "最終戦況・交戦記録を確認"}</small>

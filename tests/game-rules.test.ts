@@ -4,7 +4,7 @@ import { SHIPS, STAGES } from "../app/game/constants.ts";
 import { Arsenal, Board, SeededRandom, criticalCoordFor, harpoonCells, radarCells, sparrowCells } from "../app/game/engine.ts";
 import { EnemyAI } from "../app/game/EnemyAI.ts";
 import { nextSubmarineWake, submarineWakeCandidates } from "../app/game/SubmarineWake.ts";
-import { FULL_FLEET, playerFleetFor, survivingFleet, usesTacticsRules } from "../app/game/Campaign.ts";
+import { FULL_FLEET, aiSkillFor, playerFleetFor, survivingFleet, usesTacticsRules } from "../app/game/Campaign.ts";
 import { commandAssessment, formatElapsed, formatLocal, formatZulu } from "../app/game/AfterAction.ts";
 
 test("campaign is condensed to six escalating stages", () => {
@@ -12,6 +12,14 @@ test("campaign is condensed to six escalating stages", () => {
   assert.deepEqual(STAGES.map((stage) => stage.id), [1, 2, 3, 4, 5, 6]);
   assert.deepEqual(STAGES.map((stage) => stage.fleet.length), [3, 4, 5, 5, 6, 6]);
   assert.ok(STAGES.every((stage, index) => index === 0 || stage.aiSkill > STAGES[index - 1].aiSkill));
+});
+
+test("stage five eases tactics and survival AI without changing casual or the final stage", () => {
+  assert.equal(aiSkillFor("casual", 5, 1.1), 1.1 * 1.38);
+  assert.equal(aiSkillFor("tactics", 5, 1.1), 1.819);
+  assert.equal(aiSkillFor("survival", 5, 1.1), 1.819);
+  assert.equal(aiSkillFor("tactics", 4, 1.05), 1.05 * 1.7);
+  assert.equal(aiSkillFor("tactics", 6, 1.16), 1.16 * 1.7);
 });
 
 test("after-action timestamps use minute-precision Zulu and local time", () => {

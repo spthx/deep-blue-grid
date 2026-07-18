@@ -40,7 +40,8 @@ test("returning from damage review resets the command to normal fire", async () 
 
 test("survival retries the current stage with its entering fleet", async () => {
   const source = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
-  assert.match(source, /initStage\(stageIndex, "survival", survivalFleetRef\.current\)/);
+  assert.match(source, /difficulty === "survival" \? survivalFleetRef\.current : undefined, true/);
+  assert.match(source, /戦術撤退。現在の交戦結果を破棄し、進入時艦隊で再出撃。/);
   assert.match(source, /現在の残存艦隊で再配置/);
   assert.doesNotMatch(source, /RESTART SURVIVAL/);
 });
@@ -112,8 +113,17 @@ test("battle log drawer and victory battlefield review remain accessible", async
   assert.match(game, /className="log-drawer"/);
   assert.match(game, /BATTLEFIELD REVIEW/);
   assert.match(game, /結果画面へ戻る/);
-  assert.match(game, /slice\(-40\)/);
+  assert.doesNotMatch(game, /slice\(-40\)/);
+  assert.match(game, /FULL OPERATION LOG/);
+  assert.match(game, /作戦航海日誌/);
+  assert.match(game, /＝ STAGE \$\{stage\.id\} \/ \$\{stageAttemptRef/);
+  assert.match(game, /＝ FLEET TRAIN \/ 艦隊補給 ＝/);
+  assert.match(game, /戦果：敵\$\{enemySunk\}艦撃沈/);
+  assert.match(game, /LOST_CAPABILITY\[struckShip\.id\]/);
+  assert.match(game, /coordName\(result\.coord\)/);
   assert.match(css, /\.battle-log ol \{ max-height:76px;[\s\S]*?overflow-y:auto/);
+  assert.match(css, /\.log-drawer li\.stage-start/);
+  assert.match(css, /font-weight:800/);
   assert.match(css, /\.mobile-field-switch \.mobile-switch-utilities \{[\s\S]*?repeat\(3,34px\)/);
   assert.match(css, /\.result-review-bar/);
 });
@@ -123,7 +133,7 @@ test("CIC logs use Zulu timestamps and defeat unlocks factual post-action intell
   const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
   assert.match(game, /CIC EVENT LOG \/ ZULU TIME/);
   assert.match(game, /<time>\{formatZulu\(entry\.at\)\}<\/time>/);
-  assert.match(game, /総員戦闘配置。作戦行動を開始。/);
+  assert.match(game, /総員戦闘配置。/);
   assert.match(game, /自軍艦隊、戦闘能力喪失。/);
   assert.match(game, /作戦続行不能。撤退命令を発令。/);
   assert.match(game, /COMMAND ASSESSMENT/);

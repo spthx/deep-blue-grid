@@ -8,6 +8,11 @@ export function usesTacticsRules(mode: GameMode) {
   return mode === "tactics" || mode === "survival";
 }
 
+export function aiSkillFor(mode: GameMode, stageId: number, base: number) {
+  if (usesTacticsRules(mode) && stageId === 5) return 1.819;
+  return base * (usesTacticsRules(mode) ? 1.7 : 1.38);
+}
+
 export function playerFleetFor(mode: GameMode, stageFleet: ShipId[], survivalFleet: ShipId[]) {
   return mode === "survival" ? [...survivalFleet] : [...stageFleet];
 }
