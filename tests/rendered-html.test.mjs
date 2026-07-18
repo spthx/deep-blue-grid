@@ -71,3 +71,13 @@ test("tactics identification masks contacts and marks critical sections", async 
   assert.match(renderer, /drawCritical/);
   assert.match(renderer, /drawIdentification/);
 });
+
+test("hostile identification remains until review confirmation and mobile confirm aligns right", async () => {
+  const game = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
+  const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+  assert.match(game, /identificationTimer\.current = hostile \? null : setTimeout/);
+  assert.match(game, /const continueToPlayer = \(\) => \{[\s\S]*?setIdentificationAlert\(null\);[\s\S]*?setPhase\("player"\);/);
+  assert.match(game, /hostile persistent/);
+  assert.match(css, /\.identification-alert\.persistent/);
+  assert.match(css, /orientation: portrait[\s\S]*?\.turn-review \.review-confirm \{ width:min\(72%,280px\); min-width:0; justify-self:end; \}/);
+});

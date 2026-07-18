@@ -193,7 +193,7 @@ export function DeepBlueGrid() {
   const showIdentificationAlert = (id: ShipId, hostile: boolean) => {
     if (identificationTimer.current) clearTimeout(identificationTimer.current);
     setIdentificationAlert({ id, hostile });
-    identificationTimer.current = setTimeout(() => setIdentificationAlert(null), 1650);
+    identificationTimer.current = hostile ? null : setTimeout(() => setIdentificationAlert(null), 1650);
   };
 
   const render = useCallback((time: number) => {
@@ -379,6 +379,7 @@ export function DeepBlueGrid() {
   const continueToPlayer = () => {
     setWeapon("fire");
     setPicked([]);
+    setIdentificationAlert(null);
     setPhase("player");
     setFlash("player");
     setMessage("COMMAND：兵装と目標を選択してください。");
@@ -1058,7 +1059,7 @@ export function DeepBlueGrid() {
       {flash && <div className={"turn-flash " + flash}><div>{flash === "player" ? "COMMAND" : "ENEMY ACTION"}</div></div>}
       {identificationAlert && (() => {
         const definition = SHIPS.find((ship) => ship.id === identificationAlert.id)!;
-        return <div className={"identification-alert " + (identificationAlert.hostile ? "hostile" : "friendly")}>
+        return <div className={"identification-alert " + (identificationAlert.hostile ? "hostile persistent" : "friendly")}>
           <b>{identificationAlert.hostile ? "IMPORTANT SECTION HIT" : "CONTACT IDENTIFIED"}</b>
           <span>{identificationAlert.hostile ? "敵に識別されました：" : "敵艦識別："}{definition.name} / {definition.code}</span>
         </div>;

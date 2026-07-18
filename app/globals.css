@@ -253,7 +253,9 @@ button { font: inherit; touch-action: manipulation; }
 .identification-alert span { display:block; margin-top:4px; color:var(--foam); font-size:10px; }
 .identification-alert.hostile { border-color:var(--danger); background:#251216ed; box-shadow:0 0 0 3px #071219,0 0 28px #ff858566; }
 .identification-alert.hostile b { color:var(--danger); }
+.identification-alert.persistent { opacity:1; animation:identificationAlertIn .22s both; }
 @keyframes identificationAlert { 0%{opacity:0;transform:translate(-50%,-12px)} 14%{opacity:1;transform:translate(-50%,0)} 75%{opacity:1} 100%{opacity:0} }
+@keyframes identificationAlertIn { from{opacity:0;transform:translate(-50%,-8px)} to{opacity:1;transform:translate(-50%,0)} }
 .shake { animation:shake .28s linear; }
 @keyframes shake { 20%{transform:translate(4px,-2px)} 45%{transform:translate(-5px,3px)} 70%{transform:translate(3px,2px)} }
 
@@ -367,6 +369,7 @@ button { font: inherit; touch-action: manipulation; }
 
 @media (max-width: 760px) and (orientation: portrait) {
   .utility-overlay { display:none; }
+  .turn-review .review-confirm { width:min(72%,280px); min-width:0; justify-self:end; }
   .mobile-field-switch {
     display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto; align-items:center; gap:5px;
     position:sticky; top:4px; z-index:22; margin:8px 0 6px; padding:6px;
