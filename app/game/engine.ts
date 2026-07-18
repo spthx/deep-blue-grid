@@ -1,4 +1,4 @@
-import { GRID_SIZE, HARPOON_PATTERN, SHIPS, WEAPON_MAX, type Coord, type Orientation, type ShipId } from "./constants.ts";
+import { GRID_SIZE, HARPOON_PATTERN, ORIENTATIONS, SHIPS, WEAPON_MAX, isHorizontal, type Coord, type Orientation, type ShipId } from "./constants.ts";
 
 export type ShotMark = "unknown" | "miss" | "echo" | "hit" | "sunk";
 export type AttackKind = "MISS" | "ECHO" | "HIT" | "SUNK" | "ALREADY";
@@ -20,9 +20,11 @@ export const inBounds = ({ x, y }: Coord) => x >= 0 && y >= 0 && x < GRID_SIZE &
 export const sameCoord = (a: Coord, b: Coord) => a.x === b.x && a.y === b.y;
 export function criticalCoordFor(id: ShipId, start: Coord, orientation: Orientation) {
   const def = SHIPS.find((ship) => ship.id === id)!;
-  return orientation === "horizontal"
-    ? { x: start.x + def.critical.x, y: start.y + def.critical.y }
-    : { x: start.x + def.height - 1 - def.critical.y, y: start.y + def.critical.x };
+  const { x, y } = def.critical;
+  if (orientation === "east") return { x: start.x + x, y: start.y + y };
+  if (orientation === "south") return { x: start.x + def.height - 1 - y, y: start.y + x };
+  if (orientation === "west") return { x: start.x + def.width - 1 - x, y: start.y + def.height - 1 - y };
+  return { x: start.x + y, y: start.y + def.width - 1 - x };
 }
 
 export class Board {
@@ -33,8 +35,9 @@ export class Board {
   reset() { this.ships = []; this.shots = Array.from({ length: GRID_SIZE }, () => Array<ShotMark>(GRID_SIZE).fill("unknown")); this.radarScans = []; }
   cellsFor(start: Coord, size: number, orientation: Orientation, id?: ShipId): Coord[] {
     const def = id ? SHIPS.find((s) => s.id === id) : undefined;
-    const width = def ? (orientation === "horizontal" ? def.width : def.height) : (orientation === "horizontal" ? size : 1);
-    const height = def ? (orientation === "horizontal" ? def.height : def.width) : (orientation === "horizontal" ? 1 : size);
+    const horizontal = isHorizontal(orientation);
+    const width = def ? (horizontal ? def.width : def.height) : (horizontal ? size : 1);
+    const height = def ? (horizontal ? def.height : def.width) : (horizontal ? 1 : size);
     const cells: Coord[] = [];
     for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) cells.push({ x: start.x + x, y: start.y + y });
     return cells;
@@ -60,7 +63,7 @@ export class Board {
     for (const id of fleet) {
       const def = SHIPS.find((ship) => ship.id === id)!;
       const candidates: Array<{ start: Coord; orientation: Orientation }> = [];
-      for (let y = 0; y < GRID_SIZE; y++) for (let x = 0; x < GRID_SIZE; x++) for (const orientation of ["horizontal", "vertical"] as Orientation[]) {
+      for (let y = 0; y < GRID_SIZE; y++) for (let x = 0; x < GRID_SIZE; x++) for (const orientation of ORIENTATIONS) {
         if (this.canPlace(def.id, { x, y }, orientation)) candidates.push({ start: { x, y }, orientation });
       }
       const choice = rng.pick(candidates);

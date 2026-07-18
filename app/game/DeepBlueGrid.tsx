@@ -4,9 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CELL_LABELS,
   GAME_TITLE,
+  ORIENTATIONS,
   SHIPS,
   STAGES,
   WEAPON_MAX,
+  isHorizontal,
   type Coord,
   type Orientation,
   type ShipId,
@@ -93,7 +95,7 @@ export function DeepBlueGrid() {
   const [phase, setPhase] = useState<Phase>("placement");
   const [message, setMessage] = useState(stage.subtitle);
   const [selectedShip, setSelectedShip] = useState<ShipId>(stage.fleet[0]);
-  const [orientation, setOrientation] = useState<Orientation>("horizontal");
+  const [orientation, setOrientation] = useState<Orientation>("east");
   const [placementBackup, setPlacementBackup] = useState<PlacementBackup | null>(null);
   const [cursor, setCursor] = useState<Coord>({ x: 1, y: 2 });
   const [weapon, setWeapon] = useState<WeaponId>("fire");
@@ -110,7 +112,7 @@ export function DeepBlueGrid() {
   const [enemyIdentified, setEnemyIdentified] = useState<ShipId[]>([]);
   const [enemyContactOrder, setEnemyContactOrder] = useState<ShipId[]>([...STAGES[0].fleet]);
   const [identificationAlert, setIdentificationAlert] = useState<{ hostile: boolean; id: ShipId } | null>(null);
-  const [radarAlert, setRadarAlert] = useState<{ contact: boolean } | null>(null);
+  const [radarAlert, setRadarAlert] = useState<{ contact: boolean; hostile: boolean } | null>(null);
   const [logOpen, setLogOpen] = useState(false);
   const [resultReview, setResultReview] = useState(false);
   const [operationStart, setOperationStart] = useState(Date.now());
@@ -165,7 +167,7 @@ export function DeepBlueGrid() {
     setPhase("placement");
     setMessage(nextStage.subtitle);
     setSelectedShip(nextPlayerFleet[0]);
-    setOrientation("horizontal");
+    setOrientation("east");
     setPlacementBackup(null);
     setCursor({ x: 1, y: 2 });
     setWeapon("fire");
@@ -280,7 +282,7 @@ export function DeepBlueGrid() {
   const clearPlacement = () => {
     player.current.reset();
     setSelectedShip(playerFleet[0]);
-    setOrientation("horizontal");
+    setOrientation("east");
     setPlacementBackup(null);
     setCursor({ x: 1, y: 2 });
     setMessage("配置を初期化しました。艦を選び直してください。");
@@ -363,18 +365,20 @@ export function DeepBlueGrid() {
     setFlash(null);
     const decision = ai.current.decide(enemy.current);
     setMessage("ENEMY " + decision.state + "： " + decision.weapon.toUpperCase() + " LOCK");
-    setActive(decision.targets);
-    await sleep(750);
+    setActive(decision.weapon === "radar" ? radarCells(decision.targets[0]) : decision.targets);
+    if (decision.weapon === "radar") audio.current?.sonar();
+    await sleep(decision.weapon === "radar" ? 800 : 750);
 
     if (decision.weapon === "radar") {
-      audio.current?.sonar();
       const contact = player.current.radar(decision.targets[0]);
       ai.current.observeRadar(decision.targets[0], contact);
-      const report = contact ? "敵レーダー、生存艦反応を探知。" : "敵レーダー走査。自軍艦反応なし。";
+      const report = contact ? "敵SPS-10 RADAR：自軍4区画内に生存艦反応。" : "敵SPS-10 RADAR：自軍4区画内に生存艦反応なし。";
       setMessage(report);
       addLog(report, contact ? "bad" : "info");
+      setRadarAlert({ contact, hostile: true });
       bump();
-      await sleep(900);
+      await sleep(1450);
+      setRadarAlert(null);
     } else {
       audio.current?.fire();
       const results: AttackResult[] = [];
@@ -593,7 +597,7 @@ export function DeepBlueGrid() {
       const report = contact ? "CONTACT：黄の破線円4マス内に未破壊区画反応。" : "NO CONTACT：緑の4マス内に未破壊区画なし。";
       setMessage(report);
       addLog("SPS-10 RADAR： " + report, contact ? "good" : "info");
-      setRadarAlert({ contact });
+      setRadarAlert({ contact, hostile: false });
       setPicked([]);
       setActive([]);
       bump();
@@ -628,8 +632,8 @@ export function DeepBlueGrid() {
 
   const clampPlacementOrigin = (shipId: ShipId, shipOrientation: Orientation, coord: Coord) => {
     const definition = SHIPS.find((ship) => ship.id === shipId)!;
-    const width = shipOrientation === "horizontal" ? definition.width : definition.height;
-    const height = shipOrientation === "horizontal" ? definition.height : definition.width;
+    const width = isHorizontal(shipOrientation) ? definition.width : definition.height;
+    const height = isHorizontal(shipOrientation) ? definition.height : definition.width;
     return { x: Math.max(0, Math.min(8 - width, coord.x)), y: Math.max(0, Math.min(8 - height, coord.y)) };
   };
 
@@ -652,7 +656,7 @@ export function DeepBlueGrid() {
       const next = playerFleet.find((id) => !player.current.ships.some((placed) => placed.id === id));
       const placedName = SHIPS.find((ship) => ship.id === selectedShip)!.name;
       if (next) {
-        const nextOrientation: Orientation = "horizontal";
+        const nextOrientation: Orientation = "east";
         setSelectedShip(next);
         setOrientation(nextOrientation);
         setCursor(findPlacementStart(next, nextOrientation, coord));
@@ -669,7 +673,7 @@ export function DeepBlueGrid() {
 
   const rotatePlacement = () => {
     if (!placementPreviewActive) return;
-    const nextOrientation: Orientation = orientation === "horizontal" ? "vertical" : "horizontal";
+    const nextOrientation = ORIENTATIONS[(ORIENTATIONS.indexOf(orientation) + 1) % ORIENTATIONS.length];
     const nextCursor = player.current.canPlace(selectedShip, cursor, nextOrientation)
       ? cursor
       : findPlacementStart(selectedShip, nextOrientation, cursor);
@@ -716,7 +720,7 @@ export function DeepBlueGrid() {
       rotatePlacement();
       return;
     }
-    const nextOrientation: Orientation = "horizontal";
+    const nextOrientation: Orientation = "east";
     setSelectedShip(shipId);
     setOrientation(nextOrientation);
     setCursor(findPlacementStart(shipId, nextOrientation));
@@ -1122,7 +1126,7 @@ export function DeepBlueGrid() {
           {placementPreviewActive && (
             <div className="placement-dock" aria-label="艦の配置操作">
               <button className="cmd placement-rotate" onClick={rotatePlacement}>
-                <b>↻ 90°回転</b><small>{orientation === "horizontal" ? "現在：横向き" : "現在：縦向き"}</small>
+                <b>↻ 90°回転</b><small>現在：{{ east: "東", south: "南", west: "西", north: "北" }[orientation]}向き</small>
               </button>
               <button
                 className={"cmd primary placement-confirm " + (placementValid ? "ready" : "")}
@@ -1212,10 +1216,12 @@ export function DeepBlueGrid() {
       )}
 
       {flash && <div className={"turn-flash " + flash}><div>{flash === "player" ? "COMMAND" : "ENEMY ACTION"}</div></div>}
-      {radarAlert && <div className={"radar-result " + (radarAlert.contact ? "contact" : "clear")}>
-        <small>SPS-10 RADAR SCAN</small>
+      {radarAlert && <div className={"radar-result " + (radarAlert.contact ? "contact" : "clear") + (radarAlert.hostile ? " hostile" : "")}>
+        <small>{radarAlert.hostile ? "ENEMY SPS-10 RADAR SCAN" : "SPS-10 RADAR SCAN"}</small>
         <b>{radarAlert.contact ? "CONTACT!" : "NO CONTACT"}</b>
-        <span>{radarAlert.contact ? "4区画内に敵影あり" : "4区画内に敵影なし"}</span>
+        <span>{radarAlert.hostile
+          ? radarAlert.contact ? "自軍4区画内に生存艦反応" : "自軍4区画内に生存艦反応なし"
+          : radarAlert.contact ? "4区画内に敵影あり" : "4区画内に敵影なし"}</span>
       </div>}
       {identificationAlert && (() => {
         const definition = SHIPS.find((ship) => ship.id === identificationAlert.id)!;

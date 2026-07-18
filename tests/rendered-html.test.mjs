@@ -50,6 +50,8 @@ test("placement uses explicit rotate and confirm controls", async () => {
   const source = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
   assert.match(source, /placement-dock/);
   assert.match(source, /90°回転/);
+  assert.match(source, /ORIENTATIONS\.indexOf\(orientation\) \+ 1/);
+  assert.match(source, /east: "東", south: "南", west: "西", north: "北"/);
   assert.match(source, /配置決定/);
   assert.doesNotMatch(source, /シルエットをタップして確定/);
 });
@@ -71,6 +73,14 @@ test("radar scan announces its binary result over the playfield", async () => {
   assert.match(game, /4区画内に敵影なし/);
   assert.match(game, /ESCORT SUPPORT：F-4出撃回数＋1/);
   assert.match(css, /\.radar-result/);
+});
+
+test("enemy radar uses the same four-cell scan and result overlay", async () => {
+  const game = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
+  assert.match(game, /setActive\(decision\.weapon === "radar" \? radarCells\(decision\.targets\[0\]\) : decision\.targets\)/);
+  assert.match(game, /sleep\(decision\.weapon === "radar" \? 800 : 750\)/);
+  assert.match(game, /setRadarAlert\(\{ contact, hostile: true \}\)/);
+  assert.match(game, /ENEMY SPS-10 RADAR SCAN/);
 });
 
 test("tactics identification masks contacts and marks critical sections", async () => {

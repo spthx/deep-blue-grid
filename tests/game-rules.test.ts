@@ -65,7 +65,7 @@ test("survival assessment recognizes cumulative losses and a near victory under 
   assert.deepEqual(report.facts[0], { label: "作戦開始戦力", value: "自軍 2艦・5区画 / 敵軍 6艦・20区画" });
   assert.deepEqual(report.facts[1], { label: "累積損耗", value: "4艦：空母 / 巡洋艦 / 護衛艦 / 潜水艦" });
   assert.match(report.finding, /作戦開始時より敵側優勢/);
-  assert.match(report.finding, /敵戦闘能力の大部分を減殺/);
+  assert.match(report.finding, /敵艦隊戦力の大半を減殺/);
   assert.doesNotMatch(report.finding, /再検討|投入.*余地/);
 });
 
@@ -80,6 +80,8 @@ test("survival assessment records limited results without blaming an outmatched 
     },
   });
   assert.match(report.finding, /敵艦隊、3区画損傷/);
+  assert.match(report.finding, /戦闘能力低下を確認/);
+  assert.doesNotMatch(report.finding, /減殺/);
   assert.match(report.finding, /作戦続行不能/);
   assert.doesNotMatch(report.finding, /再検討|判断ミス|失敗/);
 });
@@ -119,20 +121,20 @@ test("every campaign fleet can be placed legally", () => {
 
 test("carrier uses a rotatable 2 by 4 footprint", () => {
   const horizontal = new Board();
-  assert.equal(horizontal.placeShip("carrier", { x: 4, y: 6 }, "horizontal"), true);
+  assert.equal(horizontal.placeShip("carrier", { x: 4, y: 6 }, "east"), true);
   assert.equal(horizontal.ships[0].cells.length, 8);
   assert.equal(new Set(horizontal.ships[0].cells.map((cell) => cell.y)).size, 2);
   const vertical = new Board();
-  assert.equal(vertical.placeShip("carrier", { x: 6, y: 4 }, "vertical"), true);
+  assert.equal(vertical.placeShip("carrier", { x: 6, y: 4 }, "south"), true);
   assert.equal(new Set(vertical.ships[0].cells.map((cell) => cell.x)).size, 2);
-  assert.equal(vertical.placeShip("destroyer", { x: 6, y: 4 }, "horizontal"), false);
-  assert.equal(new Board().placeShip("carrier", { x: 5, y: 7 }, "horizontal"), false);
+  assert.equal(vertical.placeShip("destroyer", { x: 6, y: 4 }, "east"), false);
+  assert.equal(new Board().placeShip("carrier", { x: 5, y: 7 }, "east"), false);
 });
 
 test("critical sections rotate with ships and identify without bonus damage", () => {
-  const horizontal = new Board(); horizontal.placeShip("carrier", { x: 1, y: 1 }, "horizontal");
-  const vertical = new Board(); vertical.placeShip("carrier", { x: 1, y: 1 }, "vertical");
-  assert.deepEqual(horizontal.ships[0].critical, criticalCoordFor("carrier", { x: 1, y: 1 }, "horizontal"));
+  const horizontal = new Board(); horizontal.placeShip("carrier", { x: 1, y: 1 }, "east");
+  const vertical = new Board(); vertical.placeShip("carrier", { x: 1, y: 1 }, "south");
+  assert.deepEqual(horizontal.ships[0].critical, criticalCoordFor("carrier", { x: 1, y: 1 }, "east"));
   assert.deepEqual(horizontal.ships[0].critical, { x: 3, y: 1 });
   assert.deepEqual(vertical.ships[0].critical, { x: 2, y: 3 });
   const report = horizontal.attack(horizontal.ships[0].critical);
@@ -145,8 +147,18 @@ test("critical sections rotate with ships and identify without bonus damage", ()
   assert.equal(ordinary.shipId, undefined);
 });
 
+test("four facing directions rotate asymmetric critical sections through a full circle", () => {
+  const start = { x: 1, y: 1 };
+  assert.deepEqual(criticalCoordFor("carrier", start, "east"), { x: 3, y: 1 });
+  assert.deepEqual(criticalCoordFor("carrier", start, "south"), { x: 2, y: 3 });
+  assert.deepEqual(criticalCoordFor("carrier", start, "west"), { x: 2, y: 2 });
+  assert.deepEqual(criticalCoordFor("carrier", start, "north"), { x: 1, y: 2 });
+  assert.deepEqual(criticalCoordFor("cruiser", start, "east"), { x: 3, y: 1 });
+  assert.deepEqual(criticalCoordFor("cruiser", start, "west"), { x: 2, y: 1 });
+});
+
 test("the one-cell submarine identifies and sinks on the same critical hit", () => {
-  const board = new Board(); board.placeShip("submarine", { x: 4, y: 5 }, "horizontal");
+  const board = new Board(); board.placeShip("submarine", { x: 4, y: 5 }, "east");
   const report = board.attack({ x: 4, y: 5 });
   assert.equal(report.kind, "SUNK");
   assert.equal(report.criticalHit, true);
@@ -155,24 +167,24 @@ test("the one-cell submarine identifies and sinks on the same critical hit", () 
 
 test("placement rejects overlap, duplicates, and out of bounds", () => {
   const b = new Board();
-  assert.equal(b.placeShip("battleship", { x: 4, y: 0 }, "horizontal"), false);
-  assert.equal(b.placeShip("battleship", { x: 0, y: 0 }, "horizontal"), true);
-  assert.equal(b.placeShip("battleship", { x: 0, y: 2 }, "horizontal"), false);
-  assert.equal(b.placeShip("destroyer", { x: 0, y: 0 }, "vertical"), false);
-  assert.equal(b.placeShip("destroyer", { x: 7, y: 5 }, "vertical"), true);
+  assert.equal(b.placeShip("battleship", { x: 4, y: 0 }, "east"), false);
+  assert.equal(b.placeShip("battleship", { x: 0, y: 0 }, "east"), true);
+  assert.equal(b.placeShip("battleship", { x: 0, y: 2 }, "east"), false);
+  assert.equal(b.placeShip("destroyer", { x: 0, y: 0 }, "south"), false);
+  assert.equal(b.placeShip("destroyer", { x: 7, y: 5 }, "south"), true);
 });
 
 test("a placed ship can be picked up for deliberate repositioning", () => {
   const board = new Board();
-  board.placeShip("destroyer", { x: 1, y: 1 }, "horizontal");
+  board.placeShip("destroyer", { x: 1, y: 1 }, "east");
   const removed = board.removeShip("destroyer");
   assert.equal(removed?.id, "destroyer");
   assert.equal(board.ships.length, 0);
-  assert.equal(board.placeShip("destroyer", { x: 2, y: 3 }, "vertical"), true);
+  assert.equal(board.placeShip("destroyer", { x: 2, y: 3 }, "south"), true);
 });
 
 test("attacks cannot double damage and sink on the final segment", () => {
-  const b = new Board(); b.placeShip("destroyer", { x: 1, y: 1 }, "horizontal");
+  const b = new Board(); b.placeShip("destroyer", { x: 1, y: 1 }, "east");
   assert.equal(b.attack({ x: 1, y: 1 }).kind, "HIT");
   assert.equal(b.attack({ x: 1, y: 1 }).kind, "ALREADY");
   assert.equal(b.attack({ x: 2, y: 1 }).kind, "HIT");
@@ -181,15 +193,15 @@ test("attacks cannot double damage and sink on the final segment", () => {
 });
 
 test("near miss reports only a generic echo", () => {
-  const b = new Board(); b.placeShip("submarine", { x: 3, y: 3 }, "horizontal");
+  const b = new Board(); b.placeShip("submarine", { x: 3, y: 3 }, "east");
   assert.deepEqual(b.attack({ x: 2, y: 2 }), { coord: { x: 2, y: 2 }, kind: "ECHO" });
   assert.equal(b.attack({ x: 0, y: 0 }).kind, "MISS");
 });
 
 test("wake marks appear beside the final submarine without revealing its cell", () => {
   const board = new Board();
-  board.placeShip("battleship", { x: 0, y: 0 }, "horizontal");
-  board.placeShip("submarine", { x: 7, y: 7 }, "horizontal");
+  board.placeShip("battleship", { x: 0, y: 0 }, "east");
+  board.placeShip("submarine", { x: 7, y: 7 }, "east");
   const rng = new SeededRandom(77);
   assert.equal(nextSubmarineWake(board, [], rng), null);
   for (let x = 0; x < 5; x++) board.attack({ x, y: 0 });
@@ -202,7 +214,7 @@ test("wake marks appear beside the final submarine without revealing its cell", 
 });
 
 test("AI receives the same public submarine wake candidates as the player", () => {
-  const own = new Board(); own.placeShip("submarine", { x: 0, y: 0 }, "horizontal");
+  const own = new Board(); own.placeShip("submarine", { x: 0, y: 0 }, "east");
   const ai = new EnemyAI(new SeededRandom(88), ["submarine"], 1.7, "tactics");
   const wave = { x: 3, y: 3 };
   ai.observeWake(wave);
@@ -213,7 +225,7 @@ test("AI receives the same public submarine wake candidates as the player", () =
 });
 
 test("AI finishes a publicly inferred 2 by 4 carrier footprint after five hits", () => {
-  const own = new Board(); own.placeShip("submarine", { x: 0, y: 0 }, "horizontal");
+  const own = new Board(); own.placeShip("submarine", { x: 0, y: 0 }, "east");
   const ai = new EnemyAI(new SeededRandom(91), ["carrier"], 1.7, "tactics");
   ai.arsenal.uses = { phantom: 0, harpoon: 0, sparrow: 0, mk45: 0, radar: 0 };
   const knownHits = [{ x: 1, y: 1 }, { x: 4, y: 1 }, { x: 1, y: 2 }, { x: 2, y: 2 }, { x: 3, y: 2 }];
@@ -236,7 +248,7 @@ test("tactics AI records a critical-section identification while casual AI ignor
 test("weapon patterns clip safely and radar never damages", () => {
   assert.equal(harpoonCells({ x: 4, y: 4 }).length, 5);
   assert.equal(harpoonCells({ x: 0, y: 0 }).length, 2);
-  const b = new Board(); b.placeShip("submarine", { x: 1, y: 1 }, "horizontal");
+  const b = new Board(); b.placeShip("submarine", { x: 1, y: 1 }, "east");
   assert.equal(radarCells({ x: 0, y: 0 }).length, 4);
   assert.equal(b.radar({ x: 0, y: 0 }), true);
   assert.equal(b.ships[0].hits.size, 0);
@@ -244,7 +256,7 @@ test("weapon patterns clip safely and radar never damages", () => {
 });
 
 test("radar contact only records unbroken enemy sections", () => {
-  const b = new Board(); b.placeShip("destroyer", { x: 1, y: 1 }, "horizontal");
+  const b = new Board(); b.placeShip("destroyer", { x: 1, y: 1 }, "east");
   b.attack({ x: 1, y: 1 });
   assert.equal(b.radar({ x: 0, y: 0 }), false);
   assert.equal(b.radar({ x: 1, y: 1 }), true);
@@ -254,7 +266,7 @@ test("radar contact only records unbroken enemy sections", () => {
 });
 
 test("carrier loss disables remaining weapon uses", () => {
-  const b = new Board(); b.placeShip("battleship", { x: 0, y: 0 }, "horizontal");
+  const b = new Board(); b.placeShip("battleship", { x: 0, y: 0 }, "east");
   const arsenal = new Arsenal();
   assert.equal(arsenal.canUse("harpoon", b), true);
   for (let x = 0; x < 5; x++) b.attack({ x, y: 0 });
@@ -263,7 +275,7 @@ test("carrier loss disables remaining weapon uses", () => {
 });
 
 test("harpoon keeps two symmetric uses per stage", () => {
-  const own = new Board(); own.placeShip("battleship", { x: 0, y: 0 }, "horizontal");
+  const own = new Board(); own.placeShip("battleship", { x: 0, y: 0 }, "east");
   const arsenal = new Arsenal();
   assert.equal(arsenal.uses.harpoon, 2);
   assert.equal(arsenal.spend("harpoon", own), true);
@@ -273,8 +285,8 @@ test("harpoon keeps two symmetric uses per stage", () => {
 
 test("escort grants one additional F-4 sortie while both ships survive", () => {
   const own = new Board();
-  own.placeShip("carrier", { x: 0, y: 0 }, "horizontal");
-  own.placeShip("escort", { x: 0, y: 3 }, "horizontal");
+  own.placeShip("carrier", { x: 0, y: 0 }, "east");
+  own.placeShip("escort", { x: 0, y: 3 }, "east");
   const arsenal = new Arsenal();
   assert.equal(arsenal.availableUses("phantom", own), 2);
   assert.equal(arsenal.spend("phantom", own), true);
@@ -285,7 +297,7 @@ test("escort grants one additional F-4 sortie while both ships survive", () => {
 });
 
 test("carrier keeps one F-4 sortie when no escort is deployed", () => {
-  const own = new Board(); own.placeShip("carrier", { x: 0, y: 0 }, "horizontal");
+  const own = new Board(); own.placeShip("carrier", { x: 0, y: 0 }, "east");
   const arsenal = new Arsenal();
   assert.equal(arsenal.maxUses("phantom", own), 1);
   assert.equal(arsenal.availableUses("phantom", own), 1);

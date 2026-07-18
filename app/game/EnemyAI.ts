@@ -1,4 +1,4 @@
-import { GRID_SIZE, SHIPS, type Coord, type ShipId } from "./constants.ts";
+import { GRID_SIZE, ORIENTATIONS, SHIPS, isHorizontal, type Coord, type ShipId } from "./constants.ts";
 import { Arsenal, Board, SeededRandom, criticalCoordFor, harpoonCells, inBounds, keyOf, radarCells, sameCoord, sparrowCells, type AttackResult, type ShotMark } from "./engine.ts";
 import { submarineWakeCandidates } from "./SubmarineWake.ts";
 
@@ -139,19 +139,19 @@ export class EnemyAI {
   }
   private placementsFor(id: ShipId) {
     const ship = SHIPS.find((candidate) => candidate.id === id)!;
-    const dimensions = ship.width === ship.height
-      ? [[ship.width, ship.height]]
-      : [[ship.width, ship.height], [ship.height, ship.width]];
     const placements: Coord[][] = [];
-    for (const [index, [width, height]] of dimensions.entries()) for (let y = 0; y <= GRID_SIZE - height; y++) for (let x = 0; x <= GRID_SIZE - width; x++) {
-      const orientation = index === 0 ? "horizontal" : "vertical";
-      const identifiedAt = this.identifiedShips.get(id);
-      if (identifiedAt && !sameCoord(criticalCoordFor(id, { x, y }, orientation), identifiedAt)) continue;
-      const cells: Coord[] = [];
-      for (let dy = 0; dy < height; dy++) for (let dx = 0; dx < width; dx++) cells.push({ x: x + dx, y: y + dy });
-      const overlapsOtherIdentification = [...this.identifiedShips].some(([identifiedId, coord]) => identifiedId !== id && cells.some((cell) => sameCoord(cell, coord)));
-      if (overlapsOtherIdentification) continue;
-      if (cells.every((cell) => !["miss", "echo", "sunk"].includes(this.knowledge[cell.y][cell.x]))) placements.push(cells);
+    for (const orientation of ORIENTATIONS) {
+      const width = isHorizontal(orientation) ? ship.width : ship.height;
+      const height = isHorizontal(orientation) ? ship.height : ship.width;
+      for (let y = 0; y <= GRID_SIZE - height; y++) for (let x = 0; x <= GRID_SIZE - width; x++) {
+        const identifiedAt = this.identifiedShips.get(id);
+        if (identifiedAt && !sameCoord(criticalCoordFor(id, { x, y }, orientation), identifiedAt)) continue;
+        const cells: Coord[] = [];
+        for (let dy = 0; dy < height; dy++) for (let dx = 0; dx < width; dx++) cells.push({ x: x + dx, y: y + dy });
+        const overlapsOtherIdentification = [...this.identifiedShips].some(([identifiedId, coord]) => identifiedId !== id && cells.some((cell) => sameCoord(cell, coord)));
+        if (overlapsOtherIdentification) continue;
+        if (cells.every((cell) => !["miss", "echo", "sunk"].includes(this.knowledge[cell.y][cell.x]))) placements.push(cells);
+      }
     }
     return placements;
   }

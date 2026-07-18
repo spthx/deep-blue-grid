@@ -49,13 +49,13 @@ function survivalFinding(input: AssessmentInput) {
   const termination = "自軍艦隊、戦闘能力喪失。作戦続行不能。";
 
   if (input.enemyRemainingCells <= 2) {
-    return `${situation}敵艦隊、残存${input.enemyRemainingCells}区画。敵戦闘能力の大部分を減殺。${termination}`;
+    return `${situation}敵艦隊、残存${input.enemyRemainingCells}区画。敵艦隊戦力の大半を減殺。${termination}`;
   }
   if (enemyShipsSunk > 0) {
-    return `${situation}敵${enemyShipsSunk}艦撃沈、${enemyCellsDestroyed}区画破壊。敵戦力の減殺を確認。${termination}`;
+    return `${situation}敵${enemyShipsSunk}艦撃沈、${enemyCellsDestroyed}区画破壊。敵艦隊戦力の減殺を確認。${termination}`;
   }
   if (enemyCellsDestroyed > 0) {
-    return `${situation}敵艦隊、${enemyCellsDestroyed}区画損傷。敵戦力の減殺途上。${termination}`;
+    return `${situation}敵艦隊、${enemyCellsDestroyed}区画損傷。戦闘能力低下を確認。${termination}`;
   }
   return `${situation}敵艦隊への有効損害なし。${termination}`;
 }

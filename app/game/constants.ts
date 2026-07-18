@@ -4,8 +4,11 @@ export const CELL_LABELS = "ABCDEFGH";
 
 export type ShipId = "carrier" | "battleship" | "cruiser" | "destroyer" | "escort" | "submarine";
 export type WeaponId = "fire" | "phantom" | "harpoon" | "sparrow" | "mk45" | "radar";
-export type Orientation = "horizontal" | "vertical";
+export const ORIENTATIONS = ["east", "south", "west", "north"] as const;
+export type Orientation = typeof ORIENTATIONS[number];
 export type Coord = { x: number; y: number };
+
+export const isHorizontal = (orientation: Orientation) => orientation === "east" || orientation === "west";
 
 export const SHIPS: ReadonlyArray<{ id: ShipId; name: string; code: string; size: number; width: number; height: number; weapon: string; critical: Coord }> = [
   { id: "carrier", name: "空母", code: "CV-08", size: 8, width: 4, height: 2, weapon: "F-4 PHANTOM", critical: { x: 2, y: 0 } },
