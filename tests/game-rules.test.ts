@@ -44,6 +44,38 @@ test("command assessment changes its finding for prolonged low-accuracy searches
   assert.match(report.finding, /候補海域圧縮/);
 });
 
+test("survival assessment recognizes cumulative losses and a near victory under disadvantage", () => {
+  const report = commandAssessment({
+    enemyRemainingShips: 1, enemyRemainingCells: 2, accuracy: 41, shots: 29,
+    specialUsed: 1, unusedSpecials: [], firstLoss: "battleship",
+    identified: 3, enemyTotalShips: 6, identificationRules: true,
+    survival: {
+      playerEntryShips: 2, playerEntryCells: 5, enemyEntryShips: 6, enemyEntryCells: 20,
+      previousLosses: ["carrier", "cruiser", "escort", "submarine"],
+    },
+  });
+  assert.deepEqual(report.facts[0], { label: "作戦開始戦力", value: "自軍 2艦・5区画 / 敵軍 6艦・20区画" });
+  assert.deepEqual(report.facts[1], { label: "累積損耗", value: "4艦：空母 / 巡洋艦 / 護衛艦 / 潜水艦" });
+  assert.match(report.finding, /作戦開始時より敵側優勢/);
+  assert.match(report.finding, /敵戦闘能力の大部分を減殺/);
+  assert.doesNotMatch(report.finding, /再検討|投入.*余地/);
+});
+
+test("survival assessment records limited results without blaming an outmatched fleet", () => {
+  const report = commandAssessment({
+    enemyRemainingShips: 6, enemyRemainingCells: 17, accuracy: 20, shots: 15,
+    specialUsed: 0, unusedSpecials: [], firstLoss: "destroyer",
+    identified: 0, enemyTotalShips: 6, identificationRules: true,
+    survival: {
+      playerEntryShips: 2, playerEntryCells: 4, enemyEntryShips: 6, enemyEntryCells: 20,
+      previousLosses: ["carrier", "battleship", "cruiser", "submarine"],
+    },
+  });
+  assert.match(report.finding, /敵艦隊、3区画損傷/);
+  assert.match(report.finding, /作戦続行不能/);
+  assert.doesNotMatch(report.finding, /再検討|判断ミス|失敗/);
+});
+
 test("survival starts with every ship and permanently removes sunk ships", () => {
   assert.equal(FULL_FLEET.length, SHIPS.length);
   assert.deepEqual(playerFleetFor("survival", STAGES[0].fleet, FULL_FLEET), FULL_FLEET);

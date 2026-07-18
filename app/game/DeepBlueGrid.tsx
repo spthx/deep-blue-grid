@@ -814,6 +814,7 @@ export function DeepBlueGrid() {
   const campaignClear = phase === "victory" && stageIndex === STAGES.length - 1;
   const enemyRemainingShips = enemy.current.ships.filter((ship) => !ship.sunk).length;
   const enemyRemainingCells = enemy.current.ships.reduce((sum, ship) => sum + Math.max(0, ship.size - ship.hits.size), 0);
+  const enemyFleetCells = stage.fleet.reduce((total, id) => total + SHIPS.find((ship) => ship.id === id)!.size, 0);
   const unusedSpecials = (["phantom", "harpoon", "sparrow", "mk45", "radar"] as const).flatMap((id): UnusedSpecial[] => {
     const carrier = WEAPON_META[id].carrier;
     if (!carrier || !playerFleet.includes(carrier)) return [];
@@ -833,6 +834,13 @@ export function DeepBlueGrid() {
     identified: enemyIdentified.length,
     enemyTotalShips: stage.fleet.length,
     identificationRules,
+    survival: difficulty === "survival" ? {
+      playerEntryShips: playerFleet.length,
+      playerEntryCells: fleetCells,
+      enemyEntryShips: stage.fleet.length,
+      enemyEntryCells: enemyFleetCells,
+      previousLosses: FULL_FLEET.filter((id) => !playerFleet.includes(id)),
+    } : undefined,
   }) : null;
   const selectedMeta = WEAPON_META[weapon];
   const selectedState = weaponState(weapon);

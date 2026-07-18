@@ -1,6 +1,13 @@
 import { SHIPS, type ShipId } from "./constants.ts";
 
 export type UnusedSpecial = { label: string; uses: number };
+export type SurvivalAssessmentContext = {
+  playerEntryShips: number;
+  playerEntryCells: number;
+  enemyEntryShips: number;
+  enemyEntryCells: number;
+  previousLosses: ShipId[];
+};
 export type AssessmentInput = {
   enemyRemainingShips: number;
   enemyRemainingCells: number;
@@ -12,6 +19,7 @@ export type AssessmentInput = {
   identified: number;
   enemyTotalShips: number;
   identificationRules: boolean;
+  survival?: SurvivalAssessmentContext;
 };
 
 export type CommandAssessment = {
@@ -25,6 +33,33 @@ const capabilityFinding: Partial<Record<ShipId, string>> = {
   submarine: "音響捜索能力を喪失。以後、レーダーによる候補海域圧縮不能。",
 };
 
+function survivalFinding(input: AssessmentInput) {
+  const context = input.survival;
+  if (!context) return null;
+
+  const cumulativeLosses = context.previousLosses.length;
+  const enemyAdvantage = context.playerEntryCells < context.enemyEntryCells;
+  if (!cumulativeLosses && !enemyAdvantage) return null;
+
+  const enemyShipsSunk = Math.max(0, context.enemyEntryShips - input.enemyRemainingShips);
+  const enemyCellsDestroyed = Math.max(0, context.enemyEntryCells - input.enemyRemainingCells);
+  const situation = enemyAdvantage
+    ? "作戦開始時より敵側優勢。"
+    : `累積損耗${cumulativeLosses}艦。残存艦隊で交戦。`;
+  const termination = "自軍艦隊、戦闘能力喪失。作戦続行不能。";
+
+  if (input.enemyRemainingCells <= 2) {
+    return `${situation}敵艦隊、残存${input.enemyRemainingCells}区画。敵戦闘能力の大部分を減殺。${termination}`;
+  }
+  if (enemyShipsSunk > 0) {
+    return `${situation}敵${enemyShipsSunk}艦撃沈、${enemyCellsDestroyed}区画破壊。敵戦力の減殺を確認。${termination}`;
+  }
+  if (enemyCellsDestroyed > 0) {
+    return `${situation}敵艦隊、${enemyCellsDestroyed}区画損傷。敵戦力の減殺途上。${termination}`;
+  }
+  return `${situation}敵艦隊への有効損害なし。${termination}`;
+}
+
 export function commandAssessment(input: AssessmentInput): CommandAssessment {
   const firstLoss = input.firstLoss ? SHIPS.find((ship) => ship.id === input.firstLoss) : undefined;
   const unusedTotal = input.unusedSpecials.reduce((sum, weapon) => sum + weapon.uses, 0);
@@ -35,11 +70,30 @@ export function commandAssessment(input: AssessmentInput): CommandAssessment {
     { label: "攻撃命中率", value: input.shots ? `${input.accuracy}%` : "射撃記録なし" },
     { label: "特殊兵装", value: `投入${input.specialUsed} / 未投入 ${unusedLabel}` },
   ];
+  if (input.survival) {
+    const lostNames = input.survival.previousLosses
+      .map((id) => SHIPS.find((ship) => ship.id === id)?.name)
+      .filter(Boolean)
+      .join(" / ");
+    const enemyShipsSunk = Math.max(0, input.survival.enemyEntryShips - input.enemyRemainingShips);
+    const enemyCellsDestroyed = Math.max(0, input.survival.enemyEntryCells - input.enemyRemainingCells);
+    facts.unshift(
+      {
+        label: "作戦開始戦力",
+        value: `自軍 ${input.survival.playerEntryShips}艦・${input.survival.playerEntryCells}区画 / 敵軍 ${input.survival.enemyEntryShips}艦・${input.survival.enemyEntryCells}区画`,
+      },
+      { label: "累積損耗", value: input.survival.previousLosses.length ? `${input.survival.previousLosses.length}艦：${lostNames}` : "なし" },
+      { label: "当該海域戦果", value: `${enemyShipsSunk}艦撃沈 / ${enemyCellsDestroyed}区画破壊` },
+    );
+  }
   if (input.identificationRules) facts.push({ label: "敵艦識別", value: `${input.identified} / ${input.enemyTotalShips}` });
 
   const capability = input.firstLoss ? capabilityFinding[input.firstLoss] ?? "" : "";
   let finding: string;
-  if (input.enemyRemainingCells <= 2) {
+  const survivalAssessment = survivalFinding(input);
+  if (survivalAssessment) {
+    finding = survivalAssessment;
+  } else if (input.enemyRemainingCells <= 2) {
     finding = `敵艦隊、残存${input.enemyRemainingCells}区画。${capability}`;
     finding += unusedTotal > 0
       ? "残存兵装の早期投入により、敵戦闘能力を先行して奪う余地あり。"
