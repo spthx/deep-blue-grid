@@ -238,6 +238,8 @@ button { font: inherit; touch-action: manipulation; }
 .legend i { display:inline-block; width:7px; height:7px; margin-right:4px; border-radius:50%; }
 .legend .miss{background:var(--steel)} .legend .echo{border:1px solid var(--cyan)} .legend .hit{background:var(--danger)} .legend .sunk{background:var(--amber)}
 .legend .wake { border:1px solid var(--cyan); background:#7ce5df33; box-shadow:0 0 6px #7ce5df88; }
+.radar-contact-legend { color:var(--amber); }
+.radar-clear-legend { color:#60be9d; }
 .critical-legend { color:var(--amber); }
 
 .turn-flash { position:fixed; inset:0; display:grid; place-items:center; z-index:25; pointer-events:none; background:#06131daa; animation:turnFlash 1.05s both; }

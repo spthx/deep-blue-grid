@@ -55,8 +55,9 @@ test("placement uses explicit rotate and confirm controls", async () => {
 
 test("radar contact and clear scans use restrained grid colors", async () => {
   const source = await readFile(new URL("../app/game/Renderer.ts", import.meta.url), "utf8");
-  assert.match(source, /rgba\(229,215,138,\.18\)/);
-  assert.match(source, /rgba\(76,151,133,\.105\)/);
+  assert.match(source, /setLineDash\(\[cell\*\.11,cell\*\.075\]\)/);
+  assert.match(source, /ctx\.arc\(px\+cell\*\.5,py\+cell\*\.5,cell\*\.31/);
+  assert.match(source, /rgba\(76,151,133,\.13\)/);
   assert.match(source, /contactResolved/);
   assert.match(source, /board\.shots\[coord\.y\]\[coord\.x\]!=="unknown"/);
 });
@@ -64,9 +65,10 @@ test("radar contact and clear scans use restrained grid colors", async () => {
 test("radar scan announces its binary result over the playfield", async () => {
   const game = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
   const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
-  assert.match(game, /CONTACT : \{radarAlert\.contact \? "1" : "0"\}/);
+  assert.match(game, /radarAlert\.contact \? "CONTACT!" : "NO CONTACT"/);
   assert.match(game, /4区画内に敵影あり/);
   assert.match(game, /4区画内に敵影なし/);
+  assert.match(game, /ESCORT SUPPORT：F-4出撃回数＋1/);
   assert.match(css, /\.radar-result/);
 });
 

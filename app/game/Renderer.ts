@@ -32,12 +32,18 @@ export function drawBoard(canvas: HTMLCanvasElement, board: Board, opts: RenderO
     }
   }
   for(const {coord,contact} of radarMarks.values()){
-    ctx.fillStyle=contact?"rgba(229,215,138,.18)":"rgba(76,151,133,.105)";
-    ctx.strokeStyle=contact?"rgba(229,215,138,.62)":"rgba(96,174,153,.3)";
-    ctx.lineWidth=Math.max(1,dpr*1.05);
     const px=m+coord.x*cell,py=m+coord.y*cell;
-    ctx.fillRect(px+1,py+1,cell-2,cell-2);
-    ctx.strokeRect(px+2,py+2,cell-4,cell-4);
+    ctx.save();
+    ctx.lineWidth=Math.max(1.5,dpr*1.25);
+    if(contact){
+      ctx.strokeStyle="rgba(229,215,138,.82)";
+      ctx.setLineDash([cell*.11,cell*.075]);
+      ctx.beginPath();ctx.arc(px+cell*.5,py+cell*.5,cell*.31,0,Math.PI*2);ctx.stroke();
+    }else{
+      ctx.fillStyle="rgba(76,151,133,.13)";ctx.strokeStyle="rgba(96,190,157,.52)";
+      ctx.fillRect(px+1,py+1,cell-2,cell-2);ctx.strokeRect(px+2,py+2,cell-4,cell-4);
+    }
+    ctx.restore();
   }
   for(const ship of board.ships) if(opts.revealShips||ship.sunk) drawShip(ctx,ship.id,ship.cells,ship.orientation,m,cell,ship.sunk,ship.hits);
   if(opts.showCritical)for(const ship of board.ships)if(!ship.hits.has(keyOf(ship.critical)))drawCritical(ctx,ship.critical,m,cell,false,t);

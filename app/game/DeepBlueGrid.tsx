@@ -45,7 +45,7 @@ const WEAPON_META: Record<WeaponId, { label: string; carrier?: ShipId; help: str
   harpoon: { label: "HARPOON", carrier: "battleship", help: "照準を中心にX字5マスを攻撃します。", requirement: "中心 1" },
   sparrow: { label: "SEA SPARROW", carrier: "cruiser", help: "2×2の4マスを同時攻撃します。", requirement: "左上 1" },
   mk45: { label: "MK-45 II", carrier: "destroyer", help: "異なる2マスを連続攻撃します。", requirement: "目標 2" },
-  radar: { label: "SPS-10 RADAR", carrier: "submarine", help: "2×2内の未破壊区画を走査します。CONTACT : 1は敵影あり、CONTACT : 0は敵影なしです。", requirement: "左上 1" },
+  radar: { label: "SPS-10 RADAR", carrier: "submarine", help: "2×2内の未破壊区画を走査します。CONTACTは黄の破線円、NO CONTACTは緑の四角で記録されます。", requirement: "左上 1" },
 };
 
 export function DeepBlueGrid() {
@@ -512,7 +512,7 @@ export function DeepBlueGrid() {
       await sleep(800);
       const contact = enemy.current.radar(picked[0]);
       setStats((current) => ({ ...current, turns: current.turns + 1, specials: current.specials + 1 }));
-      const report = contact ? "CONTACT：黄色の4マス内に未破壊区画反応。" : "CLEAR：青緑の4マス内に未破壊区画なし。";
+      const report = contact ? "CONTACT：黄の破線円4マス内に未破壊区画反応。" : "NO CONTACT：緑の4マス内に未破壊区画なし。";
       setMessage(report);
       addLog("SPS-10 RADAR： " + report, contact ? "good" : "info");
       setRadarAlert({ contact });
@@ -762,7 +762,7 @@ export function DeepBlueGrid() {
         title={!revealIdentity ? "未識別艦" : definition.weapon === "NONE" ? "特殊兵装なし" : "搭載兵装：" + definition.weapon}
       >
         <strong>{revealIdentity ? definition.name + " / " + definition.code : "UNKNOWN CONTACT / " + String(contactIndex + 1).padStart(2, "0")}</strong>
-        <small>{ship?.sunk ? "LOST" : !revealIdentity ? "SIGNATURE UNKNOWN" : ship ? concealDamage ? "IDENTIFIED / HULL DATA MASKED" : selectable ? "配置済み / タップで再配置" : "DEPLOYED" : selectable ? selectedShip === shipId ? "選択中 / ドックで回転・決定" : "タップして選択" : concealDamage ? "HULL DATA MASKED" : "UNKNOWN"}</small>
+        <small>{ship?.sunk ? "LOST" : !revealIdentity ? "SIGNATURE UNKNOWN" : !selectable && shipId === "escort" ? "ESCORT SUPPORT：F-4出撃回数＋1" : ship ? concealDamage ? "IDENTIFIED / HULL DATA MASKED" : selectable ? "配置済み / タップで再配置" : "DEPLOYED" : selectable ? selectedShip === shipId ? "選択中 / ドックで回転・決定" : "タップして選択" : concealDamage ? "HULL DATA MASKED" : "UNKNOWN"}</small>
         <span className={"hull-meter " + (!revealDamage ? "concealed" : "")}>
           {Array.from({ length: meterLength }, (_, index) => <i key={index} className={revealDamage && ship && index < ship.hits.size ? "hit" : ""} />)}
         </span>
@@ -1055,6 +1055,7 @@ export function DeepBlueGrid() {
           </section>
           <div className="legend">
             <span><i className="miss" />MISS</span><span><i className="echo" />ECHO</span><span><i className="hit" />HIT</span><span><i className="sunk" />SUNK</span>
+            {enemy.current.radarScans.length > 0 && <><span className="radar-contact-legend">◌ CONTACT AREA</span><span className="radar-clear-legend">□ NO CONTACT</span></>}
             {identificationRules && <span className="critical-legend">◆ 重要区画 / IDENTIFIED</span>}
             {enemyWakes.length > 0 && <span><i className="wake" />潜水艦音紋</span>}
           </div>
@@ -1064,7 +1065,7 @@ export function DeepBlueGrid() {
       {flash && <div className={"turn-flash " + flash}><div>{flash === "player" ? "COMMAND" : "ENEMY ACTION"}</div></div>}
       {radarAlert && <div className={"radar-result " + (radarAlert.contact ? "contact" : "clear")}>
         <small>SPS-10 RADAR SCAN</small>
-        <b>CONTACT : {radarAlert.contact ? "1" : "0"}</b>
+        <b>{radarAlert.contact ? "CONTACT!" : "NO CONTACT"}</b>
         <span>{radarAlert.contact ? "4区画内に敵影あり" : "4区画内に敵影なし"}</span>
       </div>}
       {identificationAlert && (() => {
