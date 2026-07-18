@@ -5,12 +5,43 @@ import { Arsenal, Board, SeededRandom, criticalCoordFor, harpoonCells, radarCell
 import { EnemyAI } from "../app/game/EnemyAI.ts";
 import { nextSubmarineWake, submarineWakeCandidates } from "../app/game/SubmarineWake.ts";
 import { FULL_FLEET, playerFleetFor, survivingFleet, usesTacticsRules } from "../app/game/Campaign.ts";
+import { commandAssessment, formatElapsed, formatLocal, formatZulu } from "../app/game/AfterAction.ts";
 
 test("campaign is condensed to six escalating stages", () => {
   assert.equal(STAGES.length, 6);
   assert.deepEqual(STAGES.map((stage) => stage.id), [1, 2, 3, 4, 5, 6]);
   assert.deepEqual(STAGES.map((stage) => stage.fleet.length), [3, 4, 5, 5, 6, 6]);
   assert.ok(STAGES.every((stage, index) => index === 0 || stage.aiSkill > STAGES[index - 1].aiSkill));
+});
+
+test("after-action timestamps use minute-precision Zulu and local time", () => {
+  const timestamp = Date.UTC(2026, 6, 18, 12, 43, 8);
+  assert.equal(formatZulu(timestamp), "1243Z");
+  assert.match(formatLocal(timestamp), /^\d{4}$/);
+  assert.equal(formatElapsed(timestamp, timestamp + 8 * 60000 + 55000), "00:08");
+});
+
+test("command assessment reports facts and avoids accusatory language", () => {
+  const report = commandAssessment({
+    enemyRemainingShips: 1, enemyRemainingCells: 2, accuracy: 38, shots: 21,
+    specialUsed: 2, unusedSpecials: [{ label: "HARPOON", uses: 1 }], firstLoss: "carrier",
+    identified: 2, enemyTotalShips: 6, identificationRules: true,
+  });
+  assert.deepEqual(report.facts[0], { label: "敵残存戦力", value: "1艦 / 2区画" });
+  assert.match(report.finding, /敵艦隊、残存2区画/);
+  assert.match(report.finding, /航空打撃能力を喪失/);
+  assert.match(report.finding, /再検討|余地あり/);
+  assert.doesNotMatch(report.finding, /失敗|判断ミス|あなた/);
+});
+
+test("command assessment changes its finding for prolonged low-accuracy searches", () => {
+  const report = commandAssessment({
+    enemyRemainingShips: 3, enemyRemainingCells: 8, accuracy: 18, shots: 22,
+    specialUsed: 0, unusedSpecials: [{ label: "SPS-10", uses: 2 }], firstLoss: "battleship",
+    identified: 0, enemyTotalShips: 5, identificationRules: false,
+  });
+  assert.match(report.finding, /索敵射撃、命中率18%/);
+  assert.match(report.finding, /候補海域圧縮/);
 });
 
 test("survival starts with every ship and permanently removes sunk ships", () => {

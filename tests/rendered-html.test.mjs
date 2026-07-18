@@ -117,3 +117,20 @@ test("battle log drawer and victory battlefield review remain accessible", async
   assert.match(css, /\.mobile-field-switch \.mobile-switch-utilities \{[\s\S]*?repeat\(3,34px\)/);
   assert.match(css, /\.result-review-bar/);
 });
+
+test("CIC logs use Zulu timestamps and defeat unlocks factual post-action intelligence", async () => {
+  const game = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
+  const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+  assert.match(game, /CIC EVENT LOG \/ ZULU TIME/);
+  assert.match(game, /<time>\{formatZulu\(entry\.at\)\}<\/time>/);
+  assert.match(game, /総員戦闘配置。作戦行動を開始。/);
+  assert.match(game, /自軍艦隊、戦闘能力喪失。/);
+  assert.match(game, /作戦続行不能。撤退命令を発令。/);
+  assert.match(game, /COMMAND ASSESSMENT/);
+  assert.match(game, /POST-ACTION INTELLIGENCE/);
+  assert.match(game, /戦後解析：敵配置確認/);
+  assert.match(game, /revealShips: phase === "defeat" && resultReview/);
+  assert.match(game, /concealDamage: identificationRules && !\(phase === "defeat" && resultReview\)/);
+  assert.match(css, /\.command-assessment/);
+  assert.match(css, /\.operation-time/);
+});
