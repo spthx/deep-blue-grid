@@ -734,7 +734,22 @@ export function DeepBlueGrid() {
     const coord = pointerToCoord(event.currentTarget, event.clientX, event.clientY);
     if (!coord) return;
     if (side === "player" && phase === "placement") {
-      if (!placementPreviewActive) return;
+      if (!placementPreviewActive) {
+        const ship = player.current.shipAt(coord);
+        if (!ship) return;
+        const start = ship.cells.reduce((best, c) => ({ x: Math.min(best.x, c.x), y: Math.min(best.y, c.y) }), { x: 7, y: 7 });
+        event.preventDefault();
+        event.currentTarget.setPointerCapture(event.pointerId);
+        selectPlacementShip(ship.id);
+        placementGesture.current = {
+          pointerId: event.pointerId,
+          offset: { x: coord.x - start.x, y: coord.y - start.y },
+          origin: start,
+          startedOnPreview: true,
+          moved: false,
+        };
+        return;
+      }
       event.preventDefault();
       event.currentTarget.setPointerCapture(event.pointerId);
       if (event.pointerType === "touch") {

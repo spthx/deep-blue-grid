@@ -104,23 +104,22 @@ function drawWake(ctx:CanvasRenderingContext2D,c:Coord,m:number,cell:number,t:nu
 function drawMark(ctx:CanvasRenderingContext2D,c:Coord,mark:string,m:number,cell:number,t:number){const x=m+(c.x+.5)*cell,y=m+(c.y+.5)*cell;
   if(mark==="miss"){ctx.strokeStyle="#71909b";ctx.lineWidth=Math.max(1,cell*.05);ctx.beginPath();ctx.arc(x,y,cell*.13,0,Math.PI*2);ctx.stroke();ctx.fillStyle="#71909b";ctx.fillRect(x-cell*.025,y-cell*.025,cell*.05,cell*.05);}
   if(mark==="echo"){
-    // 4方向(上下左右)索敵反応：錨(⚓)の腕を各方位へ、矢印のように軽く曲げたアイコン
+    // 4方向(上下左右)索敵反応：錨(⚓)の腕を各方位へ伸ばし、先端を矢印状にしたアイコン
     const pulse=.55+.3*Math.sin(t*4);
-    const rHub=cell*.075,rArm=cell*.27,bend=cell*.05,head=cell*.075;
+    const rHub=cell*.075,rArm=cell*.28,head=cell*.085;
     ctx.save();ctx.strokeStyle="#7ce5df";ctx.fillStyle="#7ce5df";ctx.lineWidth=Math.max(1,cell*.045);ctx.lineCap="round";ctx.lineJoin="round";ctx.globalAlpha=pulse;
     ctx.beginPath();ctx.arc(x,y,rHub,0,Math.PI*2);ctx.stroke();
     const dirs=[[0,-1],[0,1],[-1,0],[1,0]];
     for(const [dx,dy] of dirs){
       const sx=x+dx*rHub,sy=y+dy*rHub;
       const ex=x+dx*rArm,ey=y+dy*rArm;
+      ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);ctx.stroke();
       const px=dy,py=-dx;
-      const ctrlX=x+dx*(rArm*.55)+px*bend,ctrlY=y+dy*(rArm*.55)+py*bend;
-      ctx.beginPath();ctx.moveTo(sx,sy);ctx.quadraticCurveTo(ctrlX,ctrlY,ex,ey);ctx.stroke();
       const backX=ex-dx*head,backY=ey-dy*head;
       ctx.beginPath();
-      ctx.moveTo(backX-px*head*.65,backY-py*head*.65);
+      ctx.moveTo(backX-px*head*.6,backY-py*head*.6);
       ctx.lineTo(ex,ey);
-      ctx.lineTo(backX+px*head*.65,backY+py*head*.65);
+      ctx.lineTo(backX+px*head*.6,backY+py*head*.6);
       ctx.stroke();
     }
     ctx.globalAlpha=1;ctx.restore();
