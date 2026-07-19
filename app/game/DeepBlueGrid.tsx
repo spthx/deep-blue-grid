@@ -34,7 +34,7 @@ type Stats = { turns: number; shots: number; hits: number; sunk: number; special
 type LogKind = "event" | "campaign" | "stage-start" | "stage-end" | "withdrawal" | "supply";
 type LogEntry = { id: number; at: number; text: string; tone: "info" | "good" | "bad"; kind: LogKind };
 type ShipCardOptions = { selectable?: boolean; concealDamage?: boolean; concealIdentity?: boolean; identified?: boolean; contactIndex?: number };
-type PlacementGesture = { pointerId: number; offset: Coord; origin: Coord; startedOnPreview: boolean; moved: boolean };
+type PlacementGesture = { pointerId: number; offset: Coord; origin: Coord; startedOnPreview: boolean; moved: boolean; justPickedUp: boolean };
 type PlacementBackup = { id: ShipId; start: Coord; orientation: Orientation };
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -747,6 +747,7 @@ export function DeepBlueGrid() {
           origin: start,
           startedOnPreview: true,
           moved: false,
+          justPickedUp: true,
         };
         return;
       }
@@ -773,6 +774,7 @@ export function DeepBlueGrid() {
         origin,
         startedOnPreview: onPreview,
         moved: false,
+        justPickedUp: false,
       };
     } else if (side === "enemy") {
       setCursor(coord);
@@ -784,7 +786,7 @@ export function DeepBlueGrid() {
     if (event.pointerType === "touch") touchPointers.current.delete(event.pointerId);
     const gesture = placementGesture.current;
     if (gesture?.pointerId === event.pointerId) {
-      if (gesture.startedOnPreview && !gesture.moved && placementPreviewActive && placementValid) {
+      if (!gesture.justPickedUp && gesture.startedOnPreview && !gesture.moved && placementPreviewActive && placementValid) {
         placeAt(cursor);
       }
       placementGesture.current = null;
