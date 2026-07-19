@@ -34,7 +34,7 @@ type Stats = { turns: number; shots: number; hits: number; sunk: number; special
 type LogKind = "event" | "campaign" | "stage-start" | "stage-end" | "withdrawal" | "supply";
 type LogEntry = { id: number; at: number; text: string; tone: "info" | "good" | "bad"; kind: LogKind };
 type ShipCardOptions = { selectable?: boolean; concealDamage?: boolean; concealIdentity?: boolean; identified?: boolean; contactIndex?: number };
-type PlacementGesture = { pointerId: number; offset: Coord; origin: Coord };
+type PlacementGesture = { pointerId: number; offset: Coord; origin: Coord; startedOnPreview: boolean; moved: boolean };
 type PlacementBackup = { id: ShipId; start: Coord; orientation: Orientation };
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -756,6 +756,8 @@ export function DeepBlueGrid() {
         pointerId: event.pointerId,
         offset: onPreview ? { x: coord.x - cursor.x, y: coord.y - cursor.y } : { x: 0, y: 0 },
         origin,
+        startedOnPreview: onPreview,
+        moved: false,
       };
     } else if (side === "enemy") {
       setCursor(coord);
@@ -767,6 +769,9 @@ export function DeepBlueGrid() {
     if (event.pointerType === "touch") touchPointers.current.delete(event.pointerId);
     const gesture = placementGesture.current;
     if (gesture?.pointerId === event.pointerId) {
+      if (gesture.startedOnPreview && !gesture.moved && placementPreviewActive && placementValid) {
+        placeAt(cursor);
+      }
       placementGesture.current = null;
     }
     if (touchPointers.current.size === 0 && touchRotated.current) {
@@ -784,6 +789,7 @@ export function DeepBlueGrid() {
       const origin = clampPlacementOrigin(selectedShip, orientation, { x: coord.x - gesture.offset.x, y: coord.y - gesture.offset.y });
       if (!sameCoord(origin, gesture.origin)) {
         gesture.origin = origin;
+        gesture.moved = true;
         setCursor(origin);
       }
       return;
@@ -1138,7 +1144,7 @@ export function DeepBlueGrid() {
 
       {phase === "placement" ? (
         <section className="placement-tools">
-          <div className="placement-help"><b>配置：</b>艦を選択 → シルエットをドラッグ → 回転または配置決定 <small>{identificationRules ? "◆は重要区画／" : ""}二本指・Rで回転／Enterで決定</small></div>
+          <div className="placement-help"><b>配置：</b>艦を選択 → シルエットをドラッグ → 回転または配置決定<br />有効な位置(赤くない状態)であれば、艦を軽くタップするだけでも確定できます <small>{identificationRules ? "◆は重要区画／" : ""}二本指・Rで回転／Enterで決定</small></div>
           {placementPreviewActive && (
             <div className="placement-dock" aria-label="艦の配置操作">
               <button className="cmd placement-rotate" onClick={rotatePlacement}>
