@@ -1,4 +1,4 @@
-import { GRID_SIZE, ORIENTATIONS, SHIPS, isHorizontal, type Coord, type ShipId } from "./constants.ts";
+import { ECHO_DIRECTIONS, GRID_SIZE, ORIENTATIONS, SHIPS, isHorizontal, type Coord, type ShipId } from "./constants.ts";
 import { Arsenal, Board, SeededRandom, criticalCoordFor, harpoonCells, inBounds, keyOf, radarCells, sameCoord, sparrowCells, type AttackResult, type ShotMark } from "./engine.ts";
 import { submarineWakeCandidates } from "./SubmarineWake.ts";
 
@@ -193,5 +193,5 @@ export class EnemyAI {
   private isUnknown(c: Coord) { return inBounds(c) && this.knowledge[c.y][c.x] === "unknown"; }
   private cardinals(c: Coord) { return [{x:c.x+1,y:c.y},{x:c.x-1,y:c.y},{x:c.x,y:c.y+1},{x:c.x,y:c.y-1}].filter(inBounds); }
   private addCardinals(c: Coord, list: Coord[]) { list.push(...this.rng.shuffle(this.cardinals(c)).filter((p) => this.isUnknown(p))); }
-  private addNeighbors(c: Coord, list: Coord[]) { for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++) { const p={x:c.x+dx,y:c.y+dy}; if((dx||dy)&&this.isUnknown(p)) list.push(p); } this.rng.shuffle(list); }
+  private addNeighbors(c: Coord, list: Coord[]) { for(const dir of ECHO_DIRECTIONS) { const p={x:c.x+dir.x,y:c.y+dir.y}; if(this.isUnknown(p)) list.push(p); } this.rng.shuffle(list); }
 }

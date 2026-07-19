@@ -191,6 +191,10 @@ button { font: inherit; touch-action: manipulation; }
 .cmd.selected { border-color:var(--cyan); box-shadow:inset 0 0 0 2px #07171f, 0 0 14px #61dbd64d; }
 .cmd.danger b { color:var(--danger); }
 .cmd.primary { background:linear-gradient(#30707a,#133b46); border-color:#93f2e9; }
+.cmd.battle-start { background:linear-gradient(#a8342f,#4a1210); border-color:var(--danger); box-shadow:0 0 0 2px #07171f,0 0 18px #ff575733; }
+.cmd.battle-start b { color:#ffe4e0; letter-spacing:.06em; }
+.cmd.battle-start small { color:#ffb9b0; }
+.cmd.battle-start:hover:not(:disabled) { filter:brightness(1.18); box-shadow:0 0 0 2px #07171f,0 0 26px #ff575759; }
 .cmd.confirm { min-width:170px; border-color:#876f3d; }
 .cmd.confirm b { color:var(--amber); }
 .cmd.confirm.ready {
@@ -347,6 +351,11 @@ button { font: inherit; touch-action: manipulation; }
 .result-actions .cmd { width:100%; min-width:0; }
 .result-actions .review-battlefield { border-color:var(--amber); }
 .result-actions .open-operation-log { grid-column:1 / -1; border-color:#668b94; }
+.result-actions .withdraw-action { grid-column:1 / -1; background:#1a1518; border-color:#6b4a4a; opacity:.82; }
+.result-actions .withdraw-action b { color:#c98f8f; font-size:11px; }
+.result-actions .withdraw-action small { color:#8a6b6b; }
+.result-actions .withdraw-action.armed { opacity:1; border-color:var(--danger); background:linear-gradient(#4a1f1f,#2a1113); box-shadow:0 0 0 2px #07171f,0 0 16px #ff575744; }
+.result-actions .withdraw-action.armed b { color:#ffdede; }
 .result-actions .review-battlefield b { color:var(--amber); }
 .stats { display:grid; grid-template-columns:repeat(2,1fr); gap:7px; margin:20px 0; text-align:left; }
 .stats div { border-left:2px solid var(--teal); background:#081b24; padding:9px; color:var(--steel); font-size:9px; }

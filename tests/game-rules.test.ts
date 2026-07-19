@@ -194,8 +194,19 @@ test("attacks cannot double damage and sink on the final segment", () => {
 
 test("near miss reports only a generic echo", () => {
   const b = new Board(); b.placeShip("submarine", { x: 3, y: 3 }, "east");
-  assert.deepEqual(b.attack({ x: 2, y: 2 }), { coord: { x: 2, y: 2 }, kind: "ECHO" });
+  assert.deepEqual(b.attack({ x: 2, y: 3 }), { coord: { x: 2, y: 3 }, kind: "ECHO" });
   assert.equal(b.attack({ x: 0, y: 0 }).kind, "MISS");
+});
+
+test("echo only triggers on the 4 orthogonal neighbors, not diagonals", () => {
+  const b = new Board(); b.placeShip("submarine", { x: 3, y: 3 }, "east");
+  assert.equal(b.attack({ x: 2, y: 2 }).kind, "MISS");
+  assert.equal(b.attack({ x: 4, y: 2 }).kind, "MISS");
+  assert.equal(b.attack({ x: 2, y: 4 }).kind, "MISS");
+  assert.equal(b.attack({ x: 4, y: 4 }).kind, "MISS");
+  assert.equal(b.attack({ x: 3, y: 2 }).kind, "ECHO");
+  assert.equal(b.attack({ x: 3, y: 4 }).kind, "ECHO");
+  assert.equal(b.attack({ x: 2, y: 3 }).kind, "ECHO");
 });
 
 test("wake marks appear beside the final submarine without revealing its cell", () => {

@@ -93,6 +93,7 @@ export function DeepBlueGrid() {
   const stage = STAGES[stageIndex];
   const playerFleet = playerFleetFor(difficulty ?? difficultyRef.current, stage.fleet, survivalFleet);
   const [phase, setPhase] = useState<Phase>("placement");
+  const [withdrawArmed, setWithdrawArmed] = useState(false);
   const [message, setMessage] = useState(stage.subtitle);
   const [selectedShip, setSelectedShip] = useState<ShipId>(stage.fleet[0]);
   const [orientation, setOrientation] = useState<Orientation>("east");
@@ -139,6 +140,7 @@ export function DeepBlueGrid() {
     rngRef.current = new SeededRandom(seedRef.current);
     player.current = new Board();
     enemy.current = new Board();
+    player.current.randomize(rngRef.current, nextPlayerFleet);
     arsenal.current = new Arsenal();
     ai.current = new EnemyAI(
       new SeededRandom(seedRef.current ^ 0x51f15e),
@@ -165,7 +167,7 @@ export function DeepBlueGrid() {
     setOperationEnd(null);
     setStageIndex(nextStageIndex);
     setPhase("placement");
-    setMessage(nextStage.subtitle);
+    setMessage(nextStage.subtitle + " 全艦を自動配置済みです。艦を選ぶと移動・回転できます。");
     setSelectedShip(nextPlayerFleet[0]);
     setOrientation("east");
     setPlacementBackup(null);
@@ -899,6 +901,20 @@ export function DeepBlueGrid() {
   const selectedState = weaponState(weapon);
   const confirmLabel = weapon === "radar" ? "走査実行" : selectedMeta.label + " 発射";
 
+  useEffect(() => { setWithdrawArmed(false); }, [phase]);
+
+  const withdrawToModeSelect = () => {
+    if (!withdrawArmed) {
+      setWithdrawArmed(true);
+      return;
+    }
+    const at = Date.now();
+    addLog("作戦中止。指揮所へ帰投し、モード選択へ戻る。", "bad", at, "withdrawal");
+    setWithdrawArmed(false);
+    setPhase("placement");
+    setDifficulty(null);
+  };
+
   const retryCurrentStage = () => {
     const at = Date.now();
     if (phase === "defeat") {
@@ -1145,8 +1161,8 @@ export function DeepBlueGrid() {
             <button className="cmd" onClick={randomize}><b>RANDOM</b><small>自動配置</small></button>
           </div>
           {player.current.allPlaced(playerFleet) && (
-            <button className="cmd primary placement-start" onClick={startBattle}>
-              <b>BATTLE START</b><small>{player.current.ships.length} / {playerFleet.length} 艦配置完了</small>
+            <button className="cmd battle-start placement-start" onClick={startBattle}>
+              <b>⚔ BATTLE START</b><small>{player.current.ships.length} / {playerFleet.length} 艦配置完了</small>
             </button>
           )}
         </section>
@@ -1317,6 +1333,15 @@ export function DeepBlueGrid() {
                 <b>{phase === "victory" ? (campaignClear ? "NEW CAMPAIGN" : "NEXT STAGE") : "RETRY STAGE"}</b>
                 <small>{phase === "victory" && !campaignClear ? STAGES[stageIndex + 1].title : difficulty === "survival" ? "現在の残存艦隊で再配置" : "艦隊を再配置"}</small>
               </button>
+              {phase === "defeat" && (
+                <button
+                  className={"cmd withdraw-action" + (withdrawArmed ? " armed" : "")}
+                  onClick={withdrawToModeSelect}
+                >
+                  <b>{withdrawArmed ? "本当に撤退しますか？もう一度押す" : "WITHDRAW"}</b>
+                  <small>{withdrawArmed ? "進行状況を破棄してモード選択へ" : "作戦を終了し、モード選択へ戻る"}</small>
+                </button>
+              )}
             </div>
           </section>
         </div>

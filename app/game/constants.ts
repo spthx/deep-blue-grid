@@ -40,4 +40,23 @@ export const HARPOON_PATTERN: ReadonlyArray<Coord> = [
   { x: -1, y: -1 }, { x: 1, y: -1 }, { x: 0, y: 0 }, { x: -1, y: 1 }, { x: 1, y: 1 },
 ];
 
+// ECHO(索敵反応)の判定方向。
+// "orthogonal" = 原作準拠、着弾点の上下左右4方向のみを見る。
+// "octant"     = 周囲8方向(斜め含む)を見る従来仕様。
+// 切り替えたい場合はこの1行の値を変えるだけでよい(セーブデータ等への影響なし)。
+export const ECHO_MODE: "orthogonal" | "octant" = "orthogonal";
+
+const ECHO_DIRECTIONS_BY_MODE: Record<"orthogonal" | "octant", ReadonlyArray<Coord>> = {
+  orthogonal: [
+    { x: 0, y: -1 }, { x: 0, y: 1 }, { x: -1, y: 0 }, { x: 1, y: 0 },
+  ],
+  octant: [
+    { x: -1, y: -1 }, { x: 0, y: -1 }, { x: 1, y: -1 },
+    { x: -1, y: 0 }, { x: 1, y: 0 },
+    { x: -1, y: 1 }, { x: 0, y: 1 }, { x: 1, y: 1 },
+  ],
+};
+
+export const ECHO_DIRECTIONS: ReadonlyArray<Coord> = ECHO_DIRECTIONS_BY_MODE[ECHO_MODE];
+
 export const WEAPON_MAX = { phantom: 2, harpoon: 2, sparrow: 1, mk45: 1, radar: 2 } as const;

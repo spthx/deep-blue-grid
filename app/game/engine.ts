@@ -1,4 +1,4 @@
-import { GRID_SIZE, HARPOON_PATTERN, ORIENTATIONS, SHIPS, WEAPON_MAX, isHorizontal, type Coord, type Orientation, type ShipId } from "./constants.ts";
+import { ECHO_DIRECTIONS, GRID_SIZE, HARPOON_PATTERN, ORIENTATIONS, SHIPS, WEAPON_MAX, isHorizontal, type Coord, type Orientation, type ShipId } from "./constants.ts";
 
 export type ShotMark = "unknown" | "miss" | "echo" | "hit" | "sunk";
 export type AttackKind = "MISS" | "ECHO" | "HIT" | "SUNK" | "ALREADY";
@@ -90,9 +90,8 @@ export class Board {
     return criticalHit ? { coord, kind: "HIT", shipId: ship.id, shipName: ship.name, criticalHit: true } : { coord, kind: "HIT" };
   }
   hasLiveNeighbor(coord: Coord) {
-    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-      if (!dx && !dy) continue;
-      const ship = this.shipAt({ x: coord.x + dx, y: coord.y + dy });
+    for (const dir of ECHO_DIRECTIONS) {
+      const ship = this.shipAt({ x: coord.x + dir.x, y: coord.y + dir.y });
       if (ship && !ship.sunk) return true;
     }
     return false;

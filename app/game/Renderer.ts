@@ -103,7 +103,21 @@ function drawWake(ctx:CanvasRenderingContext2D,c:Coord,m:number,cell:number,t:nu
 
 function drawMark(ctx:CanvasRenderingContext2D,c:Coord,mark:string,m:number,cell:number,t:number){const x=m+(c.x+.5)*cell,y=m+(c.y+.5)*cell;
   if(mark==="miss"){ctx.strokeStyle="#71909b";ctx.lineWidth=Math.max(1,cell*.05);ctx.beginPath();ctx.arc(x,y,cell*.13,0,Math.PI*2);ctx.stroke();ctx.fillStyle="#71909b";ctx.fillRect(x-cell*.025,y-cell*.025,cell*.05,cell*.05);}
-  if(mark==="echo"){ctx.strokeStyle="#7ce5df";ctx.lineWidth=Math.max(1,cell*.04);for(let i=0;i<2;i++){ctx.globalAlpha=.45+.3*Math.sin(t*4+i);ctx.beginPath();ctx.arc(x,y,cell*(.15+i*.11),0,Math.PI*2);ctx.stroke();}ctx.globalAlpha=1;}
+  if(mark==="echo"){
+    // 4方向(上下左右)索敵反応：錨(⚓)を各方位へ向けた専用アイコン
+    const pulse=.55+.3*Math.sin(t*4);
+    const rHub=cell*.075,rArm=cell*.27,fluke=cell*.09;
+    ctx.save();ctx.strokeStyle="#7ce5df";ctx.fillStyle="#7ce5df";ctx.lineWidth=Math.max(1,cell*.045);ctx.lineCap="round";ctx.globalAlpha=pulse;
+    ctx.beginPath();ctx.arc(x,y,rHub,0,Math.PI*2);ctx.stroke();
+    const dirs=[[0,-1],[0,1],[-1,0],[1,0]];
+    for(const [dx,dy] of dirs){
+      const ex=x+dx*rArm,ey=y+dy*rArm;
+      ctx.beginPath();ctx.moveTo(x+dx*rHub,y+dy*rHub);ctx.lineTo(ex,ey);ctx.stroke();
+      const px=dy,py=-dx;
+      ctx.beginPath();ctx.moveTo(ex-px*fluke,ey-py*fluke);ctx.lineTo(ex+px*fluke,ey+py*fluke);ctx.stroke();
+    }
+    ctx.globalAlpha=1;ctx.restore();
+  }
   if(mark==="hit"||mark==="sunk"){ctx.fillStyle=mark==="sunk"?"#e5d78a":"#ff8585";ctx.globalAlpha=.7+.25*Math.sin(t*8);ctx.beginPath();for(let i=0;i<8;i++){const a=i*Math.PI/4,r=i%2?cell*.16:cell*.27;ctx.lineTo(x+Math.cos(a)*r,y+Math.sin(a)*r);}ctx.closePath();ctx.fill();ctx.globalAlpha=1;}
 }
 
