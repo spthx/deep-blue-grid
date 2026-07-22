@@ -224,6 +224,21 @@ test("wake marks appear beside the final submarine without revealing its cell", 
   assert.ok(submarineWakeCandidates([first, second]).some((coord) => coord.x === 7 && coord.y === 7));
 });
 
+test("wake marks avoid ships, shot marks, radar marks, and existing wakes", () => {
+  const board = new Board();
+  board.placeShip("destroyer", { x: 3, y: 3 }, "east");
+  board.placeShip("submarine", { x: 4, y: 4 }, "east");
+  for (let x = 3; x <= 5; x++) board.attack({ x, y: 3 });
+  for (const coord of [{ x: 3, y: 4 }, { x: 5, y: 4 }, { x: 3, y: 5 }]) board.attack(coord);
+  board.radar({ x: 4, y: 5 });
+
+  assert.deepEqual(nextSubmarineWake(board, [], new SeededRandom(12)), null);
+
+  board.radarScans = [];
+  const existingWake = { x: 4, y: 5 };
+  assert.deepEqual(nextSubmarineWake(board, [existingWake], new SeededRandom(12)), { x: 5, y: 5 });
+});
+
 test("AI receives the same public submarine wake candidates as the player", () => {
   const own = new Board(); own.placeShip("submarine", { x: 0, y: 0 }, "east");
   const ai = new EnemyAI(new SeededRandom(88), ["submarine"], 1.7, "tactics");

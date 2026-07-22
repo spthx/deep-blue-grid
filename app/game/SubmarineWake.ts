@@ -11,13 +11,30 @@ function neighbors(center: Coord) {
   return cells;
 }
 
+function hasVisibleRadarMark(board: Board, coord: Coord) {
+  if (board.shots[coord.y][coord.x] !== "unknown") return false;
+  return board.radarScans.some((scan) => {
+    const contactResolved = scan.contact && scan.candidates.some((candidate) => {
+      const mark = board.shots[candidate.y][candidate.x];
+      return mark === "hit" || mark === "sunk";
+    });
+    return !contactResolved && scan.candidates.some((candidate) => sameCoord(candidate, coord));
+  });
+}
+
+function hasExistingDisplay(board: Board, current: Coord[], coord: Coord) {
+  return board.shots[coord.y][coord.x] !== "unknown"
+    || Boolean(board.shipAt(coord))
+    || hasVisibleRadarMark(board, coord)
+    || current.some((seen) => sameCoord(seen, coord));
+}
+
 export function nextSubmarineWake(board: Board, current: Coord[], rng: SeededRandom) {
   const alive = board.ships.filter((ship) => !ship.sunk);
   if (alive.length !== 1 || alive[0].id !== "submarine") return null;
   const submarine = alive[0].cells[0];
-  const surrounding = neighbors(submarine);
-  const unused = surrounding.filter((coord) => !current.some((seen) => sameCoord(seen, coord)));
-  return { ...(unused.length ? rng.pick(unused) : rng.pick(surrounding)) };
+  const available = neighbors(submarine).filter((coord) => !hasExistingDisplay(board, current, coord));
+  return available.length ? { ...rng.pick(available) } : null;
 }
 
 export function submarineWakeCandidates(waves: Coord[]) {
