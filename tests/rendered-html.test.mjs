@@ -33,6 +33,20 @@ test("mobile command deck stays four columns by two rows", async () => {
   assert.match(css, /grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
 });
 
+test("unavailable weapons cannot become the selected command", async () => {
+  const source = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
+  assert.match(source, /const selectWeapon = \(nextWeapon: WeaponId\) => \{[\s\S]*?const state = weaponState\(nextWeapon\);[\s\S]*?if \(!state\.available\) \{[\s\S]*?return;[\s\S]*?setWeapon\(nextWeapon\);/);
+  assert.equal((source.match(/disabled=\{phase !== "player" \|\| locked \|\| !state\.available\}/g) ?? []).length, 2);
+});
+
+test("portrait play collapses redundant top and placement information", async () => {
+  const source = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
+  const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+  assert.match(source, /className="placement-help placement-dossier" open=\{!portraitPhone\}/);
+  assert.match(source, /className="placement-dossier-body"/);
+  assert.match(css, /@media \(max-width:760px\)[\s\S]*?\.quick-guide \{ display:none; \}/);
+  assert.match(css, /orientation:portrait[\s\S]*?\.mobile-field-switch > div \{ display:none; \}/);
+});
 test("returning from damage review resets the command to normal fire", async () => {
   const source = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
   assert.match(source, /const continueToPlayer = \(\) => \{[\s\S]*?setWeapon\("fire"\);\s*setPicked\(\[\]\);/);

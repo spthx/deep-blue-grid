@@ -556,12 +556,16 @@ button { font: inherit; touch-action: manipulation; }
 .weapon-peek em { margin-top:2px; color:var(--amber); font-size:8px; font-style:normal; }
 .weapon-peek small { margin-top:3px; color:var(--foam); font-size:8px; line-height:1.4; }
 
-.placement-dossier { display:grid; grid-template-columns:minmax(180px,.55fr) minmax(0,1fr); gap:4px 18px; padding:10px 12px; border:1px solid #355a64; border-left:3px solid var(--cyan); background:#081c25; text-align:left; }
-.placement-dossier > div { grid-row:1 / span 2; }
-.placement-dossier span,.placement-dossier b,.placement-dossier em { display:block; }
-.placement-dossier span { color:var(--steel); font-size:7px; letter-spacing:.16em; }
-.placement-dossier b { margin:3px 0; color:var(--cyan); font-size:12px; }
-.placement-dossier em { color:var(--amber); font-size:8px; font-style:normal; }
+.placement-dossier { display:block; padding:10px 12px; border:1px solid #355a64; border-left:3px solid var(--cyan); background:#081c25; text-align:left; }
+.placement-dossier summary { display:flex; align-items:baseline; gap:9px; min-width:0; list-style:none; cursor:pointer; }
+.placement-dossier summary::-webkit-details-marker { display:none; }
+.placement-dossier summary span { color:var(--steel); font-size:7px; letter-spacing:.16em; }
+.placement-dossier summary b { color:var(--cyan); font-size:12px; }
+.placement-dossier summary em { color:var(--amber); font-size:8px; font-style:normal; }
+.placement-dossier summary i { margin-left:auto; color:#66858d; font-size:7px; font-style:normal; white-space:nowrap; }
+.placement-dossier summary i::before { content:"＋ "; }
+.placement-dossier[open] summary i::before { content:"－ "; }
+.placement-dossier-body { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px 18px; margin-top:6px; }
 .placement-dossier p { margin:0; color:var(--foam); font-size:9px; line-height:1.45; }
 .placement-dossier small { margin:0; color:#9ab1b6; font-size:8px; line-height:1.45; }
 .placement-dossier footer { grid-column:1 / -1; margin-top:4px; padding-top:5px; border-top:1px solid #294b55; color:#66858d; font-size:7px; }
@@ -626,14 +630,23 @@ button { font: inherit; touch-action: manipulation; }
 }
 
 @media (max-width:760px) {
-  .placement-dossier { grid-template-columns:1fr; gap:3px; padding:7px 8px; }
-  .placement-dossier > div { grid-row:auto; }
+  .quick-guide { display:none; }
+  .status-strip { min-height:40px; padding:6px 8px; }
+  .placement-dossier { padding:6px 8px; }
+  .placement-dossier summary { min-height:28px; gap:6px; align-items:center; }
+  .placement-dossier summary span { display:none; }
+  .placement-dossier summary b { overflow:hidden; text-overflow:ellipsis; font-size:10px; white-space:nowrap; }
+  .placement-dossier summary em { overflow:hidden; text-overflow:ellipsis; font-size:7px; white-space:nowrap; }
+  .placement-dossier-body { grid-template-columns:1fr; gap:3px; margin-top:4px; }
   .placement-dossier p,.placement-dossier small { display:-webkit-box; overflow:hidden; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
   .placement-dossier footer { margin-top:2px; }
   .weapon-peek { min-height:64px; }
 }
 
 @media (max-width:760px) and (orientation:portrait) {
+  .mobile-field-switch > div { display:none; }
+  .mobile-field-switch { margin-top:5px; }
+  .boards { scroll-margin-top:52px; }
   .review-phase { padding-bottom:calc(98px + env(safe-area-inset-bottom,0px)); }
   .turn-review { position:fixed; left:8px; right:8px; bottom:calc(7px + env(safe-area-inset-bottom,0px)); grid-template-columns:minmax(0,1fr) minmax(138px,44%); align-items:center; gap:7px; min-height:72px; padding:7px 8px; }
   .turn-review .review-confirm { width:100%; min-width:0; min-height:58px; justify-self:stretch; }

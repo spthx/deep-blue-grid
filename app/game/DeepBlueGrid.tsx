@@ -704,9 +704,14 @@ export function DeepBlueGrid() {
 
   const selectWeapon = (nextWeapon: WeaponId) => {
     if (phase !== "player" || locked) return;
-    setPicked([]);
-    setWeapon(nextWeapon);
     const state = weaponState(nextWeapon);
+    setPicked([]);
+    if (!state.available) {
+      setMessage(WEAPON_META[nextWeapon].label + "： " + state.reason);
+      audio.current?.cancel();
+      return;
+    }
+    setWeapon(nextWeapon);
     setMessage(WEAPON_META[nextWeapon].label + "： " + (state.available ? WEAPON_META[nextWeapon].help : state.reason));
     audio.current?.cursor();
   };
@@ -1088,7 +1093,7 @@ export function DeepBlueGrid() {
             onPointerEnter={() => showWeaponPeek(id)}
             onPointerDown={() => showWeaponPeek(id)}
             onFocus={() => showWeaponPeek(id)}
-            disabled={phase !== "player" || locked}
+            disabled={phase !== "player" || locked || !state.available}
             aria-disabled={!state.available}
             title={state.reason || WEAPON_META[id].help}
           >
@@ -1312,11 +1317,13 @@ export function DeepBlueGrid() {
 
       {phase === "placement" ? (
         <section className="placement-tools">
-          <div className="placement-help placement-dossier">
-            <div><span>SHIP DOSSIER</span><b>{inspectedDefinition.name} / {inspectedDefinition.code}</b><em>{inspectedDossier.role}</em></div>
-            <p>{inspectedDossier.capability}</p><small>{inspectedDossier.loss}</small>
-            <footer>艦を選択 → ドラッグで移動 → 回転または配置決定　{identificationRules ? "◆は重要区画 / " : ""}二本指・Rで回転 / Enterで決定</footer>
-          </div>
+          <details key={portraitPhone ? "mobile-dossier" : "desktop-dossier"} className="placement-help placement-dossier" open={!portraitPhone}>
+            <summary><span>SHIP DOSSIER</span><b>{inspectedDefinition.name} / {inspectedDefinition.code}</b><em>{inspectedDossier.role}</em><i>艦艇データ</i></summary>
+            <div className="placement-dossier-body">
+              <p>{inspectedDossier.capability}</p><small>{inspectedDossier.loss}</small>
+              <footer>艦を選択 → ドラッグで移動 → 回転または配置決定　{identificationRules ? "◆は重要区画 / " : ""}二本指・Rで回転 / Enterで決定</footer>
+            </div>
+          </details>
           {placementPreviewActive && (
             <div className="placement-dock" aria-label="艦の配置操作">
               <button className="cmd placement-rotate" onClick={rotatePlacement}>
@@ -1370,7 +1377,7 @@ export function DeepBlueGrid() {
                   key={id}
                   className={"cmd " + (!state.available ? "unavailable " : "") + (weapon === id ? "selected" : "")}
                   onClick={() => selectWeapon(id)}
-                  disabled={phase !== "player" || locked}
+                  disabled={phase !== "player" || locked || !state.available}
                   aria-disabled={!state.available}
                   onPointerEnter={() => showWeaponPeek(id)}
                   onPointerDown={() => showWeaponPeek(id)}
