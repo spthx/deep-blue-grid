@@ -35,7 +35,7 @@ test("mobile command deck stays four columns by two rows", async () => {
 
 test("returning from damage review resets the command to normal fire", async () => {
   const source = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
-  assert.match(source, /const continueToPlayer = \(\) => \{\s*setWeapon\("fire"\);\s*setPicked\(\[\]\);/);
+  assert.match(source, /const continueToPlayer = \(\) => \{[\s\S]*?setWeapon\("fire"\);\s*setPicked\(\[\]\);/);
 });
 
 test("survival retries the current stage with its entering fleet", async () => {
@@ -56,22 +56,22 @@ test("placement uses explicit rotate and confirm controls", async () => {
   assert.doesNotMatch(source, /シルエットをタップして確定/);
 });
 
-test("radar contact and clear scans use restrained grid colors", async () => {
+test("radar contact and clear scans use one restrained tactical frame", async () => {
   const source = await readFile(new URL("../app/game/Renderer.ts", import.meta.url), "utf8");
-  assert.match(source, /setLineDash\(\[cell\*\.11,cell\*\.075\]\)/);
-  assert.match(source, /ctx\.arc\(px\+cell\*\.5,py\+cell\*\.5,cell\*\.31/);
-  assert.match(source, /rgba\(76,151,133,\.13\)/);
+  assert.match(source, /setLineDash\(\[cell\*\.16,cell\*\.11\]\)/);
+  assert.match(source, /ctx\.arc\(centerX,centerY,radius/);
+  assert.match(source, /ctx\.createLinearGradient/);
   assert.match(source, /contactResolved/);
-  assert.match(source, /board\.shots\[coord\.y\]\[coord\.x\]!=="unknown"/);
+  assert.match(source, /const mark=board\.shots\[y\]\[x\];if\(mark!=="unknown"\)drawMark/);
 });
 
 test("radar scan announces its binary result over the playfield", async () => {
   const game = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
   const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
-  assert.match(game, /radarAlert\.contact \? "CONTACT!" : "NO CONTACT"/);
+  assert.match(game, /radarAlert\.hostile && radarAlert\.contact \? "DETECTED!" : radarAlert\.contact \? "CONTACT!" : "NO CONTACT"/);
   assert.match(game, /4区画内に敵影あり/);
   assert.match(game, /4区画内に敵影なし/);
-  assert.match(game, /ESCORT SUPPORT：F-4出撃回数＋1/);
+  assert.match(game, /ESCORT LINK ACTIVE：F-4出撃＋1/);
   assert.match(css, /\.radar-result/);
 });
 
@@ -80,7 +80,8 @@ test("enemy radar uses the same four-cell scan and result overlay", async () => 
   assert.match(game, /setActive\(decision\.weapon === "radar" \? radarCells\(decision\.targets\[0\]\) : decision\.targets\)/);
   assert.match(game, /sleep\(decision\.weapon === "radar" \? 800 : 750\)/);
   assert.match(game, /setRadarAlert\(\{ contact, hostile: true \}\)/);
-  assert.match(game, /ENEMY SPS-10 RADAR SCAN/);
+  assert.match(game, /HOSTILE SENSOR LOCK/);
+  assert.match(game, /敵レーダーが自軍反応を捕捉/);
 });
 
 test("tactics identification masks contacts and marks critical sections", async () => {
@@ -109,11 +110,37 @@ test("submarine wakes are emitted only after that submarine side acts", async ()
   const enemyTurn = game.slice(game.indexOf("const enemyTurn"), game.indexOf("const continueToPlayer"));
   const playerAttack = game.slice(game.indexOf("const resolvePlayerAttack"), game.indexOf("const targetRequirement"));
   const confirmAction = game.slice(game.indexOf("const confirmAction"), game.indexOf("const cancelAim"));
-  assert.match(enemyTurn, /emitEnemySubmarineWake\(\)/);
+  assert.match(enemyTurn, /emitEnemySubmarineWake\(decision\.actor\)/);
   assert.doesNotMatch(enemyTurn, /emitPlayerSubmarineWake\(\)/);
   assert.match(playerAttack, /emitPlayerSubmarineWake\(\)/);
   assert.doesNotMatch(playerAttack, /emitEnemySubmarineWake\(\)/);
   assert.match(confirmAction, /emitPlayerSubmarineWake\(\)/);
+});
+
+test("responsive command surfaces cover iPhone portrait and full-HD play", async () => {
+  const game = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
+  const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+  assert.match(game, /className="desktop-command-rail"/);
+  assert.match(game, /QUICK ARMAMENT DATA/);
+  assert.match(game, /SHIP DOSSIER/);
+  assert.match(game, /被害報告を記録/);
+  assert.match(css, /@media \(min-width:1100px\) and \(max-height:1050px\)/);
+  assert.match(css, /\.combat-workspace\.active \{ display:grid; grid-template-columns:minmax\(0,1fr\) 326px/);
+  assert.match(css, /\.compact-command-bottom \{ display:none!important; \}/);
+  assert.match(css, /\.command-deck \{ position:relative; \}/);
+  assert.match(css, /\.weapon-peek \{[\s\S]*?position:absolute/);
+  assert.match(css, /orientation:portrait[\s\S]*?\.turn-review \{ position:fixed;[\s\S]*?grid-template-columns:minmax\(0,1fr\) minmax\(138px,44%\)/);
+});
+
+test("survival silent hunter and escort link are explained in the interface", async () => {
+  const game = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
+  const campaign = await readFile(new URL("../app/game/Campaign.ts", import.meta.url), "utf8");
+  assert.match(campaign, /SURVIVAL_STAGE_FIVE_FLEET/);
+  assert.match(campaign, /SILENT HUNTER/);
+  assert.match(game, /EMERGENCY DIVE/);
+  assert.match(game, /ENEMY SILENT RUNNING/);
+  assert.match(game, /護衛艦の全区画を空母へ上下左右で密接/);
+  assert.match(game, /LINK ACTIVE/);
 });
 
 test("battle log drawer and victory battlefield review remain accessible", async () => {

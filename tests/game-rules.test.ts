@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { SHIPS, STAGES } from "../app/game/constants.ts";
-import { Arsenal, Board, SeededRandom, criticalCoordFor, harpoonCells, radarCells, sparrowCells } from "../app/game/engine.ts";
+import { Arsenal, Board, SeededRandom, criticalCoordFor, harpoonCells, hasEscortLink, radarCells, sparrowCells } from "../app/game/engine.ts";
 import { EnemyAI } from "../app/game/EnemyAI.ts";
 import { nextSubmarineWake, submarineWakeCandidates } from "../app/game/SubmarineWake.ts";
-import { FULL_FLEET, aiSkillFor, playerFleetFor, survivingFleet, usesTacticsRules } from "../app/game/Campaign.ts";
+import { FULL_FLEET, aiSkillFor, enemyFleetFor, missionFor, playerFleetFor, survivingFleet, usesTacticsRules } from "../app/game/Campaign.ts";
 import { commandAssessment, formatElapsed, formatLocal, formatZulu } from "../app/game/AfterAction.ts";
 
 test("campaign is condensed to six escalating stages", () => {
@@ -14,12 +14,22 @@ test("campaign is condensed to six escalating stages", () => {
   assert.ok(STAGES.every((stage, index) => index === 0 || stage.aiSkill > STAGES[index - 1].aiSkill));
 });
 
-test("stage five eases tactics and survival AI without changing casual or the final stage", () => {
+test("stage five eases tactics while survival stage six returns to stage-four strength", () => {
   assert.equal(aiSkillFor("casual", 5, 1.1), 1.1 * 1.38);
   assert.equal(aiSkillFor("tactics", 5, 1.1), 1.819);
   assert.equal(aiSkillFor("survival", 5, 1.1), 1.819);
   assert.equal(aiSkillFor("tactics", 4, 1.05), 1.05 * 1.7);
   assert.equal(aiSkillFor("tactics", 6, 1.16), 1.16 * 1.7);
+  assert.equal(aiSkillFor("survival", 6, 1.16), 1.05 * 1.7);
+});
+
+test("survival stage five alone deploys the silent-hunter submarine pair", () => {
+  const stage = STAGES[4];
+  assert.deepEqual(enemyFleetFor("survival", stage), ["submarine", "silentSubmarine"]);
+  assert.deepEqual(enemyFleetFor("casual", stage), stage.fleet);
+  assert.deepEqual(enemyFleetFor("tactics", stage), stage.fleet);
+  assert.equal(missionFor("survival", stage).title, "SILENT HUNTER");
+  assert.equal(missionFor("tactics", stage).title, stage.title);
 });
 
 test("after-action timestamps use minute-precision Zulu and local time", () => {
@@ -87,7 +97,8 @@ test("survival assessment records limited results without blaming an outmatched 
 });
 
 test("survival starts with every ship and permanently removes sunk ships", () => {
-  assert.equal(FULL_FLEET.length, SHIPS.length);
+  assert.equal(FULL_FLEET.length, 6);
+  assert.equal(FULL_FLEET.includes("silentSubmarine"), false);
   assert.deepEqual(playerFleetFor("survival", STAGES[0].fleet, FULL_FLEET), FULL_FLEET);
   const remaining = survivingFleet(FULL_FLEET, ["battleship", "submarine"]);
   assert.equal(remaining.includes("battleship"), false);
@@ -99,10 +110,11 @@ test("survival starts with every ship and permanently removes sunk ships", () =>
 test("random placement is legal and complete across many seeds", () => {
   for (let seed = 1; seed <= 100; seed++) {
     const board = new Board(); board.randomize(new SeededRandom(seed));
-    assert.equal(board.ships.length, SHIPS.length);
+    assert.equal(board.ships.length, FULL_FLEET.length);
     const occupied = board.ships.flatMap((s) => s.cells.map((c) => `${c.x},${c.y}`));
-    assert.equal(new Set(occupied).size, SHIPS.reduce((n, s) => n + s.size, 0));
+    assert.equal(new Set(occupied).size, FULL_FLEET.reduce((n, id) => n + SHIPS.find((ship) => ship.id === id)!.size, 0));
     assert.ok(board.ships.every((s) => s.cells.every((c) => c.x >= 0 && c.y >= 0 && c.x < 8 && c.y < 8)));
+    assert.equal(hasEscortLink(board), true);
   }
 });
 
@@ -239,6 +251,45 @@ test("wake marks avoid ships, shot marks, radar marks, and existing wakes", () =
   assert.deepEqual(nextSubmarineWake(board, [existingWake], new SeededRandom(12)), { x: 5, y: 5 });
 });
 
+
+test("silent hunter relocates after the first hit and sinks on the second contact", () => {
+  const board = new Board();
+  board.placeShip("silentSubmarine", { x: 2, y: 2 }, "east");
+  const original = { ...board.ships[0].cells[0] };
+  const first = board.attack(original);
+  assert.equal(first.kind, "HIT");
+  assert.equal(first.criticalHit, true);
+  const relocated = board.relocateShip("silentSubmarine", new SeededRandom(5150));
+  assert.ok(relocated);
+  assert.notDeepEqual(relocated, original);
+  assert.equal(board.ships[0].hits.size, 1);
+  assert.equal(board.shots[relocated.y][relocated.x], "unknown");
+  const second = board.attack(relocated);
+  assert.equal(second.kind, "SUNK");
+  assert.equal(second.shipId, "silentSubmarine");
+  assert.equal(board.ships[0].sunk, true);
+});
+
+test("silent hunter attacks with the normal submarine, then alternates silence and fire", () => {
+  const own = new Board();
+  own.placeShip("submarine", { x: 0, y: 0 }, "east");
+  own.placeShip("silentSubmarine", { x: 7, y: 7 }, "east");
+  const ai = new EnemyAI(new SeededRandom(808), FULL_FLEET, 1.819, "silent");
+  const normalAction = ai.decide(own);
+  assert.equal(normalAction.weapon, "fire");
+  assert.equal(normalAction.actor, "submarine");
+  own.attack({ x: 0, y: 0 });
+  const silentAction = ai.decide(own);
+  assert.equal(silentAction.weapon, "hold");
+  assert.equal(silentAction.actor, "silentSubmarine");
+  const firingAction = ai.decide(own);
+  assert.equal(firingAction.weapon, "fire");
+  assert.equal(firingAction.actor, "silentSubmarine");
+  const wake = nextSubmarineWake(own, [], new SeededRandom(909), firingAction.actor);
+  assert.ok(wake);
+  assert.ok(Math.abs(wake.x - 7) <= 1 && Math.abs(wake.y - 7) <= 1);
+  assert.notDeepEqual(wake, { x: 7, y: 7 });
+});
 test("AI receives the same public submarine wake candidates as the player", () => {
   const own = new Board(); own.placeShip("submarine", { x: 0, y: 0 }, "east");
   const ai = new EnemyAI(new SeededRandom(88), ["submarine"], 1.7, "tactics");
@@ -312,14 +363,24 @@ test("harpoon keeps two symmetric uses per stage", () => {
 test("escort grants one additional F-4 sortie while both ships survive", () => {
   const own = new Board();
   own.placeShip("carrier", { x: 0, y: 0 }, "east");
-  own.placeShip("escort", { x: 0, y: 3 }, "east");
+  own.placeShip("escort", { x: 0, y: 2 }, "east");
   const arsenal = new Arsenal();
+  assert.equal(hasEscortLink(own), true);
   assert.equal(arsenal.availableUses("phantom", own), 2);
   assert.equal(arsenal.spend("phantom", own), true);
   assert.equal(arsenal.availableUses("phantom", own), 1);
-  own.attack({ x: 0, y: 3 }); own.attack({ x: 1, y: 3 });
+  own.attack({ x: 0, y: 2 }); own.attack({ x: 1, y: 2 });
   assert.equal(arsenal.availableUses("phantom", own), 0);
   assert.equal(arsenal.spend("phantom", own), false);
+});
+
+test("an escort outside the carrier screen does not add an F-4 sortie", () => {
+  const own = new Board();
+  own.placeShip("carrier", { x: 0, y: 0 }, "east");
+  own.placeShip("escort", { x: 0, y: 3 }, "east");
+  const arsenal = new Arsenal();
+  assert.equal(hasEscortLink(own), false);
+  assert.equal(arsenal.maxUses("phantom", own), 1);
 });
 
 test("carrier keeps one F-4 sortie when no escort is deployed", () => {
@@ -350,7 +411,7 @@ test("AI never repeats or leaves the board over a full simulated hunt", () => {
 });
 
 test("tactics AI keeps equal supplies and does not use hidden fleet data", () => {
-  const fleet = SHIPS.map((ship) => ship.id);
+  const fleet = [...FULL_FLEET];
   const ownA = new Board(); ownA.randomize(new SeededRandom(101));
   const ownB = new Board(); ownB.randomize(new SeededRandom(101));
   const a = new EnemyAI(new SeededRandom(202), fleet, 1.7, "tactics");

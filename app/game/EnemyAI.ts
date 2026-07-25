@@ -1,10 +1,10 @@
-import { ECHO_DIRECTIONS, GRID_SIZE, ORIENTATIONS, SHIPS, isHorizontal, type Coord, type ShipId } from "./constants.ts";
+import { ECHO_DIRECTIONS, GRID_SIZE, ORIENTATIONS, SHIPS, STANDARD_FLEET, isHorizontal, type Coord, type ShipId } from "./constants.ts";
 import { Arsenal, Board, SeededRandom, criticalCoordFor, harpoonCells, inBounds, keyOf, radarCells, sameCoord, sparrowCells, type AttackResult, type ShotMark } from "./engine.ts";
 import { submarineWakeCandidates } from "./SubmarineWake.ts";
 
 export type AIState = "HUNT" | "TARGET" | "SEARCH";
-export type AIProfile = "casual" | "tactics";
-export type AIDecision = { weapon: "fire" | "phantom" | "harpoon" | "sparrow" | "mk45" | "radar"; targets: Coord[]; state: AIState };
+export type AIProfile = "casual" | "tactics" | "silent";
+export type AIDecision = { weapon: "fire" | "phantom" | "harpoon" | "sparrow" | "mk45" | "radar" | "hold"; targets: Coord[]; state: AIState; actor?: ShipId };
 
 export class EnemyAI {
   state: AIState = "HUNT";
@@ -21,14 +21,25 @@ export class EnemyAI {
   private sunkShipIds: ShipId[] = [];
   private skill: number;
   private profile: AIProfile;
-  constructor(rng: SeededRandom, fleet: ShipId[] = SHIPS.map((ship) => ship.id), skill = 1, profile: AIProfile = "casual") {
+  private silentCycle = 0;
+  private huntBreadth: number;
+  constructor(rng: SeededRandom, fleet: ShipId[] = STANDARD_FLEET, skill = 1, profile: AIProfile = "casual", huntBreadth = 1) {
     this.rng = rng;
     this.targetFleet = [...fleet];
     this.skill = skill;
     this.profile = profile;
+    this.huntBreadth = Math.max(1, huntBreadth);
   }
 
   decide(ownBoard: Board): AIDecision {
+    if (this.profile === "silent") {
+      if (ownBoard.alive("submarine")) return { weapon: "fire", targets: [this.chooseShot()], state: this.state, actor: "submarine" };
+      if (ownBoard.alive("silentSubmarine")) {
+        this.silentCycle += 1;
+        if (this.silentCycle % 2 === 1) return { weapon: "hold", targets: [], state: "HUNT", actor: "silentSubmarine" };
+        return { weapon: "fire", targets: [this.chooseShot()], state: this.state, actor: "silentSubmarine" };
+      }
+    }
     const unknown = this.unknownCells();
     const radarPatience = this.profile === "tactics" ? 2 : this.skill >= 1.25 ? 3 : 4;
     const tacticsPressure = this.profile === "tactics" ? 1.2 : 1;
@@ -103,7 +114,9 @@ export class EnemyAI {
     if (targets.length) { this.state = "TARGET"; return targets[0]; }
     while (this.search.length) { const c = this.search.shift()!; if (this.isUnknown(c)) { this.state = this.targetHits.length ? "TARGET" : "SEARCH"; return c; } }
     this.state = "HUNT";
-    return this.rankCandidates()[0];
+    const ranked = this.rankCandidates();
+    const breadth = Math.min(this.huntBreadth, ranked.length);
+    return breadth > 1 ? this.rng.pick(ranked.slice(0, breadth)) : ranked[0];
   }
   private rankTargetCandidates() {
     if (!this.targetHits.length) return [];

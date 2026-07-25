@@ -2,7 +2,7 @@ export const GAME_TITLE = "DEEP BLUE GRID";
 export const GRID_SIZE = 8;
 export const CELL_LABELS = "ABCDEFGH";
 
-export type ShipId = "carrier" | "battleship" | "cruiser" | "destroyer" | "escort" | "submarine";
+export type ShipId = "carrier" | "battleship" | "cruiser" | "destroyer" | "escort" | "submarine" | "silentSubmarine";
 export type WeaponId = "fire" | "phantom" | "harpoon" | "sparrow" | "mk45" | "radar";
 export const ORIENTATIONS = ["east", "south", "west", "north"] as const;
 export type Orientation = typeof ORIENTATIONS[number];
@@ -17,7 +17,12 @@ export const SHIPS: ReadonlyArray<{ id: ShipId; name: string; code: string; size
   { id: "destroyer", name: "駆逐艦", code: "DD-03", size: 3, width: 3, height: 1, weapon: "MK-45 II", critical: { x: 1, y: 0 } },
   { id: "escort", name: "護衛艦", code: "DE-02", size: 2, width: 2, height: 1, weapon: "NONE", critical: { x: 1, y: 0 } },
   { id: "submarine", name: "潜水艦", code: "SS-01", size: 1, width: 1, height: 1, weapon: "SPS-10", critical: { x: 0, y: 0 } },
+  // SURVIVAL STAGE 5 only: one occupied cell, but two successful contacts are required to sink it.
+  { id: "silentSubmarine", name: "特殊潜航艦", code: "SSX-00", size: 2, width: 1, height: 1, weapon: "NONE", critical: { x: 0, y: 0 } },
 ];
+
+export const STANDARD_FLEET: ShipId[] = ["carrier", "battleship", "cruiser", "destroyer", "escort", "submarine"];
+export const isSubmarine = (id: ShipId) => id === "submarine" || id === "silentSubmarine";
 
 export type StageDefinition = {
   id: number;

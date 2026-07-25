@@ -1,4 +1,4 @@
-import { GRID_SIZE, type Coord } from "./constants.ts";
+import { GRID_SIZE, isSubmarine, type Coord, type ShipId } from "./constants.ts";
 import { Board, SeededRandom, inBounds, sameCoord } from "./engine.ts";
 
 function neighbors(center: Coord) {
@@ -29,10 +29,13 @@ function hasExistingDisplay(board: Board, current: Coord[], coord: Coord) {
     || current.some((seen) => sameCoord(seen, coord));
 }
 
-export function nextSubmarineWake(board: Board, current: Coord[], rng: SeededRandom) {
+export function nextSubmarineWake(board: Board, current: Coord[], rng: SeededRandom, actorId?: ShipId) {
   const alive = board.ships.filter((ship) => !ship.sunk);
-  if (alive.length !== 1 || alive[0].id !== "submarine") return null;
-  const submarine = alive[0].cells[0];
+  const actor = actorId
+    ? alive.find((ship) => ship.id === actorId && isSubmarine(ship.id))
+    : alive.length === 1 && isSubmarine(alive[0].id) ? alive[0] : undefined;
+  if (!actor) return null;
+  const submarine = actor.cells[0];
   const available = neighbors(submarine).filter((coord) => !hasExistingDisplay(board, current, coord));
   return available.length ? { ...rng.pick(available) } : null;
 }

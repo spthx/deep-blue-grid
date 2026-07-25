@@ -4,7 +4,7 @@ import { Board, criticalCoordFor, harpoonCells, keyOf, radarCells } from "./engi
 export type RenderOptions = {
   revealShips: boolean; cursor?: Coord; previewShip?: { id: ShipId; orientation: Orientation; valid: boolean };
   weapon?: "fire"|"phantom"|"harpoon"|"sparrow"|"mk45"|"radar"; selected?: Coord[]; active?: Coord[]; waves?: Coord[]; time?: number;
-  showCritical?: boolean; identifications?: Array<{ coord: Coord; id: ShipId }>;
+  showCritical?: boolean; identifications?: Array<{ coord: Coord; id: ShipId }>; escortZone?: boolean;
 };
 
 export function drawBoard(canvas: HTMLCanvasElement, board: Board, opts: RenderOptions) {
@@ -21,36 +21,18 @@ export function drawBoard(canvas: HTMLCanvasElement, board: Board, opts: RenderO
   }
   ctx.fillStyle="#71909b";ctx.font=`bold ${Math.max(9,cell*.2)}px monospace`;ctx.textAlign="center";ctx.textBaseline="middle";
   for(let i=0;i<GRID_SIZE;i++){ctx.fillText(String(i+1),m+i*cell+cell/2,m*.42);ctx.fillText(CELL_LABELS[i],m*.43,m+i*cell+cell/2);}
-  const radarMarks=new Map<string,{coord:Coord;contact:boolean}>();
   for(const scan of board.radarScans){
     const contactResolved=scan.contact&&scan.candidates.some(c=>board.shots[c.y][c.x]==="hit"||board.shots[c.y][c.x]==="sunk");
     if(contactResolved)continue;
-    for(const coord of scan.candidates){
-      if(board.shots[coord.y][coord.x]!=="unknown")continue;
-      const key=`${coord.x},${coord.y}`,seen=radarMarks.get(key);
-      radarMarks.set(key,{coord,contact:!!seen?.contact||scan.contact});
-    }
-  }
-  for(const {coord,contact} of radarMarks.values()){
-    const px=m+coord.x*cell,py=m+coord.y*cell;
-    ctx.save();
-    ctx.lineWidth=Math.max(1.5,dpr*1.25);
-    if(contact){
-      ctx.strokeStyle="rgba(229,215,138,.82)";
-      ctx.setLineDash([cell*.11,cell*.075]);
-      ctx.beginPath();ctx.arc(px+cell*.5,py+cell*.5,cell*.31,0,Math.PI*2);ctx.stroke();
-    }else{
-      ctx.fillStyle="rgba(76,151,133,.13)";ctx.strokeStyle="rgba(96,190,157,.52)";
-      ctx.fillRect(px+1,py+1,cell-2,cell-2);ctx.strokeRect(px+2,py+2,cell-4,cell-4);
-    }
-    ctx.restore();
+    drawRadarScan(ctx,scan.origin,scan.contact,m,cell,t,dpr);
   }
   for(const ship of board.ships) if(opts.revealShips||ship.sunk) drawShip(ctx,ship.id,ship.cells,ship.orientation,m,cell,ship.sunk,ship.hits);
   if(opts.showCritical)for(const ship of board.ships)if(!ship.hits.has(keyOf(ship.critical)))drawCritical(ctx,ship.critical,m,cell,false,t);
+  if(opts.escortZone)drawEscortZone(ctx,board,m,cell,t);
   for(let y=0;y<GRID_SIZE;y++)for(let x=0;x<GRID_SIZE;x++){const mark=board.shots[y][x];if(mark!=="unknown")drawMark(ctx,{x,y},mark,m,cell,t);}
   if(opts.showCritical)for(const ship of board.ships)if(ship.hits.has(keyOf(ship.critical)))drawCritical(ctx,ship.critical,m,cell,true,t);
   for(const identification of opts.identifications??[])drawIdentification(ctx,identification.coord,identification.id,m,cell,t);
-  for(const [index,wave] of (opts.waves??[]).entries())drawWake(ctx,wave,m,cell,t,index);
+  for(const wave of opts.waves??[])drawWake(ctx,wave,m,cell,t);
   if(opts.cursor){
     let cells=[opts.cursor]; if(opts.previewShip){const def=SHIPS.find(s=>s.id===opts.previewShip!.id)!;cells=board.cellsFor(opts.cursor,def.size,opts.previewShip.orientation,opts.previewShip.id);}
     else if(opts.weapon==="harpoon")cells=harpoonCells(opts.cursor); else if(opts.weapon==="radar"||opts.weapon==="sparrow")cells=radarCells(opts.cursor);
@@ -64,6 +46,46 @@ export function drawBoard(canvas: HTMLCanvasElement, board: Board, opts: RenderO
   for(const c of opts.selected??[]){ctx.strokeStyle="#e5d78a";ctx.lineWidth=Math.max(2,dpr*2);ctx.strokeRect(m+c.x*cell+4,m+c.y*cell+4,cell-8,cell-8);}
   for(const c of opts.active??[]){const p=.5+.5*Math.sin(t*12);ctx.strokeStyle=`rgba(255,240,190,${.5+p*.5})`;ctx.lineWidth=Math.max(2,dpr*2.3);ctx.beginPath();ctx.arc(m+(c.x+.5)*cell,m+(c.y+.5)*cell,cell*(.22+p*.18),0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(m+c.x*cell+cell*.12,m+(c.y+.5)*cell);ctx.lineTo(m+(c.x+.88)*cell,m+(c.y+.5)*cell);ctx.moveTo(m+(c.x+.5)*cell,m+c.y*cell+cell*.12);ctx.lineTo(m+(c.x+.5)*cell,m+(c.y+.88)*cell);ctx.stroke();}
 }
+function drawRadarScan(ctx:CanvasRenderingContext2D,origin:Coord,contact:boolean,m:number,cell:number,t:number,dpr:number){
+  const x=m+origin.x*cell,y=m+origin.y*cell,size=cell*2,pulse=.72+.18*Math.sin(t*3.4);
+  const inset=cell*.12,arm=cell*.34,left=x+inset,top=y+inset,right=x+size-inset,bottom=y+size-inset;
+  ctx.save();ctx.globalAlpha=pulse;ctx.lineWidth=Math.max(1,dpr);ctx.lineCap="square";
+  ctx.strokeStyle=contact?"rgba(229,215,138,.88)":"rgba(96,190,157,.78)";
+  const corners=[[left,top,1,1],[right,top,-1,1],[left,bottom,1,-1],[right,bottom,-1,-1]];
+  for(const [cx,cy,dx,dy] of corners){
+    ctx.beginPath();ctx.moveTo(cx+dx*arm,cy);ctx.lineTo(cx,cy);ctx.lineTo(cx,cy+dy*arm);ctx.stroke();
+  }
+  if(contact){
+    const centerX=x+size*.5,centerY=y+size*.5,radius=cell*(.48+.04*Math.sin(t*4));
+    ctx.setLineDash([cell*.16,cell*.11]);ctx.lineWidth=Math.max(1.2,dpr*1.1);
+    ctx.beginPath();ctx.arc(centerX,centerY,radius,0,Math.PI*2);ctx.stroke();
+    ctx.globalAlpha=.34+.16*Math.sin(t*4.6);
+    ctx.beginPath();ctx.arc(centerX,centerY,radius+cell*.22,0,Math.PI*2);ctx.stroke();
+  }else{
+    const sweep=(.12+((t*.28)%1)*.76)*size;
+    const gradient=ctx.createLinearGradient(x+inset,y,x+size-inset,y);
+    gradient.addColorStop(0,"rgba(96,190,157,0)");gradient.addColorStop(.5,"rgba(124,229,223,.7)");gradient.addColorStop(1,"rgba(96,190,157,0)");
+    ctx.strokeStyle=gradient;ctx.globalAlpha=.5;ctx.beginPath();ctx.moveTo(x+inset,y+sweep);ctx.lineTo(x+size-inset,y+sweep);ctx.stroke();
+    ctx.globalAlpha=.7;ctx.setLineDash([cell*.08,cell*.12]);ctx.strokeRect(left,top,right-left,bottom-top);
+  }
+  ctx.restore();
+}
+function drawEscortZone(ctx:CanvasRenderingContext2D,board:Board,m:number,cell:number,t:number){
+  const carrier=board.ships.find(ship=>ship.id==="carrier"&&!ship.sunk);if(!carrier)return;
+  const cells=new Map<string,Coord>();
+  for(const carrierCell of carrier.cells)for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+    const coord={x:carrierCell.x+dx,y:carrierCell.y+dy};
+    if(coord.x<0||coord.y<0||coord.x>=GRID_SIZE||coord.y>=GRID_SIZE||board.shipAt(coord))continue;
+    cells.set(keyOf(coord),coord);
+  }
+  ctx.save();ctx.strokeStyle="rgba(124,229,223,.68)";ctx.lineWidth=Math.max(1,cell*.028);ctx.setLineDash([cell*.1,cell*.08]);ctx.globalAlpha=.62+.18*Math.sin(t*3);
+  for(const coord of cells.values()){
+    const x=m+coord.x*cell,y=m+coord.y*cell,pad=cell*.12;
+    ctx.strokeRect(x+pad,y+pad,cell-pad*2,cell-pad*2);
+  }
+  ctx.restore();
+}
+
 
 function drawCritical(ctx:CanvasRenderingContext2D,c:Coord,m:number,cell:number,hit:boolean,t:number){
   const x=m+(c.x+.5)*cell,y=m+(c.y+.5)*cell,r=cell*(hit ? .31 : .17);ctx.save();ctx.translate(x,y);ctx.rotate(Math.PI/4);
@@ -94,12 +116,12 @@ function drawShip(ctx:CanvasRenderingContext2D,id:ShipId,cells:Coord[],orientati
   if(id==="destroyer"){ctx.fillRect(cell*.75,-w*.19,cell*.7,w*.38);ctx.fillRect(cell*1.52,-w*.11,cell*.45,w*.22);ctx.fillRect(cell*.33,-w*.12,cell*.28,w*.24);}
   if(id==="cruiser"){ctx.fillRect(cell*.72,-w*.22,cell*.88,w*.44);ctx.fillRect(cell*1.82,-w*.19,cell*.62,w*.38);for(const x of [.18,2.65]){ctx.fillRect(cell*x,-w*.11,cell*.34,w*.22);ctx.fillRect(cell*(x+.28),-cell*.035,cell*.28,cell*.07);}}
   if(id==="escort"){ctx.fillRect(cell*.42,-w*.18,cell*.58,w*.36);ctx.fillRect(cell*1.05,-w*.1,cell*.26,w*.2);ctx.fillRect(cell*.12,-w*.09,cell*.2,w*.18);}
-  if(id==="submarine"){ctx.fillRect(-cell*.18,-w*.12,cell*.7,w*.24);ctx.fillRect(cell*.05,-w*.32,cell*.14,w*.2);ctx.fillRect(cell*.1,-w*.42,cell*.05,w*.11);}
+  if(id==="submarine"||id==="silentSubmarine"){ctx.fillRect(-cell*.18,-w*.12,cell*.7,w*.24);ctx.fillRect(cell*.05,-w*.32,cell*.14,w*.2);ctx.fillRect(cell*.1,-w*.42,cell*.05,w*.11);}
   ctx.strokeStyle=ghost?"#143b43":sunk?"#30282a":"#163b45";ctx.lineWidth=Math.max(1,cell*.035);ctx.strokeRect(-cell*.13,-cell*.04,len-cell*.75,cell*.08);ctx.restore();
   for(const c of cells) if(hits.has(`${c.x},${c.y}`)){ctx.fillStyle="#ff8585";ctx.beginPath();ctx.arc(m+(c.x+.5)*cell,m+(c.y+.5)*cell,cell*.12,0,Math.PI*2);ctx.fill();}
 }
 
-function drawWake(ctx:CanvasRenderingContext2D,c:Coord,m:number,cell:number,t:number,index:number){const x=m+(c.x+.5)*cell,y=m+(c.y+.5)*cell,p=(t*1.25+index*.19)%1;ctx.save();ctx.strokeStyle="#7ce5df";ctx.lineWidth=Math.max(1,cell*.035);for(let i=0;i<2;i++){const q=(p+i*.42)%1;ctx.globalAlpha=.65*(1-q);ctx.beginPath();ctx.arc(x,y,cell*(.13+q*.34),0,Math.PI*2);ctx.stroke();}ctx.restore();}
+function drawWake(ctx:CanvasRenderingContext2D,c:Coord,m:number,cell:number,t:number){const x=m+(c.x+.5)*cell,y=m+(c.y+.5)*cell,p=(t*1.25)%1;ctx.save();ctx.strokeStyle="#7ce5df";ctx.lineWidth=Math.max(1,cell*.035);for(let i=0;i<2;i++){const q=(p+i*.42)%1;ctx.globalAlpha=.65*(1-q);ctx.beginPath();ctx.arc(x,y,cell*(.13+q*.34),0,Math.PI*2);ctx.stroke();}ctx.restore();}
 
 function drawMark(ctx:CanvasRenderingContext2D,c:Coord,mark:string,m:number,cell:number,t:number){const x=m+(c.x+.5)*cell,y=m+(c.y+.5)*cell;
   if(mark==="miss"){ctx.strokeStyle="#71909b";ctx.lineWidth=Math.max(1,cell*.05);ctx.beginPath();ctx.arc(x,y,cell*.13,0,Math.PI*2);ctx.stroke();ctx.fillStyle="#71909b";ctx.fillRect(x-cell*.025,y-cell*.025,cell*.05,cell*.05);}
