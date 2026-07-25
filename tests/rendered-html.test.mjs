@@ -17,28 +17,42 @@ test("server renders the finished game shell", async () => {
   assert.match(html, /<title>DEEP BLUE GRID/);
   assert.match(html, /DEEP/);
   assert.match(html, /FLEET DEPLOY/);
-  assert.match(html, /DIFFICULTY/);
+  assert.match(html, /OPERATION MODE/);
   assert.match(html, /CASUAL/);
   assert.match(html, /TACTICS/);
   assert.match(html, /SURVIVAL/);
   assert.match(html, /IMPORTANT SECTION \/ 重要区画/);
   assert.match(html, /追加ダメージなし/);
   assert.match(html, /敵AIも同じ条件/);
-  assert.doesNotMatch(html, /NORMAL|HARD|基本戦術・手加減なし/);
+  assert.match(html, /敵AIも探知済み情報だけで判断/);
+  assert.match(html, /全6海域/);
+  assert.doesNotMatch(html, /DIFFICULTY|NORMAL|HARD|基本戦術・手加減なし/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|Your site is taking shape/);
 });
 
 test("mobile command deck stays four columns by two rows", async () => {
   const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
   assert.match(css, /grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+  assert.match(css, /@media \(max-width:760px\) \{[\s\S]*?\.command-deck \{ position:sticky; \}/);
 });
 
 test("unavailable weapons cannot become the selected command", async () => {
   const source = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
   assert.match(source, /const selectWeapon = \(nextWeapon: WeaponId\) => \{[\s\S]*?const state = weaponState\(nextWeapon\);[\s\S]*?if \(!state\.available\) \{[\s\S]*?return;[\s\S]*?setWeapon\(nextWeapon\);/);
-  assert.equal((source.match(/disabled=\{phase !== "player" \|\| locked \|\| !state\.available\}/g) ?? []).length, 2);
+  assert.equal((source.match(/disabled=\{phase !== "player" \|\| locked\}/g) ?? []).length, 2);
+  assert.equal((source.match(/aria-disabled=\{!state\.available \|\| phase !== "player" \|\| locked\}/g) ?? []).length, 2);
+  assert.equal((source.match(/aria-pressed=\{weapon === id\}/g) ?? []).length, 2);
+  assert.match(source, /onPointerDown=\{\(\) => showWeaponPeek\(id\)\}/);
 });
 
+test("keyboard and full-HD review controls do not double-trigger", async () => {
+  const source = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
+  const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+  assert.match(source, /target\?\.closest\("button, summary, a, input, textarea, select, \[role='dialog'\]"\)/);
+  assert.match(source, /if \(!difficulty \|\| phase === "victory" \|\| phase === "defeat"\) return/);
+  assert.match(source, /className="result-review-bar compact-command-bottom"/);
+  assert.match(css, /:where\(button, summary\):focus-visible/);
+});
 test("portrait play collapses redundant top and placement information", async () => {
   const source = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
   const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
@@ -82,11 +96,14 @@ test("radar contact and clear scans use one restrained tactical frame", async ()
 test("radar scan announces its binary result over the playfield", async () => {
   const game = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
   const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
-  assert.match(game, /radarAlert\.hostile && radarAlert\.contact \? "DETECTED!" : radarAlert\.contact \? "CONTACT!" : "NO CONTACT"/);
-  assert.match(game, /4区画内に敵影あり/);
-  assert.match(game, /4区画内に敵影なし/);
+  assert.match(game, /radarAlert\.hostile \? radarAlert\.contact \? "FLEET DETECTED" : "SCAN EVADED" : radarAlert\.contact \? "CONTACT!" : "NO CONTACT"/);
+  assert.match(game, /指定4区画内に未破壊艦区画あり/);
+  assert.match(game, /指定4区画内に反応なし/);
   assert.match(game, /ESCORT LINK ACTIVE：F-4出撃＋1/);
   assert.match(css, /\.radar-result/);
+  assert.match(game, /setActiveEffect\("scan"\)/);
+  assert.match(game, /activeEffect === "impact" \? "shake"/);
+  assert.doesNotMatch(game, /active\.length \? "shake"/);
 });
 
 test("enemy radar uses the same four-cell scan and result overlay", async () => {
@@ -94,8 +111,9 @@ test("enemy radar uses the same four-cell scan and result overlay", async () => 
   assert.match(game, /setActive\(decision\.weapon === "radar" \? radarCells\(decision\.targets\[0\]\) : decision\.targets\)/);
   assert.match(game, /sleep\(decision\.weapon === "radar" \? 800 : 750\)/);
   assert.match(game, /setRadarAlert\(\{ contact, hostile: true \}\)/);
-  assert.match(game, /HOSTILE SENSOR LOCK/);
-  assert.match(game, /敵レーダーが自軍反応を捕捉/);
+  assert.match(game, /HOSTILE RADAR CONTACT/);
+  assert.match(game, /FLEET DETECTED/);
+  assert.match(game, /敵レーダーが自軍艦隊を捕捉/);
 });
 
 test("tactics identification masks contacts and marks critical sections", async () => {
@@ -153,7 +171,7 @@ test("survival silent hunter and escort link are explained in the interface", as
   assert.match(campaign, /SILENT HUNTER/);
   assert.match(game, /EMERGENCY DIVE/);
   assert.match(game, /ENEMY SILENT RUNNING/);
-  assert.match(game, /護衛艦の全区画を空母へ上下左右で密接/);
+  assert.match(game, /護衛艦の全区画を空母へ上下左右で隣接/);
   assert.match(game, /LINK ACTIVE/);
 });
 
@@ -175,14 +193,14 @@ test("battle log drawer and victory battlefield review remain accessible", async
   assert.match(css, /\.battle-log ol \{ max-height:76px;[\s\S]*?overflow-y:auto/);
   assert.match(css, /\.log-drawer li\.stage-start/);
   assert.match(css, /font-weight:800/);
-  assert.match(css, /\.mobile-field-switch \.mobile-switch-utilities \{[\s\S]*?repeat\(3,34px\)/);
+  assert.match(css, /\.mobile-field-switch \.mobile-switch-utilities \{[\s\S]*?repeat\(3,36px\)/);
   assert.match(css, /\.result-review-bar/);
 });
 
 test("CIC logs use Zulu timestamps and defeat unlocks factual post-action intelligence", async () => {
   const game = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
   const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
-  assert.match(game, /CIC EVENT LOG \/ ZULU TIME/);
+  assert.match(game, /CIC EVENT LOG \/ ZULU TIME \/ ENTRIES/);
   assert.match(game, /<time>\{formatZulu\(entry\.at\)\}<\/time>/);
   assert.match(game, /総員戦闘配置。/);
   assert.match(game, /自軍艦隊、戦闘能力喪失。/);

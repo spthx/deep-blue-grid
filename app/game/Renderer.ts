@@ -3,7 +3,7 @@ import { Board, criticalCoordFor, harpoonCells, keyOf, radarCells } from "./engi
 
 export type RenderOptions = {
   revealShips: boolean; cursor?: Coord; previewShip?: { id: ShipId; orientation: Orientation; valid: boolean };
-  weapon?: "fire"|"phantom"|"harpoon"|"sparrow"|"mk45"|"radar"; selected?: Coord[]; active?: Coord[]; waves?: Coord[]; time?: number;
+  weapon?: "fire"|"phantom"|"harpoon"|"sparrow"|"mk45"|"radar"; selected?: Coord[]; active?: Coord[]; waves?: Coord[]; time?: number; scanActive?: boolean;
   showCritical?: boolean; identifications?: Array<{ coord: Coord; id: ShipId }>; escortZone?: boolean;
 };
 
@@ -44,7 +44,16 @@ export function drawBoard(canvas: HTMLCanvasElement, board: Board, opts: RenderO
     }
   }
   for(const c of opts.selected??[]){ctx.strokeStyle="#e5d78a";ctx.lineWidth=Math.max(2,dpr*2);ctx.strokeRect(m+c.x*cell+4,m+c.y*cell+4,cell-8,cell-8);}
-  for(const c of opts.active??[]){const p=.5+.5*Math.sin(t*12);ctx.strokeStyle=`rgba(255,240,190,${.5+p*.5})`;ctx.lineWidth=Math.max(2,dpr*2.3);ctx.beginPath();ctx.arc(m+(c.x+.5)*cell,m+(c.y+.5)*cell,cell*(.22+p*.18),0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(m+c.x*cell+cell*.12,m+(c.y+.5)*cell);ctx.lineTo(m+(c.x+.88)*cell,m+(c.y+.5)*cell);ctx.moveTo(m+(c.x+.5)*cell,m+c.y*cell+cell*.12);ctx.lineTo(m+(c.x+.5)*cell,m+(c.y+.88)*cell);ctx.stroke();}
+  for(const c of opts.active??[]){
+    const x=m+c.x*cell,y=m+c.y*cell,p=.5+.5*Math.sin(t*12);
+    if(opts.scanActive){
+      ctx.save();ctx.fillStyle=`rgba(124,229,223,${.05+p*.035})`;ctx.fillRect(x+2,y+2,cell-4,cell-4);
+      ctx.strokeStyle=`rgba(124,229,223,${.48+p*.4})`;ctx.lineWidth=Math.max(1,dpr*1.25);ctx.setLineDash([cell*.11,cell*.08]);
+      ctx.strokeRect(x+cell*.1,y+cell*.1,cell*.8,cell*.8);ctx.restore();continue;
+    }
+    ctx.strokeStyle=`rgba(255,240,190,${.5+p*.5})`;ctx.lineWidth=Math.max(2,dpr*2.3);ctx.beginPath();ctx.arc(x+cell*.5,y+cell*.5,cell*(.22+p*.18),0,Math.PI*2);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(x+cell*.12,y+cell*.5);ctx.lineTo(x+cell*.88,y+cell*.5);ctx.moveTo(x+cell*.5,y+cell*.12);ctx.lineTo(x+cell*.5,y+cell*.88);ctx.stroke();
+  }
 }
 function drawRadarScan(ctx:CanvasRenderingContext2D,origin:Coord,contact:boolean,m:number,cell:number,t:number,dpr:number){
   const x=m+origin.x*cell,y=m+origin.y*cell,size=cell*2,pulse=.72+.18*Math.sin(t*3.4);

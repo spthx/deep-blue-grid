@@ -38,7 +38,7 @@ export const STAGES: ReadonlyArray<StageDefinition> = [
   { id: 3, title: "CRUISER GAP", subtitle: "巡洋艦と範囲兵装が戦線を拡大", fleet: ["battleship", "cruiser", "destroyer", "escort", "submarine"], aiSkill: 1 },
   { id: 4, title: "CROSS FIRE", subtitle: "複数兵装を温存し敵中枢を狙え", fleet: ["battleship", "cruiser", "destroyer", "escort", "submarine"], aiSkill: 1.05 },
   { id: 5, title: "CARRIER SCREEN", subtitle: "全6艦種による総力海戦", fleet: ["carrier", "battleship", "cruiser", "destroyer", "escort", "submarine"], aiSkill: 1.1 },
-  { id: 6, title: "DEEP BLUE GRID", subtitle: "最終海域。全艦隊を撃沈せよ", fleet: ["carrier", "battleship", "cruiser", "destroyer", "escort", "submarine"], aiSkill: 1.16 },
+  { id: 6, title: "DEEP BLUE GRID", subtitle: "最終海域。敵全艦を撃沈せよ", fleet: ["carrier", "battleship", "cruiser", "destroyer", "escort", "submarine"], aiSkill: 1.16 },
 ];
 
 export const HARPOON_PATTERN: ReadonlyArray<Coord> = [

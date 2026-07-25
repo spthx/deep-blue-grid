@@ -16,6 +16,7 @@ html { background: var(--abyss); }
 body {
   margin: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   color: var(--foam);
   background:
     radial-gradient(circle at 50% -10%, #174a5b 0, transparent 42%),
@@ -25,11 +26,16 @@ body {
   overflow-x: hidden;
   -webkit-text-size-adjust: 100%;
 }
-button { font: inherit; touch-action: manipulation; }
+button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+:where(button, summary):focus-visible {
+  outline:2px solid var(--foam); outline-offset:3px;
+  box-shadow:0 0 0 1px var(--abyss),0 0 16px #7ce5df66;
+}
 
 .game-shell {
   width: min(1420px, 100%);
   min-height: 100vh;
+  min-height: 100dvh;
   margin: 0 auto;
   padding: 14px clamp(10px, 2vw, 28px) 22px;
   position: relative;
@@ -55,6 +61,10 @@ button { font: inherit; touch-action: manipulation; }
 .phase-badge { text-align: center; min-width: 230px; padding: 8px 22px; border: 1px solid var(--steel); background: linear-gradient(#183b48,#0b202b); box-shadow: inset 0 0 0 3px #07151e, 0 4px 16px #0008; }
 .phase-badge strong { display:block; color: var(--cyan); letter-spacing: .18em; font-size: 14px; }
 .phase-badge small { color: var(--steel); font-size: 9px; letter-spacing: .2em; }
+.phase-badge.enemy { border-color:#8b4d52; background:linear-gradient(#49272d,#20131a); }
+.phase-badge.enemy strong { color:var(--danger); }
+.phase-badge.review { border-color:#8d793f; background:linear-gradient(#4a4123,#201d13); }
+.phase-badge.review strong { color:var(--amber); }
 .system-info { text-align: right; color: var(--steel); font-size: 10px; line-height: 1.5; }
 .system-info b { color: var(--foam); }
 
@@ -87,6 +97,8 @@ button { font: inherit; touch-action: manipulation; }
 .status-strip p { margin: 0; font-size: clamp(11px, 1.2vw, 14px); letter-spacing: .04em; }
 .turn-counter { color: var(--steel); font-size: 10px; }
 .status-strip p b { color:var(--cyan); }
+.status-strip.enemy p b { color:var(--danger); }
+.status-strip.review p b { color:var(--amber); }
 
 .quick-guide {
   display:flex; flex-wrap:wrap; justify-content:center; gap:7px 18px; padding:7px 10px;
@@ -484,11 +496,11 @@ button { font: inherit; touch-action: manipulation; }
   }
   .mobile-field-switch button:disabled { opacity:.35; cursor:not-allowed; }
   .mobile-field-switch .mobile-switch-utilities {
-    display:grid; grid-template-columns:repeat(3,34px); gap:3px; padding-left:2px;
+    display:grid; grid-template-columns:repeat(3,36px); gap:3px; padding-left:2px;
     border-left:1px solid #34545e;
   }
   .mobile-field-switch .mobile-switch-utilities button {
-    display:grid; place-items:center; width:34px; min-height:38px; padding:0;
+    display:grid; place-items:center; width:36px; min-height:40px; padding:0;
     color:var(--cyan); font-size:15px; line-height:1;
   }
   .mobile-field-switch .mobile-switch-utilities button.retry { color:var(--danger); font-size:22px; }
@@ -540,8 +552,10 @@ button { font: inherit; touch-action: manipulation; }
 .desktop-command-rail { display:none; }
 .command-deck { position:relative; }
 .ship-card.read-only { cursor:default; }
-.ship-card.read-only:hover,.ship-card.read-only:focus-visible { border-color:#52757d; background:#0a222b; outline:none; }
-.cmd.unavailable { opacity:.56; filter:saturate(.48); }
+.ship-card.read-only:hover { border-color:#52757d; background:#0a222b; }
+.ship-card:disabled { opacity:1; cursor:default; }
+.cmd.unavailable { opacity:.56; filter:saturate(.48); cursor:help; }
+.cmd.unavailable:active { transform:none; box-shadow:inset 0 0 0 2px #07171f,0 3px 0 #041015; }
 .cmd.unavailable:hover,.cmd.unavailable:focus-visible { opacity:.78; filter:saturate(.72) brightness(1.08); }
 
 .weapon-peek {
@@ -630,6 +644,7 @@ button { font: inherit; touch-action: manipulation; }
 }
 
 @media (max-width:760px) {
+  .command-deck { position:sticky; }
   .quick-guide { display:none; }
   .status-strip { min-height:40px; padding:6px 8px; }
   .placement-dossier { padding:6px 8px; }
