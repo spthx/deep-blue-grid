@@ -56,7 +56,7 @@ test("keyboard and full-HD review controls do not double-trigger", async () => {
 test("portrait play collapses redundant top and placement information", async () => {
   const source = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
   const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
-  assert.match(source, /className="placement-help placement-dossier" open=\{!portraitPhone\}/);
+  assert.match(source, /className="placement-help placement-dossier"[\s\S]*?open=\{!portraitPhone\}/);
   assert.match(source, /className="placement-dossier-body"/);
   assert.match(css, /@media \(max-width:760px\)[\s\S]*?\.quick-guide \{ display:none; \}/);
   assert.match(css, /orientation:portrait[\s\S]*?\.mobile-field-switch > div \{ display:none; \}/);
@@ -153,12 +153,18 @@ test("responsive command surfaces cover iPhone portrait and full-HD play", async
   const game = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
   const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
   assert.match(game, /className="desktop-command-rail"/);
+  assert.match(game, /className="placement-tools rail-placement-tools"/);
+  assert.match(game, /renderPlacementControls\("rail"\)/);
+  assert.match(game, /className="placement-tools compact-placement-bottom"/);
   assert.match(game, /QUICK ARMAMENT DATA/);
   assert.match(game, /SHIP DOSSIER/);
   assert.match(game, /被害報告を記録/);
+  assert.match(css, /\.desktop-command-rail \{ display:none; \}/);
   assert.match(css, /@media \(min-width:1100px\) and \(max-height:1050px\)/);
   assert.match(css, /\.combat-workspace\.active \{ display:grid; grid-template-columns:minmax\(0,1fr\) 326px/);
-  assert.match(css, /\.compact-command-bottom \{ display:none!important; \}/);
+  assert.match(css, /\.rail-placement-tools \{[\s\S]*?grid-template-columns:minmax\(0,1fr\)/);
+  assert.match(css, /\.compact-command-bottom,\.compact-placement-bottom \{ display:none!important; \}/);
+  assert.match(css, /@media \(max-width: 760px\) \{[\s\S]*?\.placement-tools \{[\s\S]*?position:sticky/);
   assert.match(css, /\.command-deck \{ position:relative; \}/);
   assert.match(css, /\.weapon-peek \{[\s\S]*?position:absolute/);
   assert.match(css, /orientation:portrait[\s\S]*?\.turn-review \{ position:fixed;[\s\S]*?grid-template-columns:minmax\(0,1fr\) minmax\(138px,44%\)/);

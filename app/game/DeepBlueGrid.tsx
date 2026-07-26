@@ -1141,6 +1141,48 @@ export function DeepBlueGrid() {
     </>
   );
 
+  const renderPlacementControls = (surface: "rail" | "bottom") => (
+    <>
+      <details
+        key={`${surface}-${portraitPhone ? "mobile-dossier" : "desktop-dossier"}`}
+        className="placement-help placement-dossier"
+        open={!portraitPhone}
+      >
+        <summary><span>SHIP DOSSIER</span><b>{inspectedDefinition.name} / {inspectedDefinition.code}</b><em>{inspectedDossier.role}</em><i>艦艇データ</i></summary>
+        <div className="placement-dossier-body">
+          <p>{inspectedDossier.capability}</p><small>{inspectedDossier.loss}</small>
+          <footer>艦を選択 → ドラッグで移動 → 回転または配置決定　{identificationRules ? "◆は重要区画 / " : ""}二本指・Rで回転 / Enterで決定</footer>
+        </div>
+      </details>
+      {placementPreviewActive && (
+        <div className="placement-dock" aria-label="艦の配置操作">
+          <button className="cmd placement-rotate" onClick={rotatePlacement}>
+            <b>↻ 90°回転</b><small>現在：{{ east: "東", south: "南", west: "西", north: "北" }[orientation]}向き</small>
+          </button>
+          <button
+            className={"cmd primary placement-confirm " + (placementValid ? "ready" : "")}
+            onClick={() => placeAt(cursor)}
+            disabled={!placementValid}
+          >
+            <b>✓ 配置決定</b><small>{placementValid ? coordName(cursor) + " に固定" : "重複または配置範囲外"}</small>
+          </button>
+          {placementBackup && (
+            <button className="placement-restore" onClick={restorePlacement}>元の位置に戻す <span>ESC</span></button>
+          )}
+        </div>
+      )}
+      <div className="placement-secondary">
+        <button className="cmd" onClick={clearPlacement}><b>CLEAR</b><small>配置をやり直す</small></button>
+        <button className="cmd" onClick={randomize}><b>RANDOM</b><small>自動配置</small></button>
+      </div>
+      {player.current.allPlaced(playerFleet) && (
+        <button className="cmd battle-start placement-start" onClick={startBattle}>
+          <b>⚔ BATTLE START</b><small>{player.current.ships.length} / {playerFleet.length} 艦配置完了</small>
+        </button>
+      )}
+    </>
+  );
+
   return (
     <main className={"game-shell " + (phase === "review" ? "review-phase " : "") + (activeEffect === "impact" ? "shake" : "")}>
       <div className="noise" />
@@ -1238,7 +1280,7 @@ export function DeepBlueGrid() {
         )}
       </nav>
 
-      <div className={"combat-workspace " + (phase !== "placement" ? "active" : "")}>
+      <div className={"combat-workspace " + (difficulty && (!result || resultReview) ? "active" : "")}>
         <div className="boards" ref={boardsRef}>
         <section className={"tactical-panel " + (portraitPhone && visibleBoard !== "player" ? "mobile-hidden" : "")}>
           <div className="panel-head"><h2>OWN WATERS // 自軍海域</h2><span>DEFENSE GRID</span></div>
@@ -1317,9 +1359,13 @@ export function DeepBlueGrid() {
           }))}</div>
         </section>
         </div>
-        {phase !== "placement" && (!result || resultReview) && (
+        {difficulty && (!result || resultReview) && (
           <aside className="desktop-command-rail" aria-label="戦術指揮卓">
-            {phase === "review" ? (
+            {phase === "placement" ? (
+              <section className="placement-tools rail-placement-tools" aria-label="艦隊配置指揮卓">
+                {renderPlacementControls("rail")}
+              </section>
+            ) : phase === "review" ? (
               <section className="rail-report">
                 <span>DAMAGE REPORT / CIC LOG</span>
                 <b>自軍損害を記録</b>
@@ -1347,40 +1393,8 @@ export function DeepBlueGrid() {
 
 
       {phase === "placement" ? (
-        <section className="placement-tools">
-          <details key={portraitPhone ? "mobile-dossier" : "desktop-dossier"} className="placement-help placement-dossier" open={!portraitPhone}>
-            <summary><span>SHIP DOSSIER</span><b>{inspectedDefinition.name} / {inspectedDefinition.code}</b><em>{inspectedDossier.role}</em><i>艦艇データ</i></summary>
-            <div className="placement-dossier-body">
-              <p>{inspectedDossier.capability}</p><small>{inspectedDossier.loss}</small>
-              <footer>艦を選択 → ドラッグで移動 → 回転または配置決定　{identificationRules ? "◆は重要区画 / " : ""}二本指・Rで回転 / Enterで決定</footer>
-            </div>
-          </details>
-          {placementPreviewActive && (
-            <div className="placement-dock" aria-label="艦の配置操作">
-              <button className="cmd placement-rotate" onClick={rotatePlacement}>
-                <b>↻ 90°回転</b><small>現在：{{ east: "東", south: "南", west: "西", north: "北" }[orientation]}向き</small>
-              </button>
-              <button
-                className={"cmd primary placement-confirm " + (placementValid ? "ready" : "")}
-                onClick={() => placeAt(cursor)}
-                disabled={!placementValid}
-              >
-                <b>✓ 配置決定</b><small>{placementValid ? coordName(cursor) + " に固定" : "重複または配置範囲外"}</small>
-              </button>
-              {placementBackup && (
-                <button className="placement-restore" onClick={restorePlacement}>元の位置に戻す <span>ESC</span></button>
-              )}
-            </div>
-          )}
-          <div className="placement-secondary">
-            <button className="cmd" onClick={clearPlacement}><b>CLEAR</b><small>配置をやり直す</small></button>
-            <button className="cmd" onClick={randomize}><b>RANDOM</b><small>自動配置</small></button>
-          </div>
-          {player.current.allPlaced(playerFleet) && (
-            <button className="cmd battle-start placement-start" onClick={startBattle}>
-              <b>⚔ BATTLE START</b><small>{player.current.ships.length} / {playerFleet.length} 艦配置完了</small>
-            </button>
-          )}
+        <section className="placement-tools compact-placement-bottom">
+          {renderPlacementControls("bottom")}
         </section>
       ) : phase === "review" ? (
         <section className="turn-review compact-command-bottom" aria-label="被害報告">
