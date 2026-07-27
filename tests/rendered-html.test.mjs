@@ -99,7 +99,7 @@ test("radar scan announces its binary result over the playfield", async () => {
   assert.match(game, /radarAlert\.hostile \? radarAlert\.contact \? "FLEET DETECTED" : "SCAN EVADED" : radarAlert\.contact \? "CONTACT!" : "NO CONTACT"/);
   assert.match(game, /指定4区画内に未破壊艦区画あり/);
   assert.match(game, /指定4区画内に反応なし/);
-  assert.match(game, /ESCORT LINK ACTIVE：F-4出撃＋1/);
+  assert.match(game, /ESCORT SUPPORT：F-4出撃＋1/);
   assert.match(css, /\.radar-result/);
   assert.match(game, /setActiveEffect\("scan"\)/);
   assert.match(game, /activeEffect === "impact" \? "shake"/);
@@ -179,6 +179,9 @@ test("survival silent hunter and escort link are explained in the interface", as
   assert.match(game, /ENEMY SILENT RUNNING/);
   assert.match(game, /護衛艦の全区画を空母へ上下左右で隣接/);
   assert.match(game, /LINK ACTIVE/);
+  assert.match(game, /FIRE CONTROL LINK成立。HARPOON射撃＋1/);
+  assert.match(game, /DUAL SUPPORT LINK：F-4＋1 \/ HARPOON＋1/);
+  assert.match(game, /双方への同時リンクも成立/);
 });
 
 test("battle log drawer and victory battlefield review remain accessible", async () => {

@@ -80,17 +80,23 @@ function drawRadarScan(ctx:CanvasRenderingContext2D,origin:Coord,contact:boolean
   ctx.restore();
 }
 function drawEscortZone(ctx:CanvasRenderingContext2D,board:Board,m:number,cell:number,t:number){
-  const carrier=board.ships.find(ship=>ship.id==="carrier"&&!ship.sunk);if(!carrier)return;
-  const cells=new Map<string,Coord>();
-  for(const carrierCell of carrier.cells)for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
-    const coord={x:carrierCell.x+dx,y:carrierCell.y+dy};
+  const targets=board.ships.filter(ship=>(ship.id==="carrier"||ship.id==="battleship")&&!ship.sunk);
+  if(!targets.length)return;
+  const cells=new Map<string,{coord:Coord;targets:Set<"carrier"|"battleship">}>();
+  for(const target of targets)for(const targetCell of target.cells)for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+    const coord={x:targetCell.x+dx,y:targetCell.y+dy};
     if(coord.x<0||coord.y<0||coord.x>=GRID_SIZE||coord.y>=GRID_SIZE||board.shipAt(coord))continue;
-    cells.set(keyOf(coord),coord);
+    const key=keyOf(coord),entry=cells.get(key)??{coord,targets:new Set<"carrier"|"battleship">()};
+    entry.targets.add(target.id as "carrier"|"battleship");cells.set(key,entry);
   }
-  ctx.save();ctx.strokeStyle="rgba(124,229,223,.68)";ctx.lineWidth=Math.max(1,cell*.028);ctx.setLineDash([cell*.1,cell*.08]);ctx.globalAlpha=.62+.18*Math.sin(t*3);
-  for(const coord of cells.values()){
+  ctx.save();ctx.lineWidth=Math.max(1,cell*.028);ctx.setLineDash([cell*.1,cell*.08]);ctx.globalAlpha=.62+.18*Math.sin(t*3);
+  for(const {coord,targets:cellTargets} of cells.values()){
     const x=m+coord.x*cell,y=m+coord.y*cell,pad=cell*.12;
+    const dual=cellTargets.size>1;
+    ctx.strokeStyle=dual?"rgba(255,240,181,.9)":cellTargets.has("carrier")?"rgba(124,229,223,.72)":"rgba(229,215,138,.78)";
     ctx.strokeRect(x+pad,y+pad,cell-pad*2,cell-pad*2);
+    ctx.fillStyle=ctx.strokeStyle;ctx.font=`bold ${Math.max(7,cell*.13)}px monospace`;ctx.textAlign="left";ctx.textBaseline="top";
+    ctx.fillText(dual?"CV+BB":cellTargets.has("carrier")?"CV":"BB",x+pad*1.25,y+pad*1.15);
   }
   ctx.restore();
 }

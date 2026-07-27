@@ -18,6 +18,7 @@ import {
   Board,
   SeededRandom,
   hasEscortLink,
+  hasFireControlLink,
   harpoonCells,
   radarCells,
   type AttackResult,
@@ -49,14 +50,14 @@ const LOST_CAPABILITY: Record<ShipId, string> = {
   cruiser: "面制圧能力喪失。SEA SPARROW使用不能。",
   silentSubmarine: "特殊潜航能力喪失。",
   destroyer: "連続射撃能力喪失。MK-45 II使用不能。",
-  escort: "護衛能力喪失。F-4追加出撃不能。",
+  escort: "護衛支援能力喪失。F-4追加出撃及びHARPOON追加射撃不能。",
   submarine: "音響捜索能力喪失。SPS-10 RADAR使用不能。",
 };
 
 const WEAPON_META: Record<WeaponId, { label: string; carrier?: ShipId; help: string; requirement: string; pattern: string }> = {
   fire: { label: "通常砲撃", help: "敵海域の1マスを攻撃します。", requirement: "目標 1", pattern: "単点 / 1区画" },
   phantom: { label: "F-4 PHANTOM", carrier: "carrier", help: "異なる4マスへ航空攻撃。護衛艦の全区画が空母へ上下左右で隣接し、護衛リンクが成立している間は2回、それ以外は合計1回まで出撃できます。", requirement: "目標 4", pattern: "任意 / 4区画" },
-  harpoon: { label: "HARPOON", carrier: "battleship", help: "照準を中心にX字5マスを攻撃します。", requirement: "中心 1", pattern: "X字 / 5区画" },
+  harpoon: { label: "HARPOON", carrier: "battleship", help: "照準を中心にX字5マスを攻撃。通常2回、護衛艦の全区画が戦艦へ上下左右で隣接し、射撃管制リンクが成立している間は3回まで使用できます。", requirement: "中心 1", pattern: "X字 / 5区画" },
   sparrow: { label: "SEA SPARROW", carrier: "cruiser", help: "2×2の4マスを同時攻撃します。", requirement: "左上 1", pattern: "2×2 / 4区画" },
   mk45: { label: "MK-45 II", carrier: "destroyer", help: "異なる2マスを連続攻撃します。", requirement: "目標 2", pattern: "任意 / 2区画" },
   radar: { label: "SPS-10 RADAR", carrier: "submarine", help: "指定した2×2の4区画を走査します。CONTACTは範囲内に未破壊艦区画あり、NO CONTACTは反応なしを示します。", requirement: "左上 1", pattern: "2×2探知 / 攻撃力なし" },
@@ -64,10 +65,10 @@ const WEAPON_META: Record<WeaponId, { label: string; carrier?: ShipId; help: str
 
 const SHIP_DOSSIER: Record<ShipId, { role: string; capability: string; loss: string }> = {
   carrier: { role: "8区画・航空打撃中枢", capability: "F-4 PHANTOMを運用。護衛リンク成立時は出撃回数＋1。", loss: "喪失するとF-4は以後使用不能。" },
-  battleship: { role: "5区画・主力打撃艦", capability: "HARPOONによるX字5区画攻撃。", loss: "喪失するとHARPOONは以後使用不能。" },
+  battleship: { role: "5区画・主力打撃艦", capability: "HARPOONによるX字5区画攻撃。護衛艦との射撃管制リンク成立時は使用回数＋1。", loss: "喪失するとHARPOONは以後使用不能。" },
   cruiser: { role: "4区画・面制圧艦", capability: "SEA SPARROWによる2×2同時攻撃。", loss: "喪失するとSEA SPARROWは以後使用不能。" },
   destroyer: { role: "3区画・高速火力艦", capability: "MK-45 IIで異なる2区画を連続攻撃。", loss: "喪失するとMK-45 IIは以後使用不能。" },
-  escort: { role: "2区画・航空護衛艦", capability: "護衛艦の全区画を空母へ上下左右で隣接させると、護衛リンク成立。F-4出撃回数＋1。", loss: "喪失またはリンク不成立で追加出撃を失う。隣接配置は範囲攻撃の危険を伴う。" },
+  escort: { role: "2区画・艦隊護衛艦", capability: "全区画を空母へ上下左右で隣接させるとF-4＋1、戦艦へ隣接させるとHARPOON＋1。双方への同時リンクも成立。", loss: "喪失またはリンク不成立で追加行動を失う。密集陣形は範囲攻撃の危険を伴う。" },
   submarine: { role: "1区画・音響捜索艦", capability: "SPS-10 RADARを2回使用。最後の1艦になると行動後に音紋が発生。", loss: "喪失するとレーダーは以後使用不能。" },
   silentSubmarine: { role: "1区画・特殊潜航艦", capability: "初回命中後に一度だけ緊急潜航。無音行動中は発砲せず音紋も残さない。", loss: "SURVIVAL第5海域専用の敵艦。" },
 };
@@ -387,6 +388,14 @@ export function DeepBlueGrid() {
       startedAt,
       "stage-start",
     );
+    const airSupport = hasEscortLink(player.current);
+    const fireControl = hasFireControlLink(player.current);
+    if (airSupport && fireControl) {
+      addLog("DUAL SUPPORT LINK成立。F-4出撃＋1 / HARPOON射撃＋1。", "good", startedAt);
+    } else {
+      if (airSupport) addLog("ESCORT SUPPORT成立。F-4出撃＋1。", "good", startedAt);
+      if (fireControl) addLog("FIRE CONTROL LINK成立。HARPOON射撃＋1。", "good", startedAt);
+    }
     if (usesTacticsRules(difficultyRef.current)) {
       setLocked(true);
       audio.current?.confirm();
@@ -631,8 +640,14 @@ export function DeepBlueGrid() {
     if (!player.current.alive(meta.carrier)) return { available: false, status: "搭載艦喪失", reason: "搭載艦が撃沈されたため使用不能です。" };
     const uses = arsenal.current.availableUses(id, player.current);
     const max = arsenal.current.maxUses(id, player.current);
-    const linkStatus = id === "phantom" ? hasEscortLink(player.current) ? " / LINK ACTIVE" : " / LINK INACTIVE" : "";
-    const linkReason = id === "phantom" && !hasEscortLink(player.current) ? "護衛リンク不成立のため、F-4追加出撃は無効です。護衛艦の全区画を空母へ上下左右で隣接させてください。" : "";
+    const formationSupport = playerFleet.includes("escort");
+    const linkActive = id === "phantom" ? hasEscortLink(player.current) : id === "harpoon" ? hasFireControlLink(player.current) : false;
+    const linkStatus = formationSupport && (id === "phantom" || id === "harpoon") ? linkActive ? " / LINK ACTIVE" : " / LINK INACTIVE" : "";
+    const linkReason = formationSupport && id === "phantom" && !linkActive
+      ? "護衛リンク不成立のため、F-4追加出撃は無効です。護衛艦の全区画を空母へ上下左右で隣接させてください。"
+      : formationSupport && id === "harpoon" && !linkActive
+        ? "射撃管制リンク不成立のため、HARPOON追加射撃は無効です。護衛艦の全区画を戦艦へ上下左右で隣接させてください。"
+        : "";
     return { available: uses > 0, status: "残り " + uses + "/" + max + linkStatus, reason: uses > 0 ? linkReason : "このステージでの使用回数を使い切りました。" };
   };
 
@@ -979,8 +994,17 @@ export function DeepBlueGrid() {
     const revealDamage = !concealDamage || Boolean(ship?.sunk);
     const revealIdentity = !concealIdentity || identified || Boolean(ship?.sunk);
     const meterLength = concealDamage && !ship?.sunk ? 5 : definition.size;
+    const airSupport = hasEscortLink(board);
+    const fireControl = hasFireControlLink(board);
     const escortStatus = shipId === "escort" && revealIdentity && ship
-      ? hasEscortLink(board) ? "ESCORT LINK ACTIVE：F-4出撃＋1" : "ESCORT LINK INACTIVE：F-4出撃は1回" : null;
+      ? airSupport && fireControl
+        ? "DUAL SUPPORT LINK：F-4＋1 / HARPOON＋1"
+        : airSupport
+          ? "ESCORT SUPPORT：F-4出撃＋1"
+          : fireControl
+            ? "FIRE CONTROL LINK：HARPOON射撃＋1"
+            : "SUPPORT LINK INACTIVE"
+      : null;
     return (
       <button
         key={shipId}
