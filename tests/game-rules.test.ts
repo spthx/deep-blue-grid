@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { SHIPS, STAGES } from "../app/game/constants.ts";
-import { Arsenal, Board, SeededRandom, criticalCoordFor, harpoonCells, hasEscortLink, radarCells, sparrowCells } from "../app/game/engine.ts";
+import { Arsenal, Board, SeededRandom, criticalCoordFor, harpoonCells, hasEscortLink, hasFireControlLink, radarCells, sparrowCells } from "../app/game/engine.ts";
 import { EnemyAI } from "../app/game/EnemyAI.ts";
 import { nextSubmarineWake, submarineWakeCandidates } from "../app/game/SubmarineWake.ts";
 import { FULL_FLEET, aiSkillFor, enemyFleetFor, missionFor, playerFleetFor, survivingFleet, usesTacticsRules } from "../app/game/Campaign.ts";
@@ -114,7 +114,7 @@ test("random placement is legal and complete across many seeds", () => {
     const occupied = board.ships.flatMap((s) => s.cells.map((c) => `${c.x},${c.y}`));
     assert.equal(new Set(occupied).size, FULL_FLEET.reduce((n, id) => n + SHIPS.find((ship) => ship.id === id)!.size, 0));
     assert.ok(board.ships.every((s) => s.cells.every((c) => c.x >= 0 && c.y >= 0 && c.x < 8 && c.y < 8)));
-    assert.equal(hasEscortLink(board), true);
+    assert.equal(hasEscortLink(board) || hasFireControlLink(board), true);
   }
 });
 
@@ -346,18 +346,49 @@ test("carrier loss disables remaining weapon uses", () => {
   const b = new Board(); b.placeShip("battleship", { x: 0, y: 0 }, "east");
   const arsenal = new Arsenal();
   assert.equal(arsenal.canUse("harpoon", b), true);
+  assert.equal(arsenal.availableUses("harpoon", b), 2);
   for (let x = 0; x < 5; x++) b.attack({ x, y: 0 });
   assert.equal(arsenal.canUse("harpoon", b), false);
-  assert.equal(arsenal.uses.harpoon, 2);
+  assert.equal(arsenal.availableUses("harpoon", b), 2);
 });
 
-test("harpoon keeps two symmetric uses per stage", () => {
+test("harpoon keeps two symmetric uses without a fire-control link", () => {
   const own = new Board(); own.placeShip("battleship", { x: 0, y: 0 }, "east");
   const arsenal = new Arsenal();
-  assert.equal(arsenal.uses.harpoon, 2);
+  assert.equal(arsenal.maxUses("harpoon", own), 2);
+  assert.equal(arsenal.availableUses("harpoon", own), 2);
   assert.equal(arsenal.spend("harpoon", own), true);
   assert.equal(arsenal.spend("harpoon", own), true);
   assert.equal(arsenal.spend("harpoon", own), false);
+});
+
+test("escort fire-control link grants one additional HARPOON shot while both ships survive", () => {
+  const own = new Board();
+  own.placeShip("battleship", { x: 0, y: 0 }, "east");
+  own.placeShip("escort", { x: 1, y: 1 }, "east");
+  const arsenal = new Arsenal();
+  assert.equal(hasFireControlLink(own), true);
+  assert.equal(arsenal.maxUses("harpoon", own), 3);
+  assert.equal(arsenal.availableUses("harpoon", own), 3);
+  assert.equal(arsenal.spend("harpoon", own), true);
+  assert.equal(arsenal.spend("harpoon", own), true);
+  assert.equal(arsenal.availableUses("harpoon", own), 1);
+  own.attack({ x: 1, y: 1 }); own.attack({ x: 2, y: 1 });
+  assert.equal(hasFireControlLink(own), false);
+  assert.equal(arsenal.availableUses("harpoon", own), 0);
+  assert.equal(arsenal.spend("harpoon", own), false);
+});
+
+test("one escort can sustain carrier and battleship bonuses at the same time", () => {
+  const own = new Board();
+  own.placeShip("carrier", { x: 0, y: 0 }, "east");
+  own.placeShip("battleship", { x: 0, y: 3 }, "east");
+  own.placeShip("escort", { x: 1, y: 2 }, "east");
+  const arsenal = new Arsenal();
+  assert.equal(hasEscortLink(own), true);
+  assert.equal(hasFireControlLink(own), true);
+  assert.equal(arsenal.availableUses("phantom", own), 2);
+  assert.equal(arsenal.availableUses("harpoon", own), 3);
 });
 
 test("escort grants one additional F-4 sortie while both ships survive", () => {

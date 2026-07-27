@@ -64,4 +64,5 @@ const ECHO_DIRECTIONS_BY_MODE: Record<"orthogonal" | "octant", ReadonlyArray<Coo
 
 export const ECHO_DIRECTIONS: ReadonlyArray<Coord> = ECHO_DIRECTIONS_BY_MODE[ECHO_MODE];
 
-export const WEAPON_MAX = { phantom: 2, harpoon: 2, sparrow: 1, mk45: 1, radar: 2 } as const;
+// Absolute magazine capacity. Dynamic formation limits are applied by Arsenal.maxUses.
+export const WEAPON_MAX = { phantom: 2, harpoon: 3, sparrow: 1, mk45: 1, radar: 2 } as const;

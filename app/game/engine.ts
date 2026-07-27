@@ -60,8 +60,9 @@ export class Board {
   }
   randomize(rng: SeededRandom, fleet: ShipId[] = STANDARD_FLEET) {
     this.reset();
-    const placementOrder: ShipId[] = fleet.includes("carrier") && fleet.includes("escort")
-      ? ["carrier", "escort", ...fleet.filter((id) => id !== "carrier" && id !== "escort")]
+    const supportTargets = (["carrier", "battleship"] as const).filter((id) => fleet.includes(id));
+    const placementOrder: ShipId[] = fleet.includes("escort") && supportTargets.length
+      ? [...supportTargets, "escort", ...fleet.filter((id) => !supportTargets.includes(id as "carrier" | "battleship") && id !== "escort")]
       : [...fleet];
     for (const id of placementOrder) {
       const def = SHIPS.find((ship) => ship.id === id)!;
@@ -69,11 +70,14 @@ export class Board {
       for (let y = 0; y < GRID_SIZE; y++) for (let x = 0; x < GRID_SIZE; x++) for (const orientation of ORIENTATIONS) {
         if (this.canPlace(def.id, { x, y }, orientation)) candidates.push({ start: { x, y }, orientation });
       }
-      const carrier = this.ships.find((ship) => ship.id === "carrier" && !ship.sunk);
-      const linked = id === "escort" && carrier
-        ? candidates.filter(({ start, orientation }) => this.cellsFor(start, def.size, orientation, id).every((escortCell) =>
-            carrier.cells.some((carrierCell) => Math.abs(escortCell.x - carrierCell.x) + Math.abs(escortCell.y - carrierCell.y) === 1),
-          ))
+      const capitalShips = this.ships.filter((ship) => (ship.id === "carrier" || ship.id === "battleship") && !ship.sunk);
+      const linked = id === "escort" && capitalShips.length
+        ? candidates.filter(({ start, orientation }) => {
+            const escortCells = this.cellsFor(start, def.size, orientation, id);
+            return capitalShips.some((capitalShip) => escortCells.every((escortCell) =>
+              capitalShip.cells.some((capitalCell) => Math.abs(escortCell.x - capitalCell.x) + Math.abs(escortCell.y - capitalCell.y) === 1),
+            ));
+          })
         : [];
       const choice = rng.pick(linked.length ? linked : candidates);
       this.placeShip(def.id, choice.start, choice.orientation);
@@ -141,13 +145,16 @@ export class Board {
 
 export function harpoonCells(center: Coord) { return HARPOON_PATTERN.map((o) => ({ x: center.x + o.x, y: center.y + o.y })).filter(inBounds); }
 export function radarCells(origin: Coord) { return [{ x: origin.x, y: origin.y }, { x: origin.x + 1, y: origin.y }, { x: origin.x, y: origin.y + 1 }, { x: origin.x + 1, y: origin.y + 1 }].filter(inBounds); }
-export function hasEscortLink(board: Board) {
-  const carrier = board.ships.find((ship) => ship.id === "carrier" && !ship.sunk);
+function hasEscortLinkTo(board: Board, targetId: "carrier" | "battleship") {
+  const target = board.ships.find((ship) => ship.id === targetId && !ship.sunk);
   const escort = board.ships.find((ship) => ship.id === "escort" && !ship.sunk);
-  return Boolean(carrier && escort && escort.cells.every((escortCell) =>
-    carrier.cells.some((carrierCell) => Math.abs(escortCell.x - carrierCell.x) + Math.abs(escortCell.y - carrierCell.y) === 1),
+  return Boolean(target && escort && escort.cells.every((escortCell) =>
+    target.cells.some((targetCell) => Math.abs(escortCell.x - targetCell.x) + Math.abs(escortCell.y - targetCell.y) === 1),
   ));
 }
+
+export function hasEscortLink(board: Board) { return hasEscortLinkTo(board, "carrier"); }
+export function hasFireControlLink(board: Board) { return hasEscortLinkTo(board, "battleship"); }
 
 export const sparrowCells = radarCells;
 
@@ -155,11 +162,13 @@ export class Arsenal {
   uses = { ...WEAPON_MAX };
   reset() { this.uses = { ...WEAPON_MAX }; }
   maxUses(id: keyof typeof WEAPON_MAX, board: Board) {
-    return id === "phantom" && !hasEscortLink(board) ? 1 : WEAPON_MAX[id];
+    if (id === "phantom") return hasEscortLink(board) ? WEAPON_MAX.phantom : 1;
+    if (id === "harpoon") return hasFireControlLink(board) ? WEAPON_MAX.harpoon : 2;
+    return WEAPON_MAX[id];
   }
   availableUses(id: keyof typeof WEAPON_MAX, board: Board) {
-    if (id === "phantom") {
-      const spent = WEAPON_MAX.phantom - this.uses.phantom;
+    if (id === "phantom" || id === "harpoon") {
+      const spent = WEAPON_MAX[id] - this.uses[id];
       return Math.max(0, this.maxUses(id, board) - spent);
     }
     return this.uses[id];
