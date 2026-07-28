@@ -11,7 +11,7 @@ permissions:
 jobs:
   audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -26,6 +26,13 @@ jobs:
           BALANCE_AUDIT_SEEDS: 240
           BALANCE_AUDIT_SURVIVAL_SEEDS: 240
         run: node --experimental-strip-types scripts/balance-audit.ts
+      - name: Survival enemy composition search
+        env:
+          SURVIVAL_SCREEN_TRIALS: 220
+          SURVIVAL_CALIBRATION_TRIALS: 220
+          SURVIVAL_FINAL_TRIALS: 3000
+          SURVIVAL_FINALIST_COUNT: 6
+        run: node --experimental-strip-types scripts/survival-composition-audit.ts
       - uses: actions/upload-artifact@v4
         if: always()
         with:
