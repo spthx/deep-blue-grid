@@ -21,23 +21,166 @@ jobs:
       - run: npm ci
       - name: Existing build and rule tests
         run: npm test
-      - name: Configure approximately 3000 campaign simulations
+      - name: Configure skilled-player composition audit
         run: |
           python - <<'PY'
           from pathlib import Path
           p = Path('scripts/survival-composition-audit.ts')
           s = p.read_text()
-          s = s.replace('Math.max(80, Number(process.env.SURVIVAL_SCREEN_TRIALS ?? 220))', 'Math.max(20, Number(process.env.SURVIVAL_SCREEN_TRIALS ?? 25))')
+          s = s.replace('Math.max(80, Number(process.env.SURVIVAL_SCREEN_TRIALS ?? 220))', 'Math.max(20, Number(process.env.SURVIVAL_SCREEN_TRIALS ?? 20))')
           s = s.replace('Math.max(80, Number(process.env.SURVIVAL_CALIBRATION_TRIALS ?? 220))', 'Math.max(20, Number(process.env.SURVIVAL_CALIBRATION_TRIALS ?? 30))')
-          s = s.replace('Math.max(500, Number(process.env.SURVIVAL_FINAL_TRIALS ?? 3000))', 'Math.max(200, Number(process.env.SURVIVAL_FINAL_TRIALS ?? 300))')
+          s = s.replace('Math.max(500, Number(process.env.SURVIVAL_FINAL_TRIALS ?? 3000))', 'Math.max(200, Number(process.env.SURVIVAL_FINAL_TRIALS ?? 250))')
           s = s.replace('Math.max(4, Number(process.env.SURVIVAL_FINALIST_COUNT ?? 6))', 'Math.max(2, Number(process.env.SURVIVAL_FINALIST_COUNT ?? 3))')
+          s = s.replace(
+              'const PLAYER_SKILLS = [1.35, 1.55, 1.75, 1.95, 2.15, 2.35, 2.55, 2.75, 2.95];',
+              'const PLAYER_INSIGHTS = [0.10, 0.18, 0.26, 0.34, 0.42, 0.50, 0.58, 0.66, 0.74, 0.82];',
+          )
+          s = s.replace('playerSkill', 'playerInsight')
+          s = s.replace('choosePlayerSkill', 'choosePlayerInsight')
+          s = s.replace('selectedSkill', 'selectedInsight')
+          marker = 'function battle(args: {\n'
+          smart = '''function decidePlayerAction(
+            ai: EnemyAI,
+            ownBoard: Board,
+            targetBoard: Board,
+            insight: number,
+            rng: SeededRandom,
+          ): AIDecision {
+            if (rng.next() < insight) {
+              const damaged = targetBoard.ships
+                .filter((ship) => !ship.sunk && ship.hits.size > 0)
+                .flatMap((ship) => ship.cells.filter((cell) => !ship.hits.has(`${cell.x},${cell.y}`)));
+              const live = targetBoard.ships
+                .filter((ship) => !ship.sunk)
+                .flatMap((ship) => ship.cells.filter((cell) => !ship.hits.has(`${cell.x},${cell.y}`)));
+              const candidates = damaged.length ? damaged : live;
+              if (candidates.length) {
+                return {
+                  weapon: "fire",
+                  targets: [{ ...rng.pick(candidates) }],
+                  state: damaged.length ? "TARGET" : "SEARCH",
+                };
+              }
+            }
+            return ai.decide(ownBoard);
+          }
+
+          function battle(args: {
+          '''
+          if marker not in s:
+              raise SystemExit('battle marker not found')
+          s = s.replace(marker, smart, 1)
+          old_ctor = '''    playerInsight,
+            "tactics",
+            1,
+          );
+          const enemyAi'''
+          new_ctor = '''    1.55,
+            "tactics",
+            1,
+          );
+          const insightRng = new SeededRandom(seed ^ 0xa4093822);
+          const enemyAi'''
+          if old_ctor not in s:
+              raise SystemExit('player constructor not found')
+          s = s.replace(old_ctor, new_ctor, 1)
+          old_decision = '''        decision: playerAi.decide(playerBoard),
+                wakes: playerWakes,'''
+          new_decision = '''        decision: decidePlayerAction(
+                  playerAi,
+                  playerBoard,
+                  enemyBoard,
+                  playerInsight,
+                  insightRng,
+                ),
+                wakes: playerWakes,'''
+          if old_decision not in s:
+              raise SystemExit('player decision not found')
+          s = s.replace(old_decision, new_decision, 1)
+          start = s.index('function choosePlayerInsight() {')
+          end = s.index('\nfunction compositionText', start)
+          s = s[:start] + '''function choosePlayerInsight() {
+            const calibration = PLAYER_INSIGHTS.map((insight) => {
+              const evaluated = evaluate(BASELINE, insight, CALIBRATION_TRIALS);
+              return { insight, aggregate: evaluated.aggregate };
+            });
+            const selected = [...calibration].sort((left, right) => {
+              const leftDistance = Math.abs(left.aggregate.retryClearRate - TARGET_RETRY_CLEAR_RATE);
+              const rightDistance = Math.abs(right.aggregate.retryClearRate - TARGET_RETRY_CLEAR_RATE);
+              if (leftDistance !== rightDistance) return leftDistance - rightDistance;
+              return right.aggregate.reachRates[5] - left.aggregate.reachRates[5];
+            })[0];
+            return { calibration, selected };
+          }
+          ''' + s[end:]
+          s = s.replace('calibration: Array<{ skill: number; aggregate: Aggregate }>;', 'calibration: Array<{ insight: number; aggregate: Aggregate }>;')
+          s = s.replace('|AI skill|3回再挑戦込み|一発通し|第6面到達|', '|推理補正率|3回再挑戦込み|一発通し|第6面到達|')
+          s = s.replace('`${row.skill.toFixed(2)}', '`${percent(row.insight)}')
+          s = s.replace(
+              '採用 skill: **${report.selectedInsight.toFixed(2)}**（「ギリギリ通せる」基準として8%に最も近いもの）。',
+              '採用推理補正率: **${percent(report.selectedInsight)}**（現行を「ギリギリ通せる」8%前後へ合わせた代理設定）。',
+          )
+          s = s.replace('selected.skill', 'selected.insight')
+          s = s.replace('skill: row.skill,', 'insight: row.insight,')
+          s = s.replace('## 3000回最終比較', '## 最終候補比較')
+          s = s.replace('同一3000シードにおける候補間', '同一シードにおける候補間')
+          s = s.replace(
+              '- プレイヤー代理は毎面、空母・戦艦・護衛艦のDUAL SUPPORT LINKが成立する4種類の回転配置を使い、実装のEnemyAIを熟練側へ校正しています。',
+              '- プレイヤー代理は毎面、DUAL SUPPORT LINKが成立する4種類の回転配置を使います。推理補正率は、人間がECHO・既命中位置・艦形から正解区画へ絞る強さを確率化したものです。',
+          )
+          old_manual = '''  for (const id of [
+              "s6-remove-escort",
+              "s6-remove-submarine",
+              "s2-remove-escort",
+            ]) {'''
+          new_manual = '''  for (const id of [
+              "s2-remove-escort",
+              "s3-remove-escort",
+              "s4-remove-escort",
+              "s4-remove-submarine",
+              "s6-remove-escort",
+              "s6-remove-submarine",
+            ]) {'''
+          if old_manual not in s:
+              raise SystemExit('manual finalists block not found')
+          s = s.replace(old_manual, new_manual, 1)
+          old_select = '''  const designSafe = nonBaseline.filter(
+              (row) =>
+                row.retryDelta.delta > 0 &&
+                row.candidate.stage !== 1 &&
+                row.candidate.stage !== 5,
+            );
+            const confirmedDesignSafe = designSafe.filter((row) => row.retryDelta.low > 0);
+            const balancedPool = confirmedDesignSafe.length ? confirmedDesignSafe : designSafe;
+            const recommended = [...(balancedPool.length ? balancedPool : nonBaseline)].sort(
+              (left, right) => right.efficiency - left.efficiency,
+            )[0];'''
+          new_select = '''  const designSafe = nonBaseline.filter(
+              (row) => row.candidate.stage !== 1 && row.candidate.stage !== 5,
+            );
+            const positiveDesignSafe = designSafe.filter((row) => row.retryDelta.delta > 0);
+            const confirmedDesignSafe = positiveDesignSafe.filter((row) => row.retryDelta.low > 0);
+            const balancedPool = confirmedDesignSafe.length
+              ? confirmedDesignSafe
+              : positiveDesignSafe.length
+                ? positiveDesignSafe
+                : designSafe;
+            const recommended = [...balancedPool].sort(
+              (left, right) => right.efficiency - left.efficiency,
+            )[0];'''
+          if old_select not in s:
+              raise SystemExit('recommendation block not found')
+          s = s.replace(old_select, new_select, 1)
+          if 'row.skill' in s or 'selected.skill' in s or 'PLAYER_SKILLS' in s:
+              raise SystemExit('incomplete insight migration')
           p.write_text(s)
           PY
+          node --experimental-strip-types --check scripts/survival-composition-audit.ts
       - name: Survival enemy composition search
         env:
-          SURVIVAL_SCREEN_TRIALS: 25
+          SURVIVAL_SCREEN_TRIALS: 20
           SURVIVAL_CALIBRATION_TRIALS: 30
-          SURVIVAL_FINAL_TRIALS: 300
+          SURVIVAL_FINAL_TRIALS: 250
           SURVIVAL_FINALIST_COUNT: 3
         run: node --experimental-strip-types scripts/survival-composition-audit.ts
       - uses: actions/upload-artifact@v4
