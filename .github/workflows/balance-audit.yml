@@ -1,0 +1,34 @@
+name: Balance audit
+
+on:
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+      - run: npm ci
+      - name: Existing build and rule tests
+        run: npm test
+      - name: Deterministic balance simulation
+        env:
+          BALANCE_AUDIT_SEEDS: 240
+          BALANCE_AUDIT_SURVIVAL_SEEDS: 240
+        run: node --experimental-strip-types scripts/balance-audit.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deep-blue-grid-balance-audit
+          path: artifacts/
+          if-no-files-found: warn
