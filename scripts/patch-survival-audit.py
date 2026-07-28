@@ -11,6 +11,8 @@ SMART_FUNCTION = '''function decidePlayerAction(
   insight: number,
   rng: SeededRandom,
 ): AIDecision {
+  const normal = ai.decide(ownBoard);
+  if (normal.weapon !== "fire") return normal;
   if (rng.next() < insight) {
     const damaged = targetBoard.ships
       .filter((ship) => !ship.sunk && ship.hits.size > 0)
@@ -27,7 +29,7 @@ SMART_FUNCTION = '''function decidePlayerAction(
       };
     }
   }
-  return ai.decide(ownBoard);
+  return normal;
 }
 '''.splitlines()
 
@@ -44,7 +46,7 @@ def main() -> None:
         "const FINALIST_COUNT = Math.max(4, Number(process.env.SURVIVAL_FINALIST_COUNT ?? 6));":
             "const FINALIST_COUNT = Math.max(3, Number(process.env.SURVIVAL_FINALIST_COUNT ?? 5));",
         "const PLAYER_SKILLS = [1.35, 1.55, 1.75, 1.95, 2.15, 2.35, 2.55, 2.75, 2.95];":
-            "const PLAYER_SKILLS = [0.10, 0.18, 0.26, 0.34, 0.42, 0.50, 0.58, 0.66, 0.74, 0.82];",
+            "const PLAYER_SKILLS = [0.10, 0.18, 0.26, 0.34, 0.42, 0.50, 0.58, 0.66, 0.74, 0.82, 0.90, 0.98];",
     }
     for old, new in replacements.items():
         if old not in text:
@@ -57,6 +59,8 @@ def main() -> None:
         "|推理補正率|3回再挑戦込み|一発通し|第6面到達|",
     )
     text = text.replace("採用 skill:", "採用推理補正率:")
+    text = text.replace("`${row.skill.toFixed(2)}", "`${percent(row.skill)}")
+    text = text.replace("${report.selectedSkill.toFixed(2)}", "${percent(report.selectedSkill)}")
     text = text.replace("## 3000回最終比較", "## 最終候補比較")
     text = text.replace("同一3000シードにおける候補間", "同一シードにおける候補間")
     text = text.replace(
