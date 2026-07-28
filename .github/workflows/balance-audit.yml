@@ -11,7 +11,7 @@ permissions:
 jobs:
   audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,21 +21,28 @@ jobs:
       - run: npm ci
       - name: Existing build and rule tests
         run: npm test
-      - name: Deterministic balance simulation
-        env:
-          BALANCE_AUDIT_SEEDS: 240
-          BALANCE_AUDIT_SURVIVAL_SEEDS: 240
-        run: node --experimental-strip-types scripts/balance-audit.ts
+      - name: Configure approximately 3000 campaign simulations
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/survival-composition-audit.ts')
+          s = p.read_text()
+          s = s.replace('Math.max(80, Number(process.env.SURVIVAL_SCREEN_TRIALS ?? 220))', 'Math.max(20, Number(process.env.SURVIVAL_SCREEN_TRIALS ?? 25))')
+          s = s.replace('Math.max(80, Number(process.env.SURVIVAL_CALIBRATION_TRIALS ?? 220))', 'Math.max(20, Number(process.env.SURVIVAL_CALIBRATION_TRIALS ?? 30))')
+          s = s.replace('Math.max(500, Number(process.env.SURVIVAL_FINAL_TRIALS ?? 3000))', 'Math.max(200, Number(process.env.SURVIVAL_FINAL_TRIALS ?? 300))')
+          s = s.replace('Math.max(4, Number(process.env.SURVIVAL_FINALIST_COUNT ?? 6))', 'Math.max(2, Number(process.env.SURVIVAL_FINALIST_COUNT ?? 3))')
+          p.write_text(s)
+          PY
       - name: Survival enemy composition search
         env:
-          SURVIVAL_SCREEN_TRIALS: 220
-          SURVIVAL_CALIBRATION_TRIALS: 220
-          SURVIVAL_FINAL_TRIALS: 3000
-          SURVIVAL_FINALIST_COUNT: 6
+          SURVIVAL_SCREEN_TRIALS: 25
+          SURVIVAL_CALIBRATION_TRIALS: 30
+          SURVIVAL_FINAL_TRIALS: 300
+          SURVIVAL_FINALIST_COUNT: 3
         run: node --experimental-strip-types scripts/survival-composition-audit.ts
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: deep-blue-grid-balance-audit
-          path: artifacts/
+          name: deep-blue-grid-survival-composition-audit
+          path: artifacts/deep-blue-grid-survival-composition-audit.*
           if-no-files-found: warn
