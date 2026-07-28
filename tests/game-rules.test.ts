@@ -58,8 +58,8 @@ test("command assessment changes its finding for prolonged low-accuracy searches
     specialUsed: 0, unusedSpecials: [{ label: "SPS-10", uses: 2 }], firstLoss: "battleship",
     identified: 0, enemyTotalShips: 5, identificationRules: false,
   });
-  assert.match(report.finding, /索敵射撃、命中率18%/);
-  assert.match(report.finding, /候補海域圧縮/);
+  assert.match(report.finding, /捜索射撃、命中率18%/);
+  assert.match(report.finding, /敵推定位置の絞り込み/);
 });
 
 test("survival assessment recognizes cumulative losses and a near victory under disadvantage", () => {

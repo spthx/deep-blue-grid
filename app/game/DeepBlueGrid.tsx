@@ -50,7 +50,7 @@ const LOST_CAPABILITY: Record<ShipId, string> = {
   cruiser: "面制圧能力喪失。SEA SPARROW使用不能。",
   silentSubmarine: "特殊潜航能力喪失。",
   destroyer: "連続射撃能力喪失。MK-45 II使用不能。",
-  escort: "護衛支援能力喪失。F-4追加出撃及びHARPOON追加射撃不能。",
+  escort: "護衛支援能力喪失。F-4追加出撃及びHARPOON追加発射不能。",
   submarine: "音響捜索能力喪失。SPS-10 RADAR使用不能。",
 };
 
@@ -61,6 +61,15 @@ const WEAPON_META: Record<WeaponId, { label: string; carrier?: ShipId; help: str
   sparrow: { label: "SEA SPARROW", carrier: "cruiser", help: "2×2の4マスを同時攻撃します。", requirement: "左上 1", pattern: "2×2 / 4区画" },
   mk45: { label: "MK-45 II", carrier: "destroyer", help: "異なる2マスを連続攻撃します。", requirement: "目標 2", pattern: "任意 / 2区画" },
   radar: { label: "SPS-10 RADAR", carrier: "submarine", help: "指定した2×2の4区画を走査します。CONTACTは範囲内に未破壊艦区画あり、NO CONTACTは反応なしを示します。", requirement: "左上 1", pattern: "2×2探知 / 攻撃力なし" },
+};
+
+const ACTION_LABEL: Record<WeaponId, string> = {
+  fire: "艦砲射撃",
+  phantom: "攻撃隊発進",
+  harpoon: "HARPOON 発射",
+  sparrow: "SEA SPARROW 斉射",
+  mk45: "MK-45 II 連続射撃",
+  radar: "走査開始",
 };
 
 const SHIP_DOSSIER: Record<ShipId, { role: string; capability: string; loss: string }> = {
@@ -104,7 +113,7 @@ export function DeepBlueGrid() {
   const [stageIndex, setStageIndex] = useState(0);
   const [difficulty, setDifficulty] = useState<GameMode | null>(null);
   const [survivalFleet, setSurvivalFleet] = useState<ShipId[]>([...FULL_FLEET]);
-  const [portraitPhone, setPortraitPhone] = useState(false);
+  const [compactViewport, setCompactViewport] = useState(false);
   const [visibleBoard, setVisibleBoard] = useState<"player" | "enemy">("player");
   const stage = STAGES[stageIndex];
   const mission = missionFor(difficulty ?? difficultyRef.current, stage);
@@ -219,22 +228,20 @@ export function DeepBlueGrid() {
   }, [initStage]);
 
   useEffect(() => {
-    const portraitQuery = window.matchMedia("(max-width: 760px) and (orientation: portrait)");
-    const updateLayout = () => setPortraitPhone(portraitQuery.matches);
+    const portraitQuery = window.matchMedia("(max-width: 1099px) and (orientation: portrait), (max-width: 959px) and (max-height: 600px)");
+    const updateLayout = () => setCompactViewport(portraitQuery.matches);
     updateLayout();
     portraitQuery.addEventListener("change", updateLayout);
     return () => portraitQuery.removeEventListener("change", updateLayout);
   }, []);
 
   useEffect(() => {
-    if (!portraitPhone) return;
+    if (!compactViewport || !difficulty) return;
     setVisibleBoard(phase === "player" ? "enemy" : "player");
-    if (phase !== "placement") {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => boardsRef.current?.scrollIntoView({ block: "start", behavior: "auto" }));
-      });
-    }
-  }, [phase, portraitPhone]);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => boardsRef.current?.scrollIntoView({ block: "start", behavior: "auto" }));
+    });
+  }, [phase, compactViewport, difficulty]);
 
   const startCampaign = (selectedDifficulty: GameMode) => {
     const startingFleet = selectedDifficulty === "survival" ? [...FULL_FLEET] : STAGES[0].fleet;
@@ -391,10 +398,10 @@ export function DeepBlueGrid() {
     const airSupport = hasEscortLink(player.current);
     const fireControl = hasFireControlLink(player.current);
     if (airSupport && fireControl) {
-      addLog("DUAL SUPPORT LINK成立。F-4出撃＋1 / HARPOON射撃＋1。", "good", startedAt);
+      addLog("DUAL SUPPORT LINK：ACTIVE。F-4出撃＋1 / HARPOON発射＋1。", "good", startedAt);
     } else {
-      if (airSupport) addLog("ESCORT SUPPORT成立。F-4出撃＋1。", "good", startedAt);
-      if (fireControl) addLog("FIRE CONTROL LINK成立。HARPOON射撃＋1。", "good", startedAt);
+      if (airSupport) addLog("ESCORT SUPPORT：ACTIVE。F-4出撃＋1。", "good", startedAt);
+      if (fireControl) addLog("FIRE CONTROL LINK：ACTIVE。HARPOON発射＋1。", "good", startedAt);
     }
     if (usesTacticsRules(difficultyRef.current)) {
       setLocked(true);
@@ -404,7 +411,7 @@ export function DeepBlueGrid() {
       return;
     }
     setPhase("player");
-    setMessage("COMMAND：兵装を選び、敵海域に照準を置いてください。");
+    setMessage("AWAITING ORDERS：兵装を選択し、敵情図へ目標を指示してください。");
     setFlash("player");
     setTimeout(() => setFlash(null), 1050);
     audio.current?.confirm();
@@ -422,7 +429,7 @@ export function DeepBlueGrid() {
     const decision = ai.current.decide(enemy.current);
     setMessage(decision.weapon === "hold"
       ? "ENEMY SILENT RUNNING：発砲・音紋反応なし。"
-      : "ENEMY TARGETING：" + WEAPON_META[decision.weapon].label + " LOCK");
+      : "HOSTILE TARGETING：" + WEAPON_META[decision.weapon].label + " LOCK");
     setActive(decision.weapon === "radar" ? radarCells(decision.targets[0]) : decision.targets);
     setActiveEffect(decision.weapon === "radar" ? "scan" : decision.weapon === "hold" ? "none" : "target");
     if (decision.weapon === "radar") audio.current?.sonar();
@@ -486,7 +493,7 @@ export function DeepBlueGrid() {
             ? "護衛能力喪失。"
             : LOST_CAPABILITY[struckShip.id];
           const loss = result.kind === "SUNK" ? `撃沈。${lostCapability}` : "";
-          addLog(`敵${WEAPON_META[decision.weapon].label}着弾。${struckShip.name} / ${definition.code} ${coordName(result.coord)} 被弾。${critical}${loss}`, "bad");
+          addLog(`敵${WEAPON_META[decision.weapon].label}による攻撃。${struckShip.name} / ${definition.code} ${coordName(result.coord)} 被弾。${critical}${loss}`, "bad");
         }
       } else {
         addLog(report, "info");
@@ -502,8 +509,7 @@ export function DeepBlueGrid() {
     if (player.current.allSunk()) {
       const endedAt = Date.now();
       addLog("自軍艦隊、戦闘能力喪失。", "bad", endedAt);
-      addLog("作戦続行不能。撤退命令を発令。", "bad", endedAt);
-      addLog("作戦中止。", "bad", endedAt);
+      addLog("作戦続行不能。交戦終了、作戦中止。", "bad", endedAt);
       addStageSummary(endedAt);
       addLog(`＝ STAGE ${stage.id} / 交戦終了・作戦中止 ＝`, "bad", endedAt, "stage-end");
       setOperationEnd(endedAt);
@@ -513,17 +519,17 @@ export function DeepBlueGrid() {
       return;
     }
     setPhase("review");
-    setMessage("DAMAGE REPORT：敵行動終了。自軍損害を確認し、CIC LOGへ記録してください。");
+    setMessage("DAMAGE ASSESSMENT：敵攻撃終了。自軍の損傷と着弾記録を確認してください。");
   };
 
   const continueToPlayer = () => {
-    addLog("被害報告をCIC LOGへ記録。攻撃指揮へ移行。", "info");
+    addLog("被害確認完了。CIC戦闘記録を更新、攻撃指揮へ復帰。", "info");
     setWeapon("fire");
     setPicked([]);
     setIdentificationAlert(null);
     setPhase("player");
     setFlash("player");
-    setMessage("COMMAND：兵装と目標を選択してください。");
+    setMessage("AWAITING ORDERS：兵装と目標を選択してください。");
     audio.current?.turn();
     setTimeout(() => setFlash(null), 1050);
     setLocked(false);
@@ -531,7 +537,7 @@ export function DeepBlueGrid() {
 
   const showBoard = (board: "player" | "enemy") => {
     setVisibleBoard(board);
-    if (portraitPhone) {
+    if (compactViewport) {
       requestAnimationFrame(() => boardsRef.current?.scrollIntoView({ block: "start", behavior: "auto" }));
     }
   };
@@ -600,7 +606,7 @@ export function DeepBlueGrid() {
     addLog(WEAPON_META[weapon].label + "： " + report, hits ? "good" : "info");
     const emergencyHit = results.find((result) => result.shipId === "silentSubmarine" && result.kind === "HIT");
     if (emergencyHit && enemy.current.relocateShip("silentSubmarine", rngRef.current)) {
-      const diveReport = "EMERGENCY DIVE：敵特殊潜航艦、緊急潜航。旧接触点から反応消失。";
+      const diveReport = "EMERGENCY DIVE：敵特殊潜航艦、緊急潜航。最終接触位置から反応消失。";
       setMessage(diveReport);
       addLog(diveReport, "bad");
       setDiveAlert(true);
@@ -619,7 +625,7 @@ export function DeepBlueGrid() {
       const endedAt = Date.now();
       const finalStage = stageIndex === STAGES.length - 1;
       addLog("敵艦隊の戦闘能力喪失を確認。", "good", endedAt);
-      addLog(finalStage ? "全作戦目標達成。対象海域を制圧。" : "作戦目標達成。対象海域を制圧。", "good", endedAt);
+      addLog(finalStage ? "全作戦目標達成。対象海域の敵性脅威を排除。" : "作戦目標達成。対象海域の敵性脅威を排除。", "good", endedAt);
       addLog("戦闘配置を解除。", "good", endedAt);
       addStageSummary(endedAt);
       addLog(`＝ STAGE ${stage.id} / 作戦目標達成 ＝`, "good", endedAt, "stage-end");
@@ -646,7 +652,7 @@ export function DeepBlueGrid() {
     const linkReason = formationSupport && id === "phantom" && !linkActive
       ? "護衛リンク不成立のため、F-4追加出撃は無効です。護衛艦の全区画を空母へ上下左右で隣接させてください。"
       : formationSupport && id === "harpoon" && !linkActive
-        ? "射撃管制リンク不成立のため、HARPOON追加射撃は無効です。護衛艦の全区画を戦艦へ上下左右で隣接させてください。"
+        ? "射撃管制リンク不成立のため、HARPOON追加発射は無効です。護衛艦の全区画を戦艦へ上下左右で隣接させてください。"
         : "";
     return { available: uses > 0, status: "残り " + uses + "/" + max + linkStatus, reason: uses > 0 ? linkReason : "このステージでの使用回数を使い切りました。" };
   };
@@ -782,7 +788,7 @@ export function DeepBlueGrid() {
         setCursor(findPlacementStart(next, nextOrientation, coord));
         setMessage(placedName + " 配置完了。次の艦を配置してください。");
       } else {
-        setMessage("全艦配置完了。BATTLE STARTで交戦を開始できます。");
+        setMessage("全艦配置完了。交戦開始命令を待機しています。");
       }
       bump();
     } else {
@@ -832,7 +838,7 @@ export function DeepBlueGrid() {
       setSelectedShip(shipId);
       setOrientation(placed.orientation);
       setCursor(start);
-      setMessage(placed.name + "を再配置します。ドラッグで移動し、配置ドックで決定してください。");
+      setMessage(placed.name + "を再配置します。ドラッグで移動し、配置パネルで決定してください。");
       audio.current?.cursor();
       bump();
       return;
@@ -845,7 +851,7 @@ export function DeepBlueGrid() {
     setSelectedShip(shipId);
     setOrientation(nextOrientation);
     setCursor(findPlacementStart(shipId, nextOrientation));
-    setMessage("シルエットをドラッグで移動。配置ドックで回転または決定してください。");
+    setMessage("シルエットをドラッグで移動。配置パネルで回転または決定してください。");
     audio.current?.cursor();
   };
 
@@ -998,11 +1004,11 @@ export function DeepBlueGrid() {
     const fireControl = hasFireControlLink(board);
     const escortStatus = shipId === "escort" && revealIdentity && ship
       ? airSupport && fireControl
-        ? "DUAL SUPPORT LINK：F-4＋1 / HARPOON＋1"
+        ? "DUAL SUPPORT LINK：ACTIVE / F-4＋1 / HARPOON＋1"
         : airSupport
-          ? "ESCORT SUPPORT：F-4出撃＋1"
+          ? "ESCORT SUPPORT：ACTIVE / F-4＋1"
           : fireControl
-            ? "FIRE CONTROL LINK：HARPOON射撃＋1"
+            ? "FIRE CONTROL LINK：ACTIVE / HARPOON＋1"
             : "SUPPORT LINK INACTIVE"
       : null;
     return (
@@ -1018,7 +1024,7 @@ export function DeepBlueGrid() {
         title={!revealIdentity ? "未識別艦" : definition.weapon === "NONE" ? "特殊兵装なし" : "搭載兵装：" + definition.weapon}
       >
         <strong>{revealIdentity ? definition.name + " / " + definition.code : "UNKNOWN CONTACT / " + String(contactIndex + 1).padStart(2, "0")}</strong>
-        <small>{ship?.sunk ? "LOST" : !revealIdentity ? "SIGNATURE UNKNOWN" : escortStatus ?? (ship ? concealDamage ? "IDENTIFIED / HULL DATA MASKED" : selectable ? "配置済み / タップで再配置" : "DEPLOYED" : selectable ? selectedShip === shipId ? "選択中 / ドックで回転・決定" : "タップして選択" : concealDamage ? "HULL DATA MASKED" : "UNKNOWN")}</small>
+        <small>{ship?.sunk ? "LOST" : !revealIdentity ? "SIGNATURE UNKNOWN" : escortStatus ?? (ship ? concealDamage ? "IDENTIFIED / DAMAGE STATUS UNKNOWN" : selectable ? "配置済み / タップで再配置" : "DEPLOYED" : selectable ? selectedShip === shipId ? "選択中 / 配置パネルで回転・決定" : "タップして選択" : concealDamage ? "DAMAGE STATUS UNKNOWN" : "UNKNOWN")}</small>
         <span className={"hull-meter " + (!revealDamage ? "concealed" : "")}>
           {Array.from({ length: meterLength }, (_, index) => <i key={index} className={revealDamage && ship && index < ship.hits.size ? "hit" : ""} />)}
         </span>
@@ -1059,7 +1065,24 @@ export function DeepBlueGrid() {
   }) : null;
   const selectedMeta = WEAPON_META[weapon];
   const selectedState = weaponState(weapon);
-  const confirmLabel = weapon === "radar" ? "走査実行" : selectedMeta.label + " 発射";
+  const confirmLabel = ACTION_LABEL[weapon];
+  const phaseStatus = phase === "placement"
+    ? { english: "FLEET DEPLOYMENT", japanese: "艦隊配置" }
+    : phase === "player"
+      ? locked
+        ? { english: "ENGAGING", japanese: "攻撃実行中" }
+        : ready
+          ? { english: "READY TO ENGAGE", japanese: "攻撃準備完了" }
+          : picked.length
+            ? { english: "TARGET DESIGNATION", japanese: "目標指示" }
+            : { english: "AWAITING ORDERS", japanese: "指令待機" }
+      : phase === "enemy"
+        ? { english: "HOSTILE ACTION", japanese: "敵攻撃" }
+        : phase === "review"
+          ? { english: "DAMAGE ASSESSMENT", japanese: "被害確認" }
+          : phase === "victory"
+            ? { english: campaignClear ? "OPERATION COMPLETE" : "MISSION ACCOMPLISHED", japanese: campaignClear ? "全作戦完了" : "作戦目標達成" }
+            : { english: "MISSION ABORTED", japanese: "作戦中止" };
 
   const displayedWeapon = weaponPeek ?? weapon;
   const displayedMeta = WEAPON_META[displayedWeapon];
@@ -1074,7 +1097,7 @@ export function DeepBlueGrid() {
       return;
     }
     const at = Date.now();
-    addLog("作戦中止。指揮所へ帰投し、モード選択へ戻る。", "bad", at, "withdrawal");
+    addLog("作戦中止。残存戦力へ母港帰投を下令。", "bad", at, "withdrawal");
     setWithdrawArmed(false);
     setPhase("placement");
     setDifficulty(null);
@@ -1103,7 +1126,7 @@ export function DeepBlueGrid() {
       if (lost.length) addLog(`撃沈艦、戦列復帰せず。累積損耗${lost.length}艦。`, "bad", at);
       addLog(`次海域進入戦力：${nextFleet.length}艦 / ${nextCells}区画。`, "info", at);
     }
-    addLog("＝ FLEET TRAIN / 艦隊補給 ＝", "good", at, "supply");
+    addLog("＝ REARM & REPAIR / 修復・再補給 ＝", "good", at, "supply");
   };
 
   const advanceFromResult = () => {
@@ -1130,7 +1153,7 @@ export function DeepBlueGrid() {
   const renderWeaponControls = () => (
     <>
       <div className={"weapon-peek " + (weaponPeek ? "visible" : "")} aria-live="polite">
-        <span>QUICK ARMAMENT DATA</span>
+        <span>SYSTEM STATUS</span>
         <b>{displayedMeta.label}</b>
         <em>{displayedMeta.pattern} / {displayedState.status}</em>
         <small>{displayedState.available ? displayedState.reason || displayedMeta.help : displayedState.reason}</small>
@@ -1168,11 +1191,11 @@ export function DeepBlueGrid() {
   const renderPlacementControls = (surface: "rail" | "bottom") => (
     <>
       <details
-        key={`${surface}-${portraitPhone ? "mobile-dossier" : "desktop-dossier"}`}
+        key={`${surface}-${compactViewport ? "compact-dossier" : "desktop-dossier"}`}
         className="placement-help placement-dossier"
-        open={!portraitPhone}
+        open={!compactViewport}
       >
-        <summary><span>SHIP DOSSIER</span><b>{inspectedDefinition.name} / {inspectedDefinition.code}</b><em>{inspectedDossier.role}</em><i>艦艇データ</i></summary>
+        <summary><span>VESSEL DATA</span><b>{inspectedDefinition.name} / {inspectedDefinition.code}</b><em>{inspectedDossier.role}</em><i>艦艇諸元</i></summary>
         <div className="placement-dossier-body">
           <p>{inspectedDossier.capability}</p><small>{inspectedDossier.loss}</small>
           <footer>艦を選択 → ドラッグで移動 → 回転または配置決定　{identificationRules ? "◆は重要区画 / " : ""}二本指・Rで回転 / Enterで決定</footer>
@@ -1201,25 +1224,28 @@ export function DeepBlueGrid() {
       </div>
       {player.current.allPlaced(playerFleet) && (
         <button className="cmd battle-start placement-start" onClick={startBattle}>
-          <b>⚔ BATTLE START</b><small>{player.current.ships.length} / {playerFleet.length} 艦配置完了</small>
+          <b>⚔ 交戦開始</b><small>COMMENCE ENGAGEMENT / {player.current.ships.length} / {playerFleet.length} 艦配置完了</small>
         </button>
       )}
     </>
   );
 
   return (
-    <main className={"game-shell " + (phase === "review" ? "review-phase " : "") + (activeEffect === "impact" ? "shake" : "")}>
+    <main
+      className={"game-shell operation-active phase-" + phase + " " + (phase === "review" ? "review-phase " : "") + (activeEffect === "impact" ? "shake" : "")}
+      data-phase={phase}
+    >
       <div className="noise" />
       <header className="masthead">
         <div>
-          <div className="brand-kicker">TACTICAL SONAR / {difficulty === "survival" ? "SURVIVAL" : difficulty ? "CAMPAIGN" : "OPERATION"}</div>
+          <div className="brand-kicker">COMBAT INFORMATION CENTER / CIC / {difficulty === "survival" ? "SURVIVAL" : difficulty ? "CAMPAIGN" : "OPERATION"}</div>
           <h1 className="brand-title" aria-label={GAME_TITLE}>DEEP <span>BLUE</span> GRID</h1>
         </div>
         <div className={"phase-badge " + phase}>
-          <strong>{phase === "placement" ? "FLEET DEPLOY" : phase === "player" ? "COMMAND" : phase === "enemy" ? "ENEMY ACTION" : phase === "review" ? "DAMAGE REPORT" : "MISSION END"}</strong>
-          <small>STAGE {stage.id} / {difficulty?.toUpperCase() ?? "SELECT MODE"}</small>
+          <strong>{phaseStatus.english}</strong>
+          <small>{phaseStatus.japanese} / STAGE {stage.id} / {difficulty?.toUpperCase() ?? "SELECT MODE"}</small>
         </div>
-        <div className="system-info">SEED <b>{seedRef.current.toString(16).toUpperCase()}</b><br />LINK STATUS <b>ONLINE</b></div>
+        <div className="system-info">SCENARIO ID <b>{seedRef.current.toString(16).toUpperCase()}</b><br />TACTICAL DATA LINK <b>ONLINE</b></div>
       </header>
 
       <nav className="campaign-track" aria-label="作戦進行">
@@ -1231,9 +1257,9 @@ export function DeepBlueGrid() {
       </nav>
 
       <section className={"status-strip " + (phase === "enemy" ? "enemy" : phase === "review" ? "review" : "")} aria-live="polite">
-        <span className="tag">{phase === "enemy" ? "ALERT" : phase === "review" ? "REPORT" : "OPS"}</span>
+        <span className="tag">{phase === "placement" ? "DEPLOY" : phase === "enemy" ? "HOSTILE" : phase === "review" ? "ASSESS" : "ORDERS"}</span>
         <p><b>{mission.title}</b> — {message}</p>
-        <span className="turn-counter">TURN {String(phase === "player" && !locked ? stats.turns + 1 : Math.max(1, stats.turns)).padStart(2, "0")} / OWN {ownAlive} / HOSTILE {phase === "placement" ? "?" : enemyAlive}</span>
+        <span className="turn-counter">TURN {String(phase === "player" && !locked ? stats.turns + 1 : Math.max(1, stats.turns)).padStart(2, "0")} / FRIENDLY {ownAlive} / HOSTILE {phase === "placement" ? "?" : enemyAlive}</span>
       </section>
 
       <section className="quick-guide">
@@ -1269,14 +1295,14 @@ export function DeepBlueGrid() {
 
       <nav className="mobile-field-switch" aria-label="表示する海域">
         <div>
-          <b>{resultReview ? phase === "defeat" ? "戦後解析：敵配置を確認" : "最終戦況：両軍海域を確認" : phase === "enemy" ? "敵攻撃中：自軍海域を表示" : phase === "review" ? "被害報告：自軍海域を表示" : phase === "player" ? "自軍攻撃：敵軍海域を表示" : "艦隊配置：自軍海域を表示"}</b>
-          <small>{resultReview ? "LOGから交戦記録も確認できます" : phase === "review" ? "報告を記録後、攻撃指揮へ移行" : "ターンに合わせて同じ位置へ切り替えます"}</small>
+          <b>{resultReview ? phase === "defeat" ? "交戦後解析：敵配置を確認" : "最終戦況：両軍戦術図を確認" : phase === "enemy" ? "敵攻撃中：自軍戦術図を表示" : phase === "review" ? "被害確認：自軍戦術図を表示" : phase === "player" ? "指令待機：敵情図を表示" : "艦隊配置：自軍戦術図を表示"}</b>
+          <small>{resultReview ? "LOGから交戦記録も確認できます" : phase === "review" ? "確認完了後、攻撃指揮へ復帰" : "状況に合わせて同じ位置へ切り替えます"}</small>
         </div>
         <button className={visibleBoard === "player" ? "active" : ""} onClick={() => showBoard("player")} aria-pressed={visibleBoard === "player"}>
-          自軍海域
+          自軍戦術図
         </button>
         <button className={visibleBoard === "enemy" ? "active" : ""} onClick={() => showBoard("enemy")} disabled={phase === "placement"} aria-pressed={visibleBoard === "enemy"}>
-          敵軍海域
+          敵情図
         </button>
         {difficulty && (!result || resultReview) && (
           <span className="mobile-switch-utilities" aria-label="ゲーム設定">
@@ -1306,24 +1332,24 @@ export function DeepBlueGrid() {
 
       <div className={"combat-workspace " + (difficulty && (!result || resultReview) ? "active" : "")}>
         <div className="boards" ref={boardsRef}>
-        <section className={"tactical-panel " + (portraitPhone && visibleBoard !== "player" ? "mobile-hidden" : "")}>
-          <div className="panel-head"><h2>OWN WATERS // 自軍海域</h2><span>DEFENSE GRID</span></div>
+        <section className={"tactical-panel " + (compactViewport && visibleBoard !== "player" ? "mobile-hidden" : "")}>
+          <div className="panel-head"><h2>OWN FORCE PLOT // 自軍戦術図</h2><span>DEFENSE GRID</span></div>
           {phase !== "placement" && (
             <div className={"enemy-command-help own-field-help " + (phase === "review" || resultReview ? "reviewing" : "")} aria-live="polite">
               <div>
                 <span>OWN FLEET STATUS</span>
-                <strong>{resultReview ? "最終戦況" : phase === "review" ? "被害報告" : phase === "enemy" ? "被攻撃監視" : "防衛海域"}</strong>
+                <strong>{resultReview ? "最終戦況" : phase === "review" ? "被害確認" : phase === "enemy" ? "敵攻撃監視中" : "自軍状況"}</strong>
                 <em>損傷 {stats.damage} / {fleetCells}</em>
               </div>
               <p>{resultReview ? "作戦終了時の残存艦と損傷位置です。" : phase === "review" ? "敵の攻撃が終了しました。艦隊と着弾位置を確認してください。" : phase === "enemy" ? "敵の攻撃と着弾結果を追跡しています。" : "現在の自軍艦隊と損傷状況です。"}</p>
-              <small>{resultReview ? "敵軍海域とLOGも切り替えて確認できます。" : phase === "review" ? "下の「被害報告を記録」でCIC LOGへ記録し、攻撃指揮へ移行します。" : "自軍海域ボタンでいつでも確認できます。"}</small>
+              <small>{resultReview ? "敵情図とLOGも切り替えて確認できます。" : phase === "review" ? "「確認完了」でCIC戦闘記録を更新し、攻撃指揮へ復帰します。" : "自軍戦術図ボタンでいつでも確認できます。"}</small>
             </div>
           )}
           <div className="canvas-wrap">
             <canvas
               ref={playerCanvas}
               className={"board-canvas " + (locked ? "locked" : "")}
-              aria-label="自軍海域8×8盤面"
+              aria-label="自軍戦術図8×8盤面"
               onPointerMove={onMove}
               onPointerDown={(event) => onBoardPointer("player", event)}
               onPointerUp={onPointerRelease}
@@ -1338,23 +1364,23 @@ export function DeepBlueGrid() {
           <div className="fleet-row">{playerFleet.map((id) => shipCard(player.current, id, { selectable: phase === "placement" }))}</div>
         </section>
 
-        <section className={"tactical-panel enemy-board " + (portraitPhone && visibleBoard !== "enemy" ? "mobile-hidden" : "")}>
-          <div className="panel-head"><h2>HOSTILE WATERS // 敵軍海域</h2><span>CONTACT GRID</span></div>
+        <section className={"tactical-panel enemy-board " + (compactViewport && visibleBoard !== "enemy" ? "mobile-hidden" : "")}>
+          <div className="panel-head"><h2>HOSTILE CONTACT PLOT // 敵情図</h2><span>CONTACT GRID</span></div>
           {phase !== "placement" && (
             <div className={"enemy-command-help " + (ready ? "armed" : "")} aria-live="polite">
               <div>
                 <span>SELECTED WEAPON</span>
-                <strong>{resultReview ? phase === "defeat" ? "戦後情報解析" : "敵艦隊撃破" : selectedMeta.label}</strong>
+                <strong>{resultReview ? phase === "defeat" ? "交戦後情報解析" : "敵艦隊撃破" : selectedMeta.label}</strong>
                 <em>{resultReview ? "残存 " + enemyAlive : weapon === "fire" ? "使用回数 ∞" : selectedState.status}</em>
               </div>
               <p>{resultReview ? phase === "defeat" ? "作戦終了後に確定した敵艦隊配置です。" : "最終攻撃結果と敵艦隊の配置を確認できます。" : selectedMeta.help}</p>
               <small>
                 {resultReview
-                  ? "自軍海域またはLOGから作戦全体を振り返れます。"
+                  ? "自軍戦術図またはLOGから作戦全体を振り返れます。"
                   : phase === "enemy"
-                  ? "敵行動中。自軍海域で着弾を確認してください。"
+                  ? "敵攻撃中。自軍戦術図で着弾を確認してください。"
                   : phase === "review"
-                    ? "戦況確認中。自軍海域の損傷を確認してください。"
+                    ? "被害確認中。自軍戦術図の損傷を確認してください。"
                   : !selectedState.available
                     ? selectedState.reason
                     : ready
@@ -1369,7 +1395,7 @@ export function DeepBlueGrid() {
             <canvas
               ref={enemyCanvas}
               className={"board-canvas " + (locked ? "locked" : "")}
-              aria-label="敵軍海域8×8盤面"
+              aria-label="敵情図8×8盤面"
               onPointerMove={onMove}
               onPointerDown={(event) => onBoardPointer("enemy", event)}
             />
@@ -1391,17 +1417,17 @@ export function DeepBlueGrid() {
               </section>
             ) : phase === "review" ? (
               <section className="rail-report">
-                <span>DAMAGE REPORT / CIC LOG</span>
-                <b>自軍損害を記録</b>
-                <p>自軍海域の着弾・損傷・識別警告を確認してください。</p>
-                <button className="cmd primary review-confirm" onClick={continueToPlayer}><b>被害報告を記録</b><small>攻撃指揮へ移行</small></button>
+                <span>DAMAGE ASSESSMENT / CIC LOG</span>
+                <b>自軍損傷を確認</b>
+                <p>自軍戦術図の着弾・損傷・識別警告を確認してください。</p>
+                <button className="cmd primary review-confirm" onClick={continueToPlayer}><b>確認完了</b><small>CIC戦闘記録を更新・攻撃指揮へ復帰</small></button>
               </section>
             ) : resultReview ? (
               <button className="cmd primary" onClick={() => setResultReview(false)}><b>結果画面へ戻る</b><small>作戦報告を表示</small></button>
             ) : (
               <>
                 <section className="rail-command-detail">
-                  <span>SELECTED COMMAND</span><b>{displayedMeta.label}</b><em>{displayedMeta.pattern} / {displayedState.status}</em>
+                  <span>SELECTED SYSTEM</span><b>{displayedMeta.label}</b><em>{displayedMeta.pattern} / {displayedState.status}</em>
                   <p>{displayedState.available ? displayedState.reason || displayedMeta.help : displayedState.reason}</p>
                 </section>
                 <section className="command-deck rail-command-deck">{renderWeaponControls()}</section>
@@ -1421,21 +1447,21 @@ export function DeepBlueGrid() {
           {renderPlacementControls("bottom")}
         </section>
       ) : phase === "review" ? (
-        <section className="turn-review compact-command-bottom" aria-label="被害報告">
+        <section className="turn-review compact-command-bottom" aria-label="被害確認">
           <div>
-            <span>DAMAGE REPORT / CIC LOG</span>
-            <b>自軍損害を記録してください</b>
-            <small>着弾・損傷・識別警告は、報告を記録するまで保持されます。</small>
+            <span>DAMAGE ASSESSMENT / CIC LOG</span>
+            <b>自軍損傷を確認してください</b>
+            <small>着弾・損傷・識別警告は、確認完了まで保持されます。</small>
           </div>
           <button className="cmd primary review-confirm" onClick={continueToPlayer}>
-            <b>被害報告を記録</b><small>CIC LOGへ記録・攻撃指揮へ移行</small>
+            <b>確認完了</b><small>CIC戦闘記録を更新・攻撃指揮へ復帰</small>
           </button>
         </section>
       ) : !result ? (
         <>
           <section className="command-deck compact-command-bottom">
             <div className={"weapon-peek " + (weaponPeek ? "visible" : "")} aria-live="polite">
-              <span>QUICK ARMAMENT DATA</span><b>{displayedMeta.label}</b>
+              <span>SYSTEM STATUS</span><b>{displayedMeta.label}</b>
               <em>{displayedMeta.pattern} / {displayedState.status}</em>
               <small>{displayedState.available ? displayedState.reason || displayedMeta.help : displayedState.reason}</small>
             </div>
@@ -1469,10 +1495,10 @@ export function DeepBlueGrid() {
           </section>
           <section className="ops-lower compact-command-bottom">
             <div className="command-detail">
-              <span>SELECTED COMMAND</span>
+              <span>SELECTED SYSTEM</span>
               <h3>{displayedMeta.label}</h3>
               <p>{displayedMeta.help}</p>
-              <small>{displayedMeta.pattern} / {displayedState.status}<br />{displayedState.available ? displayedState.reason || displayedMeta.requirement + "を選択後、発射ボタンで確定。" : displayedState.reason}</small>
+              <small>{displayedMeta.pattern} / {displayedState.status}<br />{displayedState.available ? displayedState.reason || displayedMeta.requirement + "を選択後、実行ボタンで確定。" : displayedState.reason}</small>
             </div>
           <div className="battle-log">
               <span>CIC EVENT LOG / ZULU TIME / ENTRIES {logs.length}</span>
@@ -1490,26 +1516,26 @@ export function DeepBlueGrid() {
 
       {result && resultReview && (
         <section className="result-review-bar compact-command-bottom" aria-label="最終戦況確認">
-          <div><span>{phase === "defeat" ? "POST-ACTION INTELLIGENCE" : "AFTER ACTION REVIEW"}</span><b>{phase === "defeat" ? "戦後解析：敵配置確認" : "最終戦況を確認中"}</b><small>自軍・敵軍海域とLOGを確認できます。</small></div>
+          <div><span>{phase === "defeat" ? "POST-ENGAGEMENT INTELLIGENCE" : "TACTICAL PLOT REVIEW"}</span><b>{phase === "defeat" ? "交戦後解析：敵配置確認" : "最終戦況を確認中"}</b><small>自軍戦術図・敵情図・LOGを確認できます。</small></div>
           <button className="cmd primary" onClick={() => setResultReview(false)}><b>結果画面へ戻る</b><small>作戦報告を表示</small></button>
         </section>
       )}
 
-      {flash && <div className={"turn-flash " + flash}><div>{flash === "player" ? "COMMAND" : "ENEMY ACTION"}</div></div>}
+      {flash && <div className={"turn-flash " + flash}><div><strong>{flash === "player" ? "AWAITING ORDERS" : "HOSTILE ACTION"}</strong><small>{flash === "player" ? "指令待機" : "敵攻撃"}</small></div></div>}
       {radarAlert && <div className={"radar-result " + (radarAlert.contact ? "contact" : "clear") + (radarAlert.hostile ? " hostile" : "")} role="status" aria-live="assertive" aria-atomic="true">
         <small>{radarAlert.hostile ? radarAlert.contact ? "HOSTILE RADAR CONTACT" : "ENEMY SPS-10 SCAN" : "SPS-10 RADAR SCAN"}</small>
-        <b>{radarAlert.hostile ? radarAlert.contact ? "FLEET DETECTED" : "SCAN EVADED" : radarAlert.contact ? "CONTACT!" : "NO CONTACT"}</b>
+        <b>{radarAlert.hostile ? radarAlert.contact ? "FLEET DETECTED" : "NO TRACK" : radarAlert.contact ? "CONTACT!" : "NO CONTACT"}</b>
         <span>{radarAlert.hostile
-          ? radarAlert.contact ? "敵レーダーが自軍艦隊を捕捉。敵追跡データへ登録。" : "敵走査を回避。自軍反応は捕捉されず。"
+          ? radarAlert.contact ? "敵レーダーが自軍艦隊を捕捉。敵追跡データへ登録。" : "敵レーダーによる捕捉なし。自軍反応は追跡されず。"
           : radarAlert.contact ? "指定4区画内に未破壊艦区画あり" : "指定4区画内に反応なし"}</span>
       </div>}
       {diveAlert && <div className="dive-alert" role="status" aria-live="assertive">
-        <b>EMERGENCY DIVE</b><span>敵特殊潜航艦、旧接触点から離脱。再捕捉を要す。</span>
+        <b>EMERGENCY DIVE</b><span>敵特殊潜航艦、最終接触位置から離脱。再捕捉を要す。</span>
       </div>}
       {identificationAlert && (() => {
         const definition = SHIPS.find((ship) => ship.id === identificationAlert.id)!;
         return <div className={"identification-alert " + (identificationAlert.hostile ? "hostile persistent" : "friendly")} role="alert">
-          <b>{identificationAlert.hostile ? "IMPORTANT SECTION HIT" : "CONTACT IDENTIFIED"}</b>
+          <b>{identificationAlert.hostile ? "VITAL COMPARTMENT HIT" : "CONTACT IDENTIFIED"}</b>
           <span>{identificationAlert.hostile ? "敵に識別されました：" : "敵艦識別："}{definition.name} / {definition.code}</span>
         </div>;
       })()}
@@ -1517,7 +1543,7 @@ export function DeepBlueGrid() {
       {logOpen && (
         <div className="log-drawer-backdrop" onClick={() => setLogOpen(false)}>
           <section className="log-drawer" role="dialog" aria-modal="true" aria-label="バトルログ" onClick={(event) => event.stopPropagation()}>
-            <header><div><span>CIC EVENT LOG / ZULU TIME / ENTRIES {logs.length}</span><b>作戦航海日誌</b></div><button onClick={() => setLogOpen(false)} aria-label="ログを閉じる">×</button></header>
+            <header><div><span>CIC EVENT LOG / ZULU TIME / ENTRIES {logs.length}</span><b>CIC戦闘経過記録</b></div><button onClick={() => setLogOpen(false)} aria-label="ログを閉じる">×</button></header>
             <ol>{[...logs].reverse().map((entry) => <li key={entry.id} className={`${entry.tone} ${entry.kind}`}><time>{formatZulu(entry.at)}</time><span>{entry.text}</span></li>)}</ol>
           </section>
         </div>
@@ -1528,29 +1554,29 @@ export function DeepBlueGrid() {
           <section className="difficulty-card" role="dialog" aria-modal="true" aria-labelledby="operation-mode-title">
             <div className="eyebrow">SELECT OPERATION PROFILE</div>
             <h2 id="operation-mode-title">OPERATION MODE</h2>
-            <p>全6海域を攻略します。TACTICSとSURVIVALは敵先攻・艦種／損傷秘匿。重要区画への命中で識別し、敵AIも探知済み情報だけで判断します。</p>
+            <p>複数海域を攻略します。TACTICSとSURVIVALでは敵が先制攻撃し、艦種と損傷は秘匿。敵指揮系統も探知済み情報だけで判断します。</p>
             <div className="difficulty-options">
               <button className="mode-button" onClick={() => startCampaign("casual")}>
                 <span>CASUAL</span><b>自軍先攻・情報公開</b><small>敵艦種と損傷を常に表示。重要区画と識別処理は使用せず、基本の索敵・追撃を楽しむ標準モードです。</small>
               </button>
               <button className="mode-button tactics" onClick={() => startCampaign("tactics")}>
-                <span>TACTICS</span><b>敵先攻・重要区画識別</b><small>敵艦はUNKNOWN表示。重要区画へ命中すると艦種・コードだけを識別できます。耐久・向き・未命中区画は非公開です。</small>
+                <span>TACTICS</span><b>敵先制・重要区画識別</b><small>敵艦はUNKNOWN表示。重要区画へ命中すると艦種・コードだけを識別できます。耐久・向き・未命中区画は非公開です。</small>
               </button>
               <button className="mode-button survival" onClick={() => startCampaign("survival")}>
                 <span>SURVIVAL</span><b>TACTICS＋艦隊損耗</b><small>全6隻で識別戦に挑戦。海域後に生存艦と兵装は回復しますが、撃沈艦とその搭載兵装は以後の海域で戻りません。</small>
               </button>
             </div>
-            <section className="identification-rules" aria-label="重要区画識別ルール">
-              <h3>◆ IMPORTANT SECTION / 重要区画</h3>
+            <details className="identification-rules" open={!compactViewport}>
+              <summary><span>◆ VITAL COMPARTMENT / 重要区画</span><small>識別戦ルール</small></summary>
               <ul>
                 <li><b>対象：</b>TACTICSとSURVIVALのみ。各艦に1マス設定されます。</li>
-                <li><b>自軍：</b>◆を常時表示。敵弾が命中すると敵AIに艦種を識別されます。</li>
+                <li><b>自軍：</b>◆を常時表示。敵弾が命中すると敵指揮系統に艦種を識別されます。</li>
                 <li><b>敵軍：</b>重要区画は見えません。命中時にその座標へ菱形と艦種略号を記録します。</li>
                 <li><b>開示：</b>艦種とコードのみ。耐久、向き、残り区画は開示しません。</li>
-                <li><b>威力：</b>重要区画でも追加ダメージなし。敵AIも同じ条件で、未発見配置は読みません。</li>
+                <li><b>威力：</b>重要区画でも追加ダメージなし。敵指揮系統も同じ条件で、未探知位置は把握しません。</li>
                 <li><b>潜水艦：</b>1マス艦のため、命中・識別・撃沈が同時に発生します。</li>
               </ul>
-            </section>
+            </details>
           </section>
         </div>
       )}
@@ -1559,12 +1585,12 @@ export function DeepBlueGrid() {
         <div className="result-modal">
           <section className={"result-card " + (phase === "defeat" ? "loss" : "")} role="dialog" aria-modal="true" aria-labelledby="result-title">
             <div className="eyebrow">STAGE AFTER ACTION REPORT</div>
-            <h2 id="result-title">{campaignClear ? "CAMPAIGN CLEAR" : phase === "victory" ? "VICTORY" : "DEFEAT"}</h2>
+            <h2 id="result-title">{campaignClear ? "OPERATION COMPLETE" : phase === "victory" ? "MISSION ACCOMPLISHED" : "MISSION ABORTED"}</h2>
             <p>
               {campaignClear
-                ? difficulty === "survival" ? "残存艦隊、全6海域を突破。SURVIVAL作戦完了。" : "全6海域を制圧。DEEP BLUE GRID 作戦完了。"
+                ? difficulty === "survival" ? "残存艦隊、全6海域を突破。SURVIVAL作戦完了。" : "全6海域の敵性脅威を排除。DEEP BLUE GRID 作戦完了。"
                 : phase === "victory"
-                  ? "敵艦隊、戦闘能力喪失。次海域への進出可。"
+                  ? "敵艦隊、戦闘能力喪失。対象海域の敵性脅威を排除。次海域への進出可。"
                   : "自軍艦隊、戦闘能力喪失。戦闘記録に基づく指揮所見を表示します。"}
             </p>
             <div className="operation-time" aria-label="交戦時刻">
@@ -1573,14 +1599,14 @@ export function DeepBlueGrid() {
               <div><span>ELAPSED</span><b>{formatElapsed(operationStart, operationEnd ?? operationStart)}</b><small>HOURS : MINUTES</small></div>
             </div>
             <div className="stats">
-              <div>COMMAND TURNS<b>{stats.turns}</b></div>
-              <div>STAGE ACCURACY<b>{stats.shots ? Math.round(stats.hits / stats.shots * 100) : 0}%</b></div>
+              <div>TACTICAL ACTIONS<b>{stats.turns}</b></div>
+              <div>FIRE ACCURACY<b>{stats.shots ? Math.round(stats.hits / stats.shots * 100) : 0}%</b></div>
               <div>ENEMY SHIPS SUNK<b>{stats.sunk} / {enemyFleet.length}</b></div>
-              <div>SPECIAL ACTIONS<b>{stats.specials}</b></div>
-              <div>HULL DAMAGE<b>{stats.damage} / {fleetCells}</b></div>
+              <div>SPECIAL SYSTEM USES<b>{stats.specials}</b></div>
+              <div>DAMAGE SUSTAINED<b>{stats.damage} / {fleetCells}</b></div>
               <div>STAGE<b>{stage.id} / {STAGES.length}</b></div>
               {difficulty === "survival" && <div>SURVIVORS<b>{player.current.ships.filter((ship) => !ship.sunk).length} / {playerFleet.length}</b></div>}
-              {difficulty === "survival" && <div>LOST THIS STAGE<b>{player.current.ships.filter((ship) => ship.sunk).length}</b></div>}
+              {difficulty === "survival" && <div>SHIPS LOST<b>{player.current.ships.filter((ship) => ship.sunk).length}</b></div>}
             </div>
             {assessment && <section className="command-assessment" aria-label="指揮所見">
               <header><span>COMMAND ASSESSMENT</span><b>指揮所見</b></header>
@@ -1593,8 +1619,8 @@ export function DeepBlueGrid() {
                 <small>全ステージ・全交戦記録を表示</small>
               </button>
               <button className="cmd review-battlefield" onClick={() => { setVisibleBoard("player"); setResultReview(true); }}>
-                <b>{phase === "defeat" ? "POST-ACTION INTELLIGENCE" : "BATTLEFIELD REVIEW"}</b>
-                <small>{phase === "defeat" ? "戦後解析：敵配置確認" : "最終戦況・交戦記録を確認"}</small>
+                <b>{phase === "defeat" ? "POST-ENGAGEMENT INTELLIGENCE" : "TACTICAL PLOT REVIEW"}</b>
+                <small>{phase === "defeat" ? "交戦後解析：敵配置確認" : "最終戦況・交戦記録を確認"}</small>
               </button>
               <button className="cmd primary" onClick={advanceFromResult}>
                 <b>{phase === "victory" ? (campaignClear ? "NEW CAMPAIGN" : "NEXT STAGE") : "RETRY STAGE"}</b>

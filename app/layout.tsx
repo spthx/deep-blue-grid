@@ -7,8 +7,8 @@ export async function generateMetadata(): Promise<Metadata> {
   const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host") ?? "localhost:3000";
   const protocol = requestHeaders.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
   const image = `${protocol}://${host}/og.png`;
-  const title = "DEEP BLUE GRID — 海軍戦術シミュレーション";
-  const description = "8×8の海図で索敵・砲撃・特殊兵装を駆使し、全6海域を攻略する一人用海戦ゲーム。";
+  const title = "DEEP BLUE GRID — 海戦タクティクス";
+  const description = "8×8の戦術図で索敵・砲撃・特殊兵装を駆使し、複数海域を攻略する一人用海戦ゲーム。";
   return {
     title,
     description,

@@ -28,9 +28,9 @@ export type CommandAssessment = {
 };
 
 const capabilityFinding: Partial<Record<ShipId, string>> = {
-  carrier: "航空打撃能力を喪失。以後も主砲射撃能力は残存。",
-  escort: "護衛支援能力を喪失。F-4追加出撃及びHARPOON追加射撃不能。",
-  submarine: "音響捜索能力を喪失。以後、レーダーによる候補海域圧縮不能。",
+  carrier: "航空打撃能力を喪失。以後も通常攻撃能力は残存。",
+  escort: "護衛支援能力を喪失。F-4追加出撃及びHARPOON追加発射不能。",
+  submarine: "音響捜索能力を喪失。以後、レーダーによる敵推定位置の絞り込み不能。",
 };
 
 function survivalFinding(input: AssessmentInput) {
@@ -99,8 +99,8 @@ export function commandAssessment(input: AssessmentInput): CommandAssessment {
       ? "残存兵装の早期投入により、敵戦闘能力を先行して奪う余地あり。"
       : "艦砲射撃による火力集中に、再検討の余地あり。";
   } else if (input.shots >= 8 && input.accuracy < 25) {
-    finding = `索敵射撃、命中率${input.accuracy}%。敵残存戦力の捕捉に時間を要したと認められる。`;
-    finding += unusedTotal > 0 ? "残存兵装による候補海域圧縮に、活用余地あり。" : "目標海域の選定に、再検討の余地あり。";
+    finding = `捜索射撃、命中率${input.accuracy}%。敵残存戦力の捕捉に時間を要したと認められる。`;
+    finding += unusedTotal > 0 ? "残存兵装による敵推定位置の絞り込みに、活用余地あり。" : "目標海域の選定に、再検討の余地あり。";
   } else if (capability) {
     finding = capability + (unusedTotal > 0
       ? "残存兵装の投入時期及び目標配分に、再検討の余地あり。"
