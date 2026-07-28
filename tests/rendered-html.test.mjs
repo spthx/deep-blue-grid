@@ -16,16 +16,16 @@ test("server renders the finished game shell", async () => {
   const html = await response.text();
   assert.match(html, /<title>DEEP BLUE GRID/);
   assert.match(html, /DEEP/);
-  assert.match(html, /FLEET DEPLOY/);
+  assert.match(html, /FLEET DEPLOYMENT/);
   assert.match(html, /OPERATION MODE/);
   assert.match(html, /CASUAL/);
   assert.match(html, /TACTICS/);
   assert.match(html, /SURVIVAL/);
-  assert.match(html, /IMPORTANT SECTION \/ 重要区画/);
+  assert.match(html, /VITAL COMPARTMENT \/ 重要区画/);
   assert.match(html, /追加ダメージなし/);
-  assert.match(html, /敵AIも同じ条件/);
-  assert.match(html, /敵AIも探知済み情報だけで判断/);
-  assert.match(html, /全6海域/);
+  assert.match(html, /敵指揮系統も同じ条件/);
+  assert.match(html, /敵指揮系統も探知済み情報だけで判断/);
+  assert.match(html, /複数海域/);
   assert.doesNotMatch(html, /DIFFICULTY|NORMAL|HARD|基本戦術・手加減なし/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|Your site is taking shape/);
 });
@@ -34,6 +34,19 @@ test("mobile command deck stays four columns by two rows", async () => {
   const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
   assert.match(css, /grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
   assert.match(css, /@media \(max-width:760px\) \{[\s\S]*?\.command-deck \{ position:sticky; \}/);
+});
+
+test("responsive regimes cover compact portrait, phone landscape, tablet landscape, and full-HD", async () => {
+  const source = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
+  const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+  assert.match(source, /max-width: 1099px\) and \(orientation: portrait\), \(max-width: 959px\) and \(max-height: 600px\)/);
+  assert.match(css, /min-width:960px\) and \(orientation:landscape\)/);
+  assert.match(css, /min-width:1100px/);
+  assert.doesNotMatch(css, /min-width:1100px\) and \(max-height:1050px\)/);
+  assert.match(css, /calc\(100dvh - 330px\)/);
+  assert.match(css, /\.phase-placement \.canvas-wrap[\s\S]*?calc\(100dvh - 425px\)/);
+  assert.match(css, /\.ops-lower\.compact-command-bottom,[\s\S]*?\.legend\.compact-command-bottom \{ display:none; \}/);
+  assert.match(css, /\.mobile-field-switch button \{[\s\S]*?min-height:44px/);
 });
 
 test("unavailable weapons cannot become the selected command", async () => {
@@ -56,7 +69,7 @@ test("keyboard and full-HD review controls do not double-trigger", async () => {
 test("portrait play collapses redundant top and placement information", async () => {
   const source = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
   const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
-  assert.match(source, /className="placement-help placement-dossier"[\s\S]*?open=\{!portraitPhone\}/);
+  assert.match(source, /className="placement-help placement-dossier"[\s\S]*?open=\{!compactViewport\}/);
   assert.match(source, /className="placement-dossier-body"/);
   assert.match(css, /@media \(max-width:760px\)[\s\S]*?\.quick-guide \{ display:none; \}/);
   assert.match(css, /orientation:portrait[\s\S]*?\.mobile-field-switch > div \{ display:none; \}/);
@@ -96,10 +109,10 @@ test("radar contact and clear scans use one restrained tactical frame", async ()
 test("radar scan announces its binary result over the playfield", async () => {
   const game = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
   const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
-  assert.match(game, /radarAlert\.hostile \? radarAlert\.contact \? "FLEET DETECTED" : "SCAN EVADED" : radarAlert\.contact \? "CONTACT!" : "NO CONTACT"/);
+  assert.match(game, /radarAlert\.hostile \? radarAlert\.contact \? "FLEET DETECTED" : "NO TRACK" : radarAlert\.contact \? "CONTACT!" : "NO CONTACT"/);
   assert.match(game, /指定4区画内に未破壊艦区画あり/);
   assert.match(game, /指定4区画内に反応なし/);
-  assert.match(game, /ESCORT SUPPORT：F-4出撃＋1/);
+  assert.match(game, /ESCORT SUPPORT：ACTIVE。F-4出撃＋1/);
   assert.match(css, /\.radar-result/);
   assert.match(game, /setActiveEffect\("scan"\)/);
   assert.match(game, /activeEffect === "impact" \? "shake"/);
@@ -121,8 +134,8 @@ test("tactics identification masks contacts and marks critical sections", async 
   const renderer = await readFile(new URL("../app/game/Renderer.ts", import.meta.url), "utf8");
   assert.match(game, /UNKNOWN CONTACT/);
   assert.match(game, /SIGNATURE UNKNOWN/);
-  assert.match(game, /IMPORTANT SECTION HIT/);
-  assert.match(game, /IDENTIFIED \/ HULL DATA MASKED/);
+  assert.match(game, /VITAL COMPARTMENT HIT/);
+  assert.match(game, /IDENTIFIED \/ DAMAGE STATUS UNKNOWN/);
   assert.match(renderer, /drawCritical/);
   assert.match(renderer, /drawIdentification/);
 });
@@ -134,7 +147,7 @@ test("hostile identification remains until review confirmation and mobile confir
   assert.match(game, /const continueToPlayer = \(\) => \{[\s\S]*?setIdentificationAlert\(null\);[\s\S]*?setPhase\("player"\);/);
   assert.match(game, /hostile persistent/);
   assert.match(css, /\.identification-alert\.persistent/);
-  assert.match(css, /orientation: portrait[\s\S]*?\.turn-review \.review-confirm \{ width:min\(72%,280px\); min-width:0; justify-self:end; \}/);
+  assert.match(css, /orientation:portrait[\s\S]*?\.turn-review \.review-confirm \{ width:min\(72%,280px\); min-width:0; justify-self:end; \}/);
 });
 
 test("submarine wakes are emitted only after that submarine side acts", async () => {
@@ -156,12 +169,12 @@ test("responsive command surfaces cover iPhone portrait and full-HD play", async
   assert.match(game, /className="placement-tools rail-placement-tools"/);
   assert.match(game, /renderPlacementControls\("rail"\)/);
   assert.match(game, /className="placement-tools compact-placement-bottom"/);
-  assert.match(game, /QUICK ARMAMENT DATA/);
-  assert.match(game, /SHIP DOSSIER/);
-  assert.match(game, /被害報告を記録/);
+  assert.match(game, /SYSTEM STATUS/);
+  assert.match(game, /VESSEL DATA/);
+  assert.match(game, /確認完了/);
   assert.match(css, /\.desktop-command-rail \{ display:none; \}/);
-  assert.match(css, /@media \(min-width:1100px\) and \(max-height:1050px\)/);
-  assert.match(css, /\.combat-workspace\.active \{ display:grid; grid-template-columns:minmax\(0,1fr\) 326px/);
+  assert.match(css, /@media \(min-width:960px\) and \(orientation:landscape\)/);
+  assert.match(css, /\.combat-workspace\.active \{ display:grid; grid-template-columns:minmax\(0,1fr\) clamp\(286px,24vw,326px\)/);
   assert.match(css, /\.rail-placement-tools \{[\s\S]*?grid-template-columns:minmax\(0,1fr\)/);
   assert.match(css, /\.compact-command-bottom,\.compact-placement-bottom \{ display:none!important; \}/);
   assert.match(css, /@media \(max-width: 760px\) \{[\s\S]*?\.placement-tools \{[\s\S]*?position:sticky/);
@@ -179,8 +192,8 @@ test("survival silent hunter and escort link are explained in the interface", as
   assert.match(game, /ENEMY SILENT RUNNING/);
   assert.match(game, /護衛艦の全区画を空母へ上下左右で隣接/);
   assert.match(game, /LINK ACTIVE/);
-  assert.match(game, /FIRE CONTROL LINK成立。HARPOON射撃＋1/);
-  assert.match(game, /DUAL SUPPORT LINK：F-4＋1 \/ HARPOON＋1/);
+  assert.match(game, /FIRE CONTROL LINK：ACTIVE。HARPOON発射＋1/);
+  assert.match(game, /DUAL SUPPORT LINK：ACTIVE。F-4出撃＋1 \/ HARPOON発射＋1/);
   assert.match(game, /双方への同時リンクも成立/);
 });
 
@@ -189,20 +202,20 @@ test("battle log drawer and victory battlefield review remain accessible", async
   const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
   assert.match(game, /バトルログを開く/);
   assert.match(game, /className="log-drawer"/);
-  assert.match(game, /BATTLEFIELD REVIEW/);
+  assert.match(game, /TACTICAL PLOT REVIEW/);
   assert.match(game, /結果画面へ戻る/);
   assert.doesNotMatch(game, /slice\(-40\)/);
   assert.match(game, /FULL OPERATION LOG/);
-  assert.match(game, /作戦航海日誌/);
+  assert.match(game, /CIC戦闘経過記録/);
   assert.match(game, /＝ STAGE \$\{stage\.id\} \/ \$\{stageAttemptRef/);
-  assert.match(game, /＝ FLEET TRAIN \/ 艦隊補給 ＝/);
+  assert.match(game, /＝ REARM & REPAIR \/ 修復・再補給 ＝/);
   assert.match(game, /戦果：敵\$\{enemySunk\}艦撃沈/);
   assert.match(game, /LOST_CAPABILITY\[struckShip\.id\]/);
   assert.match(game, /coordName\(result\.coord\)/);
   assert.match(css, /\.battle-log ol \{ max-height:76px;[\s\S]*?overflow-y:auto/);
   assert.match(css, /\.log-drawer li\.stage-start/);
   assert.match(css, /font-weight:800/);
-  assert.match(css, /\.mobile-field-switch \.mobile-switch-utilities \{[\s\S]*?repeat\(3,36px\)/);
+  assert.match(css, /\.mobile-field-switch \.mobile-switch-utilities \{[\s\S]*?repeat\(3,44px\)/);
   assert.match(css, /\.result-review-bar/);
 });
 
@@ -213,10 +226,10 @@ test("CIC logs use Zulu timestamps and defeat unlocks factual post-action intell
   assert.match(game, /<time>\{formatZulu\(entry\.at\)\}<\/time>/);
   assert.match(game, /総員戦闘配置。/);
   assert.match(game, /自軍艦隊、戦闘能力喪失。/);
-  assert.match(game, /作戦続行不能。撤退命令を発令。/);
+  assert.match(game, /作戦続行不能。交戦終了、作戦中止。/);
   assert.match(game, /COMMAND ASSESSMENT/);
-  assert.match(game, /POST-ACTION INTELLIGENCE/);
-  assert.match(game, /戦後解析：敵配置確認/);
+  assert.match(game, /POST-ENGAGEMENT INTELLIGENCE/);
+  assert.match(game, /交戦後解析：敵配置確認/);
   assert.match(game, /revealShips: phase === "defeat" && resultReview/);
   assert.match(game, /concealDamage: identificationRules && !\(phase === "defeat" && resultReview\)/);
   assert.match(css, /\.command-assessment/);
