@@ -21,7 +21,9 @@
 5. 本文書
 6. `images/web-procedural-visual-reference.png`
 7. `images/android-portrait-layout-blueprint.png`
-8. `images/historical/` 以下の旧画面
+8. `images/effects/web-overlay-effect-storyboard.png`
+9. `images/effects/README.md`
+10. `images/historical/` 以下の旧画面
 
 ビジュアル資料の正本性と用途は`IMAGE_MANIFEST.md`に従う。`images/historical/`は世界観の補助資料であり、現在の文言・配置の正本ではない。
 
@@ -506,6 +508,8 @@ IDENTIFIED:
 ---
 
 ## 13. 演出時間
+
+Unity向けの透明連番画像と画面演出構成は`images/effects/`に収録する。`effect-assets.json`を切り出し・再生速度の機械可読正本、`web-overlay-effect-storyboard.png`をレイヤー・色・文言・保持条件の参照とする。ただし、有限枚で完全な連続性を表せないレーダーなどは、以下の数式をUnity側で再現する。
 
 | 演出 | 時間 |
 |---|---:|

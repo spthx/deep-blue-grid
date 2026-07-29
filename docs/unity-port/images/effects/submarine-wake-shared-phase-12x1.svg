@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3072 256">
+  <g fill="none" stroke="#7ce5df" stroke-width="8.96">
+    <g><circle cx="128" cy="128" r="33.28" opacity=".65"/><circle cx="128" cy="128" r="69.837" opacity=".377"/></g>
+    <g transform="translate(256)"><circle cx="128" cy="128" r="40.533" opacity=".595833"/><circle cx="128" cy="128" r="77.09" opacity=".322833"/></g>
+    <g transform="translate(512)"><circle cx="128" cy="128" r="47.787" opacity=".541667"/><circle cx="128" cy="128" r="84.343" opacity=".268667"/></g>
+    <g transform="translate(768)"><circle cx="128" cy="128" r="55.04" opacity=".4875"/><circle cx="128" cy="128" r="91.597" opacity=".2145"/></g>
+    <g transform="translate(1024)"><circle cx="128" cy="128" r="62.293" opacity=".433333"/><circle cx="128" cy="128" r="98.85" opacity=".160333"/></g>
+    <g transform="translate(1280)"><circle cx="128" cy="128" r="69.547" opacity=".379167"/><circle cx="128" cy="128" r="106.103" opacity=".106167"/></g>
+    <g transform="translate(1536)"><circle cx="128" cy="128" r="76.8" opacity=".325"/><circle cx="128" cy="128" r="113.357" opacity=".052"/></g>
+    <g transform="translate(1792)"><circle cx="128" cy="128" r="84.053" opacity=".270833"/><circle cx="128" cy="128" r="33.57" opacity=".647833"/></g>
+    <g transform="translate(2048)"><circle cx="128" cy="128" r="91.307" opacity=".216667"/><circle cx="128" cy="128" r="40.823" opacity=".593667"/></g>
+    <g transform="translate(2304)"><circle cx="128" cy="128" r="98.56" opacity=".1625"/><circle cx="128" cy="128" r="48.077" opacity=".5395"/></g>
+    <g transform="translate(2560)"><circle cx="128" cy="128" r="105.813" opacity=".108333"/><circle cx="128" cy="128" r="55.33" opacity=".485333"/></g>
+    <g transform="translate(2816)"><circle cx="128" cy="128" r="113.067" opacity=".054167"/><circle cx="128" cy="128" r="62.583" opacity=".431167"/></g>
+  </g>
+</svg>

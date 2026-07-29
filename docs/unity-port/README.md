@@ -28,6 +28,9 @@ Unity版の担当タスクは、実装に着手する前に次の順序で確認
 15. `IMAGE_MANIFEST.md`
 16. `images/web-procedural-visual-reference.png`
 17. `images/android-portrait-layout-blueprint.png`
+18. `images/effects/web-overlay-effect-storyboard.png`
+19. `images/effects/README.md`
+20. `images/effects/effect-assets.json`
 
 仕様が食い違う場合は、上にある項目を優先します。テストと正本コードが最優先であり、スクリーンショットや既存Unity実装を根拠にルールを変更してはいけません。
 
@@ -44,11 +47,11 @@ Unity版の担当タスクは、実装に着手する前に次の順序で確認
 - `canonical-source/`
   上記コミットから固定した正本コードと回帰テストの写しです。
 - `images/`
-  正本コードから起こした描画資料、旧Web画面、修正前Unity画面、OG画像です。用途と正本性は `IMAGE_MANIFEST.md` を参照してください。
+  正本コードから起こした描画資料、透明演出スプライトシート、演出ストーリーボード、旧Web画面、修正前Unity画面、OG画像です。用途と正本性は `IMAGE_MANIFEST.md` を参照してください。
 - `verify-handoff.mjs`
   JSONの主要不変条件と、`canonical-source/`が正本コードとバイト単位で一致することを検証します。
 - `MANIFEST.sha256`
-  パッケージ内29ファイルのSHA-256一覧です。ZIP展開後の破損確認に使います。
+  パッケージ内43ファイルのSHA-256一覧です。ZIP展開後の破損確認に使います。
 
 ## 現在の重要な確定事項
 

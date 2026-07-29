@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3072 512">
+  <defs>
+    <path id="corners" fill="none" stroke-linecap="square" stroke-width="2"
+      d="M58.88 15.36H15.36V58.88M197.12 15.36H240.64V58.88M58.88 240.64H15.36V197.12M197.12 240.64H240.64V197.12"/>
+    <linearGradient id="clearSweep" x1="15.36" y1="0" x2="240.64" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#60be9d" stop-opacity="0"/>
+      <stop offset=".5" stop-color="#7ce5df" stop-opacity=".7"/>
+      <stop offset="1" stop-color="#60be9d" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Row 0: CONTACT. The 12 samples cover the primary radius cycle, t = 2πk/(12·4). -->
+  <g fill="none" stroke="#e5d78a" stroke-width="2">
+    <g opacity=".72"><use href="#corners" stroke-opacity=".88"/><circle cx="128" cy="128" r="61.44" stroke-opacity=".88" stroke-width="2.2" stroke-dasharray="20.48 14.08"/></g>
+    <circle cx="128" cy="128" r="89.6" opacity=".34"/>
+    <g transform="translate(256)" opacity=".797492"><use href="#corners" stroke-opacity=".88"/><circle cx="128" cy="128" r="64" stroke-opacity=".88" stroke-width="2.2" stroke-dasharray="20.48 14.08"/></g>
+    <circle cx="384" cy="128" r="92.16" opacity=".430625"/>
+    <g transform="translate(512)" opacity=".859886"><use href="#corners" stroke-opacity=".88"/><circle cx="128" cy="128" r="65.874" stroke-opacity=".88" stroke-width="2.2" stroke-dasharray="20.48 14.08"/></g>
+    <circle cx="640" cy="128" r="94.034" opacity=".489373"/>
+    <g transform="translate(768)" opacity=".895027"><use href="#corners" stroke-opacity=".88"/><circle cx="128" cy="128" r="66.56" stroke-opacity=".88" stroke-width="2.2" stroke-dasharray="20.48 14.08"/></g>
+    <circle cx="896" cy="128" r="94.72" opacity=".495579"/>
+    <g transform="translate(1024)" opacity=".896067"><use href="#corners" stroke-opacity=".88"/><circle cx="128" cy="128" r="65.874" stroke-opacity=".88" stroke-width="2.2" stroke-dasharray="20.48 14.08"/></g>
+    <circle cx="1152" cy="128" r="94.034" opacity=".447061"/>
+    <g transform="translate(1280)" opacity=".862804"><use href="#corners" stroke-opacity=".88"/><circle cx="128" cy="128" r="64" stroke-opacity=".88" stroke-width="2.2" stroke-dasharray="20.48 14.08"/></g>
+    <circle cx="1408" cy="128" r="92.16" opacity=".360884"/>
+    <g transform="translate(1536)" opacity=".801718"><use href="#corners" stroke-opacity=".88"/><circle cx="128" cy="128" r="61.44" stroke-opacity=".88" stroke-width="2.2" stroke-dasharray="20.48 14.08"/></g>
+    <circle cx="1664" cy="128" r="89.6" opacity=".267362"/>
+    <g transform="translate(1792)" opacity=".724712"><use href="#corners" stroke-opacity=".88"/><circle cx="128" cy="128" r="58.88" stroke-opacity=".88" stroke-width="2.2" stroke-dasharray="20.48 14.08"/></g>
+    <circle cx="1920" cy="128" r="87.04" opacity=".199389"/>
+    <g transform="translate(2048)" opacity=".646787"><use href="#corners" stroke-opacity=".88"/><circle cx="128" cy="128" r="57.006" stroke-opacity=".88" stroke-width="2.2" stroke-dasharray="20.48 14.08"/></g>
+    <circle cx="2176" cy="128" r="85.166" opacity=".180876"/>
+    <g transform="translate(2304)" opacity=".583127"><use href="#corners" stroke-opacity=".88"/><circle cx="128" cy="128" r="56.32" stroke-opacity=".88" stroke-width="2.2" stroke-dasharray="20.48 14.08"/></g>
+    <circle cx="2432" cy="128" r="84.48" opacity=".218335"/>
+    <g transform="translate(2560)" opacity=".546133"><use href="#corners" stroke-opacity=".88"/><circle cx="128" cy="128" r="57.006" stroke-opacity=".88" stroke-width="2.2" stroke-dasharray="20.48 14.08"/></g>
+    <circle cx="2688" cy="128" r="85.166" opacity=".298589"/>
+    <g transform="translate(2816)" opacity=".543014"><use href="#corners" stroke-opacity=".88"/><circle cx="128" cy="128" r="58.88" stroke-opacity=".88" stroke-width="2.2" stroke-dasharray="20.48 14.08"/></g>
+    <circle cx="2944" cy="128" r="87.04" opacity=".393409"/>
+  </g>
+
+  <!-- Row 1: NO CONTACT. The 12 samples traverse the .28 cycles/s sweep. -->
+  <g transform="translate(0 256)" fill="none">
+    <g><use href="#corners" stroke="#60be9d" opacity=".72" stroke-opacity=".78"/><path d="M15.36 30.72H240.64" stroke="url(#clearSweep)" stroke-width="2" opacity=".5"/><rect x="15.36" y="15.36" width="225.28" height="225.28" stroke="url(#clearSweep)" stroke-width="2" stroke-dasharray="10.24 15.36" opacity=".7"/></g>
+    <g transform="translate(256)"><use href="#corners" stroke="#60be9d" opacity=".872612" stroke-opacity=".78"/><path d="M15.36 46.933H240.64" stroke="url(#clearSweep)" stroke-width="2" opacity=".5"/><rect x="15.36" y="15.36" width="225.28" height="225.28" stroke="url(#clearSweep)" stroke-width="2" stroke-dasharray="10.24 15.36" opacity=".7"/></g>
+    <g transform="translate(512)"><use href="#corners" stroke="#60be9d" opacity=".881844" stroke-opacity=".78"/><path d="M15.36 63.147H240.64" stroke="url(#clearSweep)" stroke-width="2" opacity=".5"/><rect x="15.36" y="15.36" width="225.28" height="225.28" stroke="url(#clearSweep)" stroke-width="2" stroke-dasharray="10.24 15.36" opacity=".7"/></g>
+    <g transform="translate(768)"><use href="#corners" stroke="#60be9d" opacity=".739023" stroke-opacity=".78"/><path d="M15.36 79.36H240.64" stroke="url(#clearSweep)" stroke-width="2" opacity=".5"/><rect x="15.36" y="15.36" width="225.28" height="225.28" stroke="url(#clearSweep)" stroke-width="2" stroke-dasharray="10.24 15.36" opacity=".7"/></g>
+    <g transform="translate(1024)"><use href="#corners" stroke="#60be9d" opacity=".578329" stroke-opacity=".78"/><path d="M15.36 95.573H240.64" stroke="url(#clearSweep)" stroke-width="2" opacity=".5"/><rect x="15.36" y="15.36" width="225.28" height="225.28" stroke="url(#clearSweep)" stroke-width="2" stroke-dasharray="10.24 15.36" opacity=".7"/></g>
+    <g transform="translate(1280)"><use href="#corners" stroke="#60be9d" opacity=".550737" stroke-opacity=".78"/><path d="M15.36 111.787H240.64" stroke="url(#clearSweep)" stroke-width="2" opacity=".5"/><rect x="15.36" y="15.36" width="225.28" height="225.28" stroke="url(#clearSweep)" stroke-width="2" stroke-dasharray="10.24 15.36" opacity=".7"/></g>
+    <g transform="translate(1536)"><use href="#corners" stroke="#60be9d" opacity=".682168" stroke-opacity=".78"/><path d="M15.36 128H240.64" stroke="url(#clearSweep)" stroke-width="2" opacity=".5"/><rect x="15.36" y="15.36" width="225.28" height="225.28" stroke="url(#clearSweep)" stroke-width="2" stroke-dasharray="10.24 15.36" opacity=".7"/></g>
+    <g transform="translate(1792)"><use href="#corners" stroke="#60be9d" opacity=".849143" stroke-opacity=".78"/><path d="M15.36 144.213H240.64" stroke="url(#clearSweep)" stroke-width="2" opacity=".5"/><rect x="15.36" y="15.36" width="225.28" height="225.28" stroke="url(#clearSweep)" stroke-width="2" stroke-dasharray="10.24 15.36" opacity=".7"/></g>
+    <g transform="translate(2048)"><use href="#corners" stroke="#60be9d" opacity=".894787" stroke-opacity=".78"/><path d="M15.36 160.427H240.64" stroke="url(#clearSweep)" stroke-width="2" opacity=".5"/><rect x="15.36" y="15.36" width="225.28" height="225.28" stroke="url(#clearSweep)" stroke-width="2" stroke-dasharray="10.24 15.36" opacity=".7"/></g>
+    <g transform="translate(2304)"><use href="#corners" stroke="#60be9d" opacity=".776218" stroke-opacity=".78"/><path d="M15.36 176.64H240.64" stroke="url(#clearSweep)" stroke-width="2" opacity=".5"/><rect x="15.36" y="15.36" width="225.28" height="225.28" stroke="url(#clearSweep)" stroke-width="2" stroke-dasharray="10.24 15.36" opacity=".7"/></g>
+    <g transform="translate(2560)"><use href="#corners" stroke="#60be9d" opacity=".604832" stroke-opacity=".78"/><path d="M15.36 192.853H240.64" stroke="url(#clearSweep)" stroke-width="2" opacity=".5"/><rect x="15.36" y="15.36" width="225.28" height="225.28" stroke="url(#clearSweep)" stroke-width="2" stroke-dasharray="10.24 15.36" opacity=".7"/></g>
+    <g transform="translate(2816)"><use href="#corners" stroke="#60be9d" opacity=".541647" stroke-opacity=".78"/><path d="M15.36 209.067H240.64" stroke="url(#clearSweep)" stroke-width="2" opacity=".5"/><rect x="15.36" y="15.36" width="225.28" height="225.28" stroke="url(#clearSweep)" stroke-width="2" stroke-dasharray="10.24 15.36" opacity=".7"/></g>
+  </g>
+</svg>

@@ -22,8 +22,27 @@ const sourcePairs = [
   ["app/game/SubmarineWake.ts", "canonical-source/SubmarineWake.ts"],
 ];
 
+const effectPngs = [
+  ["echo-8x1.png", 2048, 256],
+  ["hit-sunk-pulses-8x2.png", 2048, 512],
+  ["submarine-wake-shared-phase-12x1.png", 3072, 256],
+  ["radar-contact-no-contact-12x2.png", 3072, 512],
+  ["target-vital-identification-pulses-8x4.png", 2048, 1024],
+  ["web-overlay-effect-storyboard.png", 1600, 2050],
+];
+
 function assert(condition, message) {
   if (!condition) throw new Error(message);
+}
+
+function readPngHeader(buffer) {
+  const signature = "89504e470d0a1a0a";
+  assert(buffer.subarray(0, 8).toString("hex") === signature, "Invalid PNG signature.");
+  return {
+    width: buffer.readUInt32BE(16),
+    height: buffer.readUInt32BE(20),
+    colorType: buffer[25],
+  };
 }
 
 function sha256(buffer) {
@@ -62,6 +81,23 @@ for (const [sourceRelative, copyRelative] of sourcePairs) {
   );
 }
 
+const effectMetadata = JSON.parse(
+  await readFile(path.join(handoffDir, "images", "effects", "effect-assets.json"), "utf8"),
+);
+assert(effectMetadata.cellSizePx === 256, "Effect sprite cells must be 256x256.");
+for (const [file, expectedWidth, expectedHeight] of effectPngs) {
+  const png = await readFile(path.join(handoffDir, "images", "effects", file));
+  const header = readPngHeader(png);
+  assert(
+    header.width === expectedWidth && header.height === expectedHeight,
+    `Unexpected effect image dimensions: ${file}`,
+  );
+  assert(
+    header.colorType === 4 || header.colorType === 6,
+    `Effect image does not contain an alpha channel: ${file}`,
+  );
+}
+
 console.log(
-  `Unity handoff verified: ${sourcePairs.length} canonical source copies, commit ${expectedCommit}.`,
+  `Unity handoff verified: ${sourcePairs.length} canonical source copies, ${effectPngs.length} effect PNGs, commit ${expectedCommit}.`,
 );

@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "canonicalCommit": "69f5c566ebfde8cb0eca814fe0f5d8f04b291834",
+  "source": [
+    "canonical-source/Renderer.ts",
+    "canonical-source/DeepBlueGrid.tsx",
+    "canonical-source/globals.css"
+  ],
+  "cellSizePx": 256,
+  "background": "transparent",
+  "alpha": "straight",
+  "colorSpace": "sRGB",
+  "preferredUnityImplementation": "procedural UI Graphic or shader using the canonical formulas",
+  "fallbackTextureImport": {
+    "spriteMode": "Multiple",
+    "meshType": "Full Rect",
+    "filterMode": "Point",
+    "wrapMode": "Clamp",
+    "mipMaps": false
+  },
+  "sheets": [
+    {
+      "file": "echo-8x1.png",
+      "columns": 8,
+      "rows": 1,
+      "widthPx": 2048,
+      "heightPx": 256,
+      "rowLabels": ["ECHO"],
+      "periodSeconds": 1.5707963268,
+      "secondsPerFrame": 0.1963495408,
+      "loop": true,
+      "formula": "alpha = 0.55 + 0.30 * sin(t * 4)"
+    },
+    {
+      "file": "hit-sunk-pulses-8x2.png",
+      "columns": 8,
+      "rows": 2,
+      "widthPx": 2048,
+      "heightPx": 512,
+      "rowLabels": ["HIT", "SUNK"],
+      "periodSeconds": 0.7853981634,
+      "secondsPerFrame": 0.0981747704,
+      "loop": true,
+      "formula": "alpha = 0.70 + 0.25 * sin(t * 8)"
+    },
+    {
+      "file": "submarine-wake-shared-phase-12x1.png",
+      "columns": 12,
+      "rows": 1,
+      "widthPx": 3072,
+      "heightPx": 256,
+      "rowLabels": ["SUBMARINE WAKE"],
+      "periodSeconds": 0.8,
+      "secondsPerFrame": 0.0666666667,
+      "loop": true,
+      "globalPhaseRequired": true,
+      "formula": "p=(t*1.25)%1; q=(p+i*0.42)%1; radius=cell*(0.13+q*0.34); alpha=0.65*(1-q)"
+    },
+    {
+      "file": "radar-contact-no-contact-12x2.png",
+      "columns": 12,
+      "rows": 2,
+      "widthPx": 3072,
+      "heightPx": 512,
+      "rowLabels": ["CONTACT", "NO CONTACT"],
+      "rowPlayback": [
+        {
+          "row": 0,
+          "sampledPeriodSeconds": 1.5707963268,
+          "secondsPerFrame": 0.1308996939,
+          "seamlessLoop": false,
+          "reason": "brackets, main ring and outer ring use 3.4, 4.0 and 4.6 rad/s"
+        },
+        {
+          "row": 1,
+          "periodSeconds": 3.5714285714,
+          "secondsPerFrame": 0.2976190476,
+          "seamlessLoop": true
+        }
+      ],
+      "proceduralRenderingStronglyRecommended": true
+    },
+    {
+      "file": "target-vital-identification-pulses-8x4.png",
+      "columns": 8,
+      "rows": 4,
+      "widthPx": 2048,
+      "heightPx": 1024,
+      "rowLabels": [
+        "ACTIVE TARGET",
+        "VITAL INTACT",
+        "VITAL HIT",
+        "IDENTIFIED"
+      ],
+      "rowPeriodsSeconds": [
+        0.5235987756,
+        null,
+        0.897597901,
+        1.2566370614
+      ],
+      "dynamicIdentificationCode": {
+        "bakedIntoSheet": false,
+        "labels": ["CV", "BB", "CA", "DD", "DE", "SS", "SSX"],
+        "color": "#fff0b5",
+        "position": "0.35 cell above center"
+      }
+    }
+  ],
+  "storyboard": {
+    "file": "web-overlay-effect-storyboard.png",
+    "widthPx": 1600,
+    "heightPx": 2050,
+    "runtimeSprite": false,
+    "purpose": "Unity UI, text, layer, timing and persistence reference"
+  }
+}

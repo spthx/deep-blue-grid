@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2048 256">
+  <defs>
+    <g id="echo" fill="none" stroke="#7ce5df" stroke-width="11.52" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="128" cy="128" r="19.2"/>
+      <path d="M128 108.8V56.32M141.056 78.08L128 56.32 114.944 78.08"/>
+      <path d="M128 147.2V199.68M114.944 177.92L128 199.68 141.056 177.92"/>
+      <path d="M108.8 128H56.32M78.08 114.944L56.32 128 78.08 141.056"/>
+      <path d="M147.2 128H199.68M177.92 141.056L199.68 128 177.92 114.944"/>
+    </g>
+  </defs>
+  <use href="#echo" opacity=".55"/>
+  <use href="#echo" transform="translate(256)" opacity=".762132"/>
+  <use href="#echo" transform="translate(512)" opacity=".85"/>
+  <use href="#echo" transform="translate(768)" opacity=".762132"/>
+  <use href="#echo" transform="translate(1024)" opacity=".55"/>
+  <use href="#echo" transform="translate(1280)" opacity=".337868"/>
+  <use href="#echo" transform="translate(1536)" opacity=".25"/>
+  <use href="#echo" transform="translate(1792)" opacity=".337868"/>
+</svg>

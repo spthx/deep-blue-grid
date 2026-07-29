@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2048 1024">
+  <defs>
+    <path id="targetCross" d="M30.72 128H225.28M128 30.72V225.28"/>
+    <g id="vitalIntact" transform="translate(128 128) rotate(45)" stroke="#7ce5df" stroke-width="8.96">
+      <rect x="-43.52" y="-43.52" width="87.04" height="87.04" fill="none"/>
+      <rect x="-20.89" y="-20.89" width="41.779" height="41.779" fill="#7ce5df" fill-opacity=".68" stroke="none"/>
+    </g>
+    <rect id="vitalHit" x="-79.36" y="-79.36" width="158.72" height="158.72" fill="none" stroke="#ff8585" stroke-width="11.52"/>
+    <rect id="identified" x="-87.04" y="-87.04" width="174.08" height="174.08" fill="none" stroke="#e5d78a" stroke-width="11.52"/>
+  </defs>
+
+  <!-- Row 0: selected target reticle. -->
+  <g fill="none" stroke="#fff0be" stroke-width="4.6">
+    <g opacity=".75"><circle cx="128" cy="128" r="79.36"/><use href="#targetCross"/></g>
+    <g transform="translate(256)" opacity=".926777"><circle cx="128" cy="128" r="95.652"/><use href="#targetCross"/></g>
+    <g transform="translate(512)"><circle cx="128" cy="128" r="102.4"/><use href="#targetCross"/></g>
+    <g transform="translate(768)" opacity=".926777"><circle cx="128" cy="128" r="95.652"/><use href="#targetCross"/></g>
+    <g transform="translate(1024)" opacity=".75"><circle cx="128" cy="128" r="79.36"/><use href="#targetCross"/></g>
+    <g transform="translate(1280)" opacity=".573223"><circle cx="128" cy="128" r="63.068"/><use href="#targetCross"/></g>
+    <g transform="translate(1536)" opacity=".5"><circle cx="128" cy="128" r="56.32"/><use href="#targetCross"/></g>
+    <g transform="translate(1792)" opacity=".573223"><circle cx="128" cy="128" r="63.068"/><use href="#targetCross"/></g>
+  </g>
+
+  <!-- Row 1: unhit own vital section; static in Renderer.ts, repeated for atlas consistency. -->
+  <g transform="translate(0 256)" opacity=".92">
+    <use href="#vitalIntact"/><use href="#vitalIntact" transform="translate(256)"/><use href="#vitalIntact" transform="translate(512)"/><use href="#vitalIntact" transform="translate(768)"/>
+    <use href="#vitalIntact" transform="translate(1024)"/><use href="#vitalIntact" transform="translate(1280)"/><use href="#vitalIntact" transform="translate(1536)"/><use href="#vitalIntact" transform="translate(1792)"/>
+  </g>
+
+  <!-- Row 2: hit vital section. -->
+  <g transform="translate(128 640) rotate(45)" opacity=".78"><use href="#vitalHit"/></g>
+  <g transform="translate(384 640) rotate(45)" opacity=".921421"><use href="#vitalHit"/></g>
+  <g transform="translate(640 640) rotate(45)" opacity=".98"><use href="#vitalHit"/></g>
+  <g transform="translate(896 640) rotate(45)" opacity=".921421"><use href="#vitalHit"/></g>
+  <g transform="translate(1152 640) rotate(45)" opacity=".78"><use href="#vitalHit"/></g>
+  <g transform="translate(1408 640) rotate(45)" opacity=".638579"><use href="#vitalHit"/></g>
+  <g transform="translate(1664 640) rotate(45)" opacity=".58"><use href="#vitalHit"/></g>
+  <g transform="translate(1920 640) rotate(45)" opacity=".638579"><use href="#vitalHit"/></g>
+
+  <!-- Row 3: identified-contact diamond; ship code is a separate dynamic text overlay. -->
+  <g transform="translate(128 896) rotate(45)" opacity=".82"><use href="#identified"/></g>
+  <g transform="translate(384 896) rotate(45)" opacity=".933137"><use href="#identified"/></g>
+  <g transform="translate(640 896) rotate(45)" opacity=".98"><use href="#identified"/></g>
+  <g transform="translate(896 896) rotate(45)" opacity=".933137"><use href="#identified"/></g>
+  <g transform="translate(1152 896) rotate(45)" opacity=".82"><use href="#identified"/></g>
+  <g transform="translate(1408 896) rotate(45)" opacity=".706863"><use href="#identified"/></g>
+  <g transform="translate(1664 896) rotate(45)" opacity=".66"><use href="#identified"/></g>
+  <g transform="translate(1920 896) rotate(45)" opacity=".706863"><use href="#identified"/></g>
+</svg>

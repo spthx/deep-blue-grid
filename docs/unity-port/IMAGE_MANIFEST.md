@@ -33,6 +33,37 @@
 - 状態: **実装用レイアウト設計図のPNG版**。ランタイム完成画面ではありません。
 - 用途: Unity Editor、Android実機、レビュー画面での並列比較。
 
+## 演出専用のコード派生画像
+
+`images/effects/`は、`Renderer.ts`、`DeepBlueGrid.tsx`、`globals.css`の式を透明背景へサンプリングしたUnity向け追補です。AI生成画像ではありません。
+
+### 透明PNGスプライトシート
+
+- `effects/echo-8x1.png`: 4方向ECHOの8フレーム。
+- `effects/hit-sunk-pulses-8x2.png`: HITとSUNKの各8フレーム。
+- `effects/submarine-wake-shared-phase-12x1.png`: 2重音紋の共通位相12フレーム。
+- `effects/radar-contact-no-contact-12x2.png`: CONTACTとNO CONTACTの各12サンプル。
+- `effects/target-vital-identification-pulses-8x4.png`: 照準、未被弾重要区画、被弾重要区画、敵識別の各8フレーム。
+
+状態: **正本コード由来の透明PNG**。各セルは256×256 px、Straight Alpha、sRGB。対応SVGも同じディレクトリに保存。
+
+用途: UnityのSprite Mode `Multiple`で切り出すフォールバック、またはprocedural描画の目視照合。
+
+注意:
+
+- Web正本は手続き描画であり、Unityでも同じ数式を使う方法が第一選択です。
+- 特にCONTACTレーダーは3種類の異なる周期を重ねるため、有限枚のPNGを単純ループしても完全な連続一致にはなりません。
+- 潜水艦音紋は各マークに個別Animatorを持たせず、盤面全体で同じフレームを使います。
+- 識別コード`CV/BB/CA/DD/DE/SS/SSX`はシートへ焼き込まず、動的文字として別レイヤーで表示します。
+- 正確な行、周期、秒/フレーム、Unity Import設定は`effects/effect-assets.json`と`effects/README.md`を参照してください。
+
+### `effects/web-overlay-effect-storyboard.svg` / `.png`
+
+- 出自: ターン切替、味方／敵レーダー、識別、重要区画被弾、緊急潜航、被害確認を正本CSSと文言から再構成。
+- 状態: **演出ストーリーボード**。ランタイムスクリーンショットでも、固定表示する1枚画像でもありません。
+- 用途: Unity UIのレイヤー順、警戒色、文字階層、自動消去時間、確認まで保持する警告、右寄せ確認ボタンを照合。
+- 禁止用途: この画像全体を画面へ貼ること。Unity UI、Text、Shader、Animationとして組み直してください。
+
 ## Web版の旧画面・履歴資料
 
 以下は過去時点のスクリーンショットです。全体の密度、盤面サイズ、情報階層を理解する補助には使えますが、現在の文言、配置、ルール、表示条件の正本ではありません。

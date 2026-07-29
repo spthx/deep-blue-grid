@@ -1,0 +1,381 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="2050" viewBox="0 0 1600 2050" role="img" aria-labelledby="title desc">
+  <title id="title">DEEP BLUE GRID — Web overlay effect storyboard for Unity</title>
+  <desc id="desc">A code-native reference sheet showing the canonical Web overlay states, colors, hierarchy, durations, and persistence rules. This is a storyboard, not a runtime screenshot or a sprite atlas.</desc>
+  <defs>
+    <linearGradient id="sheetBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0b2c3a"/>
+      <stop offset=".35" stop-color="#061923"/>
+      <stop offset="1" stop-color="#030c12"/>
+    </linearGradient>
+    <linearGradient id="cardBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#102f3b"/>
+      <stop offset=".5" stop-color="#071923"/>
+      <stop offset="1" stop-color="#051219"/>
+    </linearGradient>
+    <linearGradient id="reviewBg" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#302916" stop-opacity=".94"/>
+      <stop offset="1" stop-color="#071821" stop-opacity=".94"/>
+    </linearGradient>
+    <linearGradient id="hostileRadarBg" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#35151a" stop-opacity=".93"/>
+      <stop offset="1" stop-color="#081820" stop-opacity=".95"/>
+    </linearGradient>
+    <linearGradient id="primaryButton" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#30707a"/>
+      <stop offset="1" stop-color="#133b46"/>
+    </linearGradient>
+    <pattern id="scanlines" width="4" height="4" patternUnits="userSpaceOnUse">
+      <rect width="4" height="4" fill="none"/>
+      <path d="M0 3.5H4" stroke="#010a0f" stroke-opacity=".28" stroke-width="1"/>
+    </pattern>
+    <pattern id="boardGrid" width="36" height="36" patternUnits="userSpaceOnUse">
+      <rect width="36" height="36" fill="#092934"/>
+      <path d="M36 0H0V36" fill="none" stroke="#477581" stroke-opacity=".32" stroke-width="1"/>
+      <circle cx="18" cy="18" r="9" fill="none" stroke="#7ce5df" stroke-opacity=".045"/>
+    </pattern>
+    <filter id="cyanGlow" x="-40%" y="-80%" width="180%" height="260%">
+      <feGaussianBlur stdDeviation="7" result="blur"/>
+      <feFlood flood-color="#7ce5df" flood-opacity=".6" result="color"/>
+      <feComposite in="color" in2="blur" operator="in" result="glow"/>
+      <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="amberGlow" x="-40%" y="-80%" width="180%" height="260%">
+      <feGaussianBlur stdDeviation="7" result="blur"/>
+      <feFlood flood-color="#e5d78a" flood-opacity=".6" result="color"/>
+      <feComposite in="color" in2="blur" operator="in" result="glow"/>
+      <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="dangerGlow" x="-40%" y="-80%" width="180%" height="260%">
+      <feGaussianBlur stdDeviation="7" result="blur"/>
+      <feFlood flood-color="#ff8585" flood-opacity=".62" result="color"/>
+      <feComposite in="color" in2="blur" operator="in" result="glow"/>
+      <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="cardShadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#000" flood-opacity=".58"/>
+    </filter>
+    <style>
+      .mono { font-family:"Courier New","Yu Gothic UI",monospace; }
+      .sheet-title { font:700 46px "Courier New","Yu Gothic UI",monospace; letter-spacing:8px; fill:#e2fff8; }
+      .sheet-kicker { font:700 14px "Courier New","Yu Gothic UI",monospace; letter-spacing:5px; fill:#7ce5df; }
+      .sheet-note { font:400 14px "Courier New","Yu Gothic UI",monospace; fill:#71909b; }
+      .card-no { font:700 11px "Courier New","Yu Gothic UI",monospace; letter-spacing:3px; fill:#71909b; }
+      .card-title { font:700 20px "Courier New","Yu Gothic UI",monospace; letter-spacing:2px; fill:#e2fff8; }
+      .viewport-label { font:700 9px "Courier New","Yu Gothic UI",monospace; letter-spacing:2px; fill:#527984; }
+      .meta { font:400 11px "Courier New","Yu Gothic UI",monospace; fill:#71909b; }
+      .meta-strong { font:700 11px "Courier New","Yu Gothic UI",monospace; fill:#e2fff8; }
+      .overlay-eyebrow { font:700 9px "Courier New","Yu Gothic UI",monospace; letter-spacing:2px; fill:#71909b; }
+      .overlay-large { font:900 27px "Courier New","Yu Gothic UI",monospace; letter-spacing:4px; }
+      .overlay-small { font:700 11px "Courier New","Yu Gothic UI",monospace; fill:#e2fff8; }
+      .turn-large { font:900 31px "Courier New","Yu Gothic UI",monospace; letter-spacing:7px; }
+      .turn-jp { font:700 11px "Courier New","Yu Gothic UI",monospace; letter-spacing:3px; fill:#e2fff8; }
+      .tag { font:700 9px "Courier New","Yu Gothic UI",monospace; letter-spacing:1.5px; }
+      .callout { font:700 9px "Courier New","Yu Gothic UI",monospace; letter-spacing:1px; fill:#71909b; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="2050" fill="url(#sheetBg)"/>
+  <rect width="1600" height="2050" fill="url(#scanlines)" opacity=".68"/>
+  <path d="M0 170H1600M0 1980H1600" stroke="#315965" stroke-width="1"/>
+  <path d="M44 31V139M1556 31V139" stroke="#7ce5df" stroke-opacity=".38"/>
+
+  <text x="68" y="55" class="sheet-kicker">UNITY PORT / CANONICAL WEB EFFECTS / PORTRAIT-FIRST</text>
+  <text x="68" y="111" class="sheet-title">OVERLAY EFFECT STORYBOARD</text>
+  <text x="70" y="143" class="sheet-note">Peak-state composition derived from DeepBlueGrid.tsx + globals.css · palette, copy, layer order and timing are authoritative.</text>
+  <g transform="translate(1201 38)">
+    <rect width="332" height="96" rx="2" fill="#071821" stroke="#52757d"/>
+    <rect x="1" y="1" width="4" height="94" fill="#e5d78a"/>
+    <text x="20" y="29" class="tag" fill="#e5d78a">REFERENCE — NOT A SPRITE</text>
+    <text x="20" y="51" class="meta">Rebuild with Unity UI, text and shaders.</text>
+    <text x="20" y="70" class="meta">Do not import this sheet as a fixed overlay.</text>
+    <text x="20" y="87" class="meta">Not a runtime screenshot.</text>
+  </g>
+
+  <!-- Card 01: awaiting orders -->
+  <g transform="translate(44 205)" filter="url(#cardShadow)">
+    <rect width="480" height="548" rx="4" fill="url(#cardBg)" stroke="#41636d"/>
+    <path d="M0 13V0H13M467 0H480V13M0 535V548H13M467 548H480V535" fill="none" stroke="#7ce5df" stroke-opacity=".62"/>
+    <text x="22" y="28" class="card-no">01 / TURN TRANSITION</text>
+    <text x="22" y="55" class="card-title">AWAITING ORDERS</text>
+    <g transform="translate(22 74)">
+      <rect width="436" height="298" fill="url(#boardGrid)" stroke="#52757d"/>
+      <text x="12" y="18" class="viewport-label">HOSTILE WATERS / CONTACT GRID</text>
+      <rect width="436" height="298" fill="#06131d" fill-opacity=".67"/>
+      <g transform="translate(0 117)">
+        <path d="M0 0H436M0 64H436" stroke="#7ce5df" stroke-width="1"/>
+        <rect width="436" height="64" fill="#06131d" fill-opacity=".22"/>
+        <text x="218" y="28" text-anchor="middle" class="turn-large" fill="#7ce5df" filter="url(#cyanGlow)">AWAITING ORDERS</text>
+        <text x="218" y="49" text-anchor="middle" class="turn-jp">指令待機</text>
+      </g>
+      <text x="13" y="282" class="callout">FULL-VIEW DIM → CENTERED HORIZONTAL SIGNAL BAND</text>
+    </g>
+    <g transform="translate(22 393)">
+      <text y="0" class="meta-strong">DURATION</text><text x="82" y="0" class="meta">1.05 s · auto-dismiss</text>
+      <text y="22" class="meta-strong">LAYER</text><text x="82" y="22" class="meta">z 25 · pointer input passes through</text>
+      <text y="44" class="meta-strong">CURVE</text><text x="82" y="44" class="meta">0–25% fade in · hold to 70% · fade out</text>
+      <line y1="64" x2="436" y2="64" stroke="#294b55"/>
+      <text y="86" class="meta" fill="#7ce5df">Hierarchy: dark field veil → cyan rules → primary English → Japanese status.</text>
+      <text y="106" class="meta">Fires only when player command control is returned.</text>
+    </g>
+  </g>
+
+  <!-- Card 02: hostile action -->
+  <g transform="translate(560 205)" filter="url(#cardShadow)">
+    <rect width="480" height="548" rx="4" fill="url(#cardBg)" stroke="#41636d"/>
+    <path d="M0 13V0H13M467 0H480V13M0 535V548H13M467 548H480V535" fill="none" stroke="#ff8585" stroke-opacity=".62"/>
+    <text x="22" y="28" class="card-no">02 / TURN TRANSITION</text>
+    <text x="22" y="55" class="card-title">HOSTILE ACTION</text>
+    <g transform="translate(22 74)">
+      <rect width="436" height="298" fill="url(#boardGrid)" stroke="#6b4148"/>
+      <text x="12" y="18" class="viewport-label">OWN WATERS / DEFENSE GRID</text>
+      <rect width="436" height="298" fill="#06131d" fill-opacity=".67"/>
+      <g transform="translate(0 117)">
+        <path d="M0 0H436M0 64H436" stroke="#ff8585" stroke-width="1"/>
+        <rect width="436" height="64" fill="#160e14" fill-opacity=".28"/>
+        <text x="218" y="28" text-anchor="middle" class="turn-large" fill="#ff8585" filter="url(#dangerGlow)">HOSTILE ACTION</text>
+        <text x="218" y="49" text-anchor="middle" class="turn-jp">敵攻撃</text>
+      </g>
+      <text x="13" y="282" class="callout">SAME STRUCTURE · HOSTILE STATE CHANGES SIGNAL COLOR ONLY</text>
+    </g>
+    <g transform="translate(22 393)">
+      <text y="0" class="meta-strong">DURATION</text><text x="82" y="0" class="meta">1.05 s · auto-dismiss</text>
+      <text y="22" class="meta-strong">LAYER</text><text x="82" y="22" class="meta">z 25 · pointer input passes through</text>
+      <text y="44" class="meta-strong">COLOR</text><text x="82" y="44" class="meta">DANGER #ff8585 · no amber substitution</text>
+      <line y1="64" x2="436" y2="64" stroke="#294b55"/>
+      <text y="86" class="meta" fill="#ff8585">Tone: immediate threat, not player failure or result-state red.</text>
+      <text y="106" class="meta">Shown before enemy targeting begins.</text>
+    </g>
+  </g>
+
+  <!-- Card 03: contact -->
+  <g transform="translate(1076 205)" filter="url(#cardShadow)">
+    <rect width="480" height="548" rx="4" fill="url(#cardBg)" stroke="#41636d"/>
+    <path d="M0 13V0H13M467 0H480V13M0 535V548H13M467 548H480V535" fill="none" stroke="#e5d78a" stroke-opacity=".62"/>
+    <text x="22" y="28" class="card-no">03 / FRIENDLY RADAR RESULT</text>
+    <text x="22" y="55" class="card-title">CONTACT!</text>
+    <g transform="translate(22 74)">
+      <rect width="436" height="298" fill="url(#boardGrid)" stroke="#52757d"/>
+      <text x="12" y="18" class="viewport-label">HOSTILE WATERS / SPS-10 SCAN</text>
+      <g transform="translate(30 82)">
+        <rect width="376" height="132" fill="#071920" fill-opacity=".95" stroke="#e5d78a"/>
+        <rect x="-3" y="0" width="3" height="132" fill="#e5d78a"/>
+        <text x="188" y="27" text-anchor="middle" class="overlay-eyebrow">SPS-10 RADAR SCAN</text>
+        <text x="188" y="72" text-anchor="middle" class="overlay-large" fill="#e5d78a" filter="url(#amberGlow)">CONTACT!</text>
+        <text x="188" y="102" text-anchor="middle" class="overlay-small">指定4区画内に未破壊艦区画あり</text>
+      </g>
+      <text x="13" y="282" class="callout">AMBER = POSITIVE CONTACT · BINARY RESULT, NO COUNT</text>
+    </g>
+    <g transform="translate(22 393)">
+      <text y="0" class="meta-strong">DURATION</text><text x="82" y="0" class="meta">1.45 s · auto-dismiss</text>
+      <text y="22" class="meta-strong">LAYER</text><text x="82" y="22" class="meta">z 35 · centered · maximum width 520 px</text>
+      <text y="44" class="meta-strong">MOTION</text><text x="82" y="44" class="meta">.92 scale → 1.0 by 12% · hold to 78%</text>
+      <line y1="64" x2="436" y2="64" stroke="#294b55"/>
+      <text y="86" class="meta" fill="#e5d78a">CONTACT never reports how many occupied cells were detected.</text>
+      <text y="106" class="meta">Hierarchy: scan source → result → one-line interpretation.</text>
+    </g>
+  </g>
+
+  <!-- Card 04: no contact -->
+  <g transform="translate(44 781)" filter="url(#cardShadow)">
+    <rect width="480" height="548" rx="4" fill="url(#cardBg)" stroke="#41636d"/>
+    <path d="M0 13V0H13M467 0H480V13M0 535V548H13M467 548H480V535" fill="none" stroke="#7ce5df" stroke-opacity=".62"/>
+    <text x="22" y="28" class="card-no">04 / FRIENDLY RADAR RESULT</text>
+    <text x="22" y="55" class="card-title">NO CONTACT</text>
+    <g transform="translate(22 74)">
+      <rect width="436" height="298" fill="url(#boardGrid)" stroke="#52757d"/>
+      <text x="12" y="18" class="viewport-label">HOSTILE WATERS / SPS-10 SCAN</text>
+      <g transform="translate(30 82)">
+        <rect width="376" height="132" fill="#071920" fill-opacity=".95" stroke="#7ce5df"/>
+        <rect x="-3" y="0" width="3" height="132" fill="#7ce5df"/>
+        <text x="188" y="27" text-anchor="middle" class="overlay-eyebrow">SPS-10 RADAR SCAN</text>
+        <text x="188" y="72" text-anchor="middle" class="overlay-large" fill="#7ce5df" filter="url(#cyanGlow)">NO CONTACT</text>
+        <text x="188" y="102" text-anchor="middle" class="overlay-small">指定4区画内に反応なし</text>
+      </g>
+      <text x="13" y="282" class="callout">CYAN = CLEAR RESULT · NEVER RECOLOR AS GREEN IN THE OVERLAY</text>
+    </g>
+    <g transform="translate(22 393)">
+      <text y="0" class="meta-strong">DURATION</text><text x="82" y="0" class="meta">1.45 s · auto-dismiss</text>
+      <text y="22" class="meta-strong">LAYER</text><text x="82" y="22" class="meta">z 35 · same geometry as CONTACT</text>
+      <text y="44" class="meta-strong">SEMANTIC</text><text x="82" y="44" class="meta">No unhit living ship cell in the 2×2 scan</text>
+      <line y1="64" x2="436" y2="64" stroke="#294b55"/>
+      <text y="86" class="meta">Keep identical weight and timing so the result is read from copy/color,</text>
+      <text y="106" class="meta">not from a larger or more theatrical panel.</text>
+    </g>
+  </g>
+
+  <!-- Card 05: hostile radar pair -->
+  <g transform="translate(560 781)" filter="url(#cardShadow)">
+    <rect width="480" height="548" rx="4" fill="url(#cardBg)" stroke="#41636d"/>
+    <path d="M0 13V0H13M467 0H480V13M0 535V548H13M467 548H480V535" fill="none" stroke="#ff8585" stroke-opacity=".62"/>
+    <text x="22" y="28" class="card-no">05 / HOSTILE RADAR RESULT</text>
+    <text x="22" y="55" class="card-title">FLEET DETECTED / NO TRACK</text>
+    <g transform="translate(22 74)">
+      <rect width="436" height="298" fill="url(#boardGrid)" stroke="#6b4148"/>
+      <text x="12" y="18" class="viewport-label">OWN WATERS / ENEMY SPS-10 SCAN</text>
+      <g transform="translate(19 53)">
+        <rect width="398" height="99" fill="url(#hostileRadarBg)" stroke="#ff8585"/>
+        <rect x="-3" width="3" height="99" fill="#ff8585"/>
+        <rect x="5" y="5" width="388" height="89" fill="none" stroke="#ff8585" stroke-opacity=".27" stroke-dasharray="7 4"/>
+        <text x="199" y="22" text-anchor="middle" class="overlay-eyebrow" fill="#ff8585">HOSTILE RADAR CONTACT</text>
+        <text x="199" y="56" text-anchor="middle" class="overlay-large" font-size="22" fill="#ff8585" filter="url(#dangerGlow)">FLEET DETECTED</text>
+        <text x="199" y="80" text-anchor="middle" class="overlay-small">敵レーダーが自軍艦隊を捕捉。敵追跡データへ登録。</text>
+      </g>
+      <g transform="translate(19 169)">
+        <rect width="398" height="99" fill="#071920" fill-opacity=".95" stroke="#7ce5df"/>
+        <rect x="-3" width="3" height="99" fill="#7ce5df"/>
+        <text x="199" y="22" text-anchor="middle" class="overlay-eyebrow">ENEMY SPS-10 SCAN</text>
+        <text x="199" y="56" text-anchor="middle" class="overlay-large" font-size="23" fill="#7ce5df">NO TRACK</text>
+        <text x="199" y="80" text-anchor="middle" class="overlay-small">敵レーダーによる捕捉なし。自軍反応は追跡されず。</text>
+      </g>
+    </g>
+    <g transform="translate(22 393)">
+      <text y="0" class="meta-strong">DURATION</text><text x="82" y="0" class="meta">1.45 s · each state auto-dismisses</text>
+      <text y="22" class="meta-strong">CONTACT</text><text x="82" y="22" class="meta">danger treatment + inner lock flicker .42 s</text>
+      <text y="44" class="meta-strong">NO TRACK</text><text x="82" y="44" class="meta">canonical cyan clear treatment</text>
+      <line y1="64" x2="436" y2="64" stroke="#294b55"/>
+      <text y="86" class="meta" fill="#ff8585">Enemy contact is explicitly negative: “FLEET DETECTED”.</text>
+      <text y="106" class="meta">Do not mirror the friendly CONTACT wording.</text>
+    </g>
+  </g>
+
+  <!-- Card 06: contact identified -->
+  <g transform="translate(1076 781)" filter="url(#cardShadow)">
+    <rect width="480" height="548" rx="4" fill="url(#cardBg)" stroke="#41636d"/>
+    <path d="M0 13V0H13M467 0H480V13M0 535V548H13M467 548H480V535" fill="none" stroke="#e5d78a" stroke-opacity=".62"/>
+    <text x="22" y="28" class="card-no">06 / ENEMY IDENTITY REVEAL</text>
+    <text x="22" y="55" class="card-title">CONTACT IDENTIFIED</text>
+    <g transform="translate(22 74)">
+      <rect width="436" height="298" fill="url(#boardGrid)" stroke="#52757d"/>
+      <text x="12" y="18" class="viewport-label">HOSTILE WATERS / VITAL HIT REPORT</text>
+      <g transform="translate(30 44)">
+        <rect width="376" height="94" fill="#15170e" fill-opacity=".92" stroke="#e5d78a"/>
+        <rect x="4" y="4" width="368" height="86" fill="none" stroke="#071219" stroke-width="3"/>
+        <text x="188" y="38" text-anchor="middle" class="overlay-large" font-size="21" fill="#e5d78a" filter="url(#amberGlow)">CONTACT IDENTIFIED</text>
+        <text x="188" y="67" text-anchor="middle" class="overlay-small">敵艦識別：航空母艦 / CV-08</text>
+      </g>
+      <path d="M215 180l13 13-13 13-13-13z" fill="#ff8585"/>
+      <path d="M193 193h44M215 171v44" stroke="#e5d78a" stroke-width="2" stroke-opacity=".7"/>
+      <text x="13" y="282" class="callout">TOP ALERT → BOARD MARKER REMAINS; ORIENTATION / HP STAY HIDDEN</text>
+    </g>
+    <g transform="translate(22 393)">
+      <text y="0" class="meta-strong">DURATION</text><text x="82" y="0" class="meta">1.65 s · auto-dismiss</text>
+      <text y="22" class="meta-strong">LAYER</text><text x="82" y="22" class="meta">z 36 · top max(92 px, 14dvh)</text>
+      <text y="44" class="meta-strong">REVEAL</text><text x="82" y="44" class="meta">ship name + code only</text>
+      <line y1="64" x2="436" y2="64" stroke="#294b55"/>
+      <text y="86" class="meta" fill="#e5d78a">Triggered by player hit on an enemy vital compartment.</text>
+      <text y="106" class="meta">Alert leaves the compact diamond identification mark on that hit.</text>
+    </g>
+  </g>
+
+  <!-- Card 07: vital compartment hit -->
+  <g transform="translate(44 1357)" filter="url(#cardShadow)">
+    <rect width="480" height="548" rx="4" fill="url(#cardBg)" stroke="#41636d"/>
+    <path d="M0 13V0H13M467 0H480V13M0 535V548H13M467 548H480V535" fill="none" stroke="#ff8585" stroke-opacity=".62"/>
+    <text x="22" y="28" class="card-no">07 / OWN VITAL COMPARTMENT</text>
+    <text x="22" y="55" class="card-title">VITAL COMPARTMENT HIT</text>
+    <g transform="translate(22 74)">
+      <rect width="436" height="298" fill="url(#boardGrid)" stroke="#6b4148"/>
+      <text x="12" y="18" class="viewport-label">OWN WATERS / IDENTIFICATION WARNING</text>
+      <g transform="translate(30 44)">
+        <rect width="376" height="94" fill="#251216" fill-opacity=".93" stroke="#ff8585"/>
+        <rect x="4" y="4" width="368" height="86" fill="none" stroke="#071219" stroke-width="3"/>
+        <text x="188" y="38" text-anchor="middle" class="overlay-large" font-size="20" fill="#ff8585" filter="url(#dangerGlow)">VITAL COMPARTMENT HIT</text>
+        <text x="188" y="67" text-anchor="middle" class="overlay-small">敵に識別されました：戦艦 / BB-05</text>
+      </g>
+      <g transform="translate(69 224)">
+        <rect width="298" height="45" fill="#302916" fill-opacity=".93" stroke="#8d793f"/>
+        <text x="13" y="18" class="tag" fill="#e5d78a">DAMAGE ASSESSMENT PENDING</text>
+        <text x="13" y="34" class="meta">warning remains visible until review confirmation</text>
+      </g>
+    </g>
+    <g transform="translate(22 393)">
+      <text y="0" class="meta-strong">ENTRY</text><text x="82" y="0" class="meta">.22 s slide/fade in</text>
+      <text y="22" class="meta-strong">PERSIST</text><text x="82" y="22" class="meta">no timeout · clear only on review confirm</text>
+      <text y="44" class="meta-strong">LAYER</text><text x="82" y="44" class="meta">z 36 · danger alert above combat field</text>
+      <line y1="64" x2="436" y2="64" stroke="#294b55"/>
+      <text y="86" class="meta" fill="#ff8585">This is not the 1.65 s friendly identification animation.</text>
+      <text y="106" class="meta">It must survive the remaining enemy sequence and the review phase.</text>
+    </g>
+  </g>
+
+  <!-- Card 08: emergency dive -->
+  <g transform="translate(560 1357)" filter="url(#cardShadow)">
+    <rect width="480" height="548" rx="4" fill="url(#cardBg)" stroke="#41636d"/>
+    <path d="M0 13V0H13M467 0H480V13M0 535V548H13M467 548H480V535" fill="none" stroke="#7ce5df" stroke-opacity=".62"/>
+    <text x="22" y="28" class="card-no">08 / SILENT SUBMARINE RESPONSE</text>
+    <text x="22" y="55" class="card-title">EMERGENCY DIVE</text>
+    <g transform="translate(22 74)">
+      <rect width="436" height="298" fill="url(#boardGrid)" stroke="#52757d"/>
+      <text x="12" y="18" class="viewport-label">HOSTILE WATERS / CONTACT LOST</text>
+      <g transform="translate(30 44)">
+        <rect width="376" height="94" fill="#071920" fill-opacity=".95" stroke="#7ce5df"/>
+        <rect x="-3" width="3" height="94" fill="#7ce5df"/>
+        <text x="188" y="38" text-anchor="middle" class="overlay-large" font-size="23" fill="#7ce5df" filter="url(#cyanGlow)">EMERGENCY DIVE</text>
+        <text x="188" y="67" text-anchor="middle" class="overlay-small">敵特殊潜航艦、最終接触位置から離脱。再捕捉を要す。</text>
+      </g>
+      <g transform="translate(218 208)" fill="none" stroke="#7ce5df">
+        <ellipse rx="24" ry="9" opacity=".62"/>
+        <ellipse rx="48" ry="18" opacity=".36"/>
+        <ellipse rx="72" ry="27" opacity=".16"/>
+      </g>
+      <path d="M190 185h56l-10 13h-36z" fill="#7ce5df" fill-opacity=".2"/>
+      <text x="13" y="282" class="callout">CONTACT POSITION INVALIDATED · DO NOT SHOW THE NEW LOCATION</text>
+    </g>
+    <g transform="translate(22 393)">
+      <text y="0" class="meta-strong">DURATION</text><text x="82" y="0" class="meta">1.75 s · auto-dismiss</text>
+      <text y="22" class="meta-strong">LAYER</text><text x="82" y="22" class="meta">z 37 · above identification and radar</text>
+      <text y="44" class="meta-strong">MOTION</text><text x="82" y="44" class="meta">−10 px vertical entry · hold to 76%</text>
+      <line y1="64" x2="436" y2="64" stroke="#294b55"/>
+      <text y="86" class="meta" fill="#7ce5df">Shown after the first hit relocates SSX-00.</text>
+      <text y="106" class="meta">Inform loss of contact; never disclose its destination cell.</text>
+    </g>
+  </g>
+
+  <!-- Card 09: damage assessment -->
+  <g transform="translate(1076 1357)" filter="url(#cardShadow)">
+    <rect width="480" height="548" rx="4" fill="url(#cardBg)" stroke="#41636d"/>
+    <path d="M0 13V0H13M467 0H480V13M0 535V548H13M467 548H480V535" fill="none" stroke="#e5d78a" stroke-opacity=".62"/>
+    <text x="22" y="28" class="card-no">09 / REVIEW GATE</text>
+    <text x="22" y="55" class="card-title">DAMAGE ASSESSMENT</text>
+    <g transform="translate(22 74)">
+      <rect width="436" height="298" fill="url(#boardGrid)" stroke="#52757d"/>
+      <text x="12" y="18" class="viewport-label">OWN WATERS / REVIEW PHASE</text>
+      <circle cx="113" cy="137" r="11" fill="#ff8585" opacity=".9"/>
+      <path d="M102 126l22 22M124 126l-22 22" stroke="#ffd1d1" stroke-width="2"/>
+      <g transform="translate(12 183)">
+        <rect width="412" height="103" fill="url(#reviewBg)" stroke="#8d793f"/>
+        <rect x="1" y="1" width="4" height="101" fill="#e5d78a"/>
+        <g transform="translate(16 17)">
+          <text class="tag" fill="#e5d78a">DAMAGE ASSESSMENT / CIC LOG</text>
+          <text y="24" class="overlay-small" font-size="12">自軍損傷を確認してください</text>
+          <text y="45" class="meta" fill="#d1cda9">着弾・損傷・識別警告は、確認完了まで保持されます。</text>
+        </g>
+        <g transform="translate(270 15)">
+          <rect width="128" height="73" fill="url(#primaryButton)" stroke="#93f2e9"/>
+          <rect x="3" y="3" width="122" height="67" fill="none" stroke="#07171f" stroke-width="2"/>
+          <text x="12" y="29" class="meta-strong" fill="#7ce5df">確認完了</text>
+          <text x="12" y="47" class="meta" font-size="8">CIC戦闘記録を更新</text>
+          <text x="12" y="61" class="meta" font-size="8">攻撃指揮へ復帰</text>
+        </g>
+      </g>
+    </g>
+    <g transform="translate(22 393)">
+      <text y="0" class="meta-strong">PERSIST</text><text x="82" y="0" class="meta">until explicit confirmation · no timer</text>
+      <text y="22" class="meta-strong">POSITION</text><text x="82" y="22" class="meta">sticky bottom + safe-area inset</text>
+      <text y="44" class="meta-strong">ACTION</text><text x="82" y="44" class="meta">right-aligned, minimum 230 px on wide UI</text>
+      <line y1="64" x2="436" y2="64" stroke="#294b55"/>
+      <text y="86" class="meta" fill="#e5d78a">Confirmation clears persistent vital warning, selects normal fire,</text>
+      <text y="106" class="meta">switches to the enemy plot, then plays AWAITING ORDERS.</text>
+    </g>
+  </g>
+
+  <g transform="translate(44 1941)">
+    <text class="sheet-kicker" font-size="11">IMPLEMENTATION ORDER</text>
+    <text x="202" class="sheet-note">field/board → dim veil → state panel → eyebrow → primary result → interpretation → persistence gate</text>
+    <g transform="translate(1136 -18)">
+      <rect width="420" height="47" fill="#071821" stroke="#315965"/>
+      <text x="12" y="19" class="meta"><tspan fill="#7ce5df">CYAN</tspan> system/clear · <tspan fill="#e5d78a">AMBER</tspan> contact/review · <tspan fill="#ff8585">RED</tspan> hostile threat</text>
+      <text x="12" y="36" class="meta">Canonical source commit: 69f5c566ebfde8cb0eca814fe0f5d8f04b291834</text>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2048 512">
+  <defs>
+    <polygon id="burst" points="197.12,128 156.963,156.963 128,197.12 99.037,156.963 58.88,128 99.037,99.037 128,58.88 156.963,99.037"/>
+  </defs>
+  <g fill="#ff8585">
+    <use href="#burst" opacity=".7"/>
+    <use href="#burst" transform="translate(256)" opacity=".876777"/>
+    <use href="#burst" transform="translate(512)" opacity=".95"/>
+    <use href="#burst" transform="translate(768)" opacity=".876777"/>
+    <use href="#burst" transform="translate(1024)" opacity=".7"/>
+    <use href="#burst" transform="translate(1280)" opacity=".523223"/>
+    <use href="#burst" transform="translate(1536)" opacity=".45"/>
+    <use href="#burst" transform="translate(1792)" opacity=".523223"/>
+  </g>
+  <g fill="#e5d78a" transform="translate(0 256)">
+    <use href="#burst" opacity=".7"/>
+    <use href="#burst" transform="translate(256)" opacity=".876777"/>
+    <use href="#burst" transform="translate(512)" opacity=".95"/>
+    <use href="#burst" transform="translate(768)" opacity=".876777"/>
+    <use href="#burst" transform="translate(1024)" opacity=".7"/>
+    <use href="#burst" transform="translate(1280)" opacity=".523223"/>
+    <use href="#burst" transform="translate(1536)" opacity=".45"/>
+    <use href="#burst" transform="translate(1792)" opacity=".523223"/>
+  </g>
+</svg>
