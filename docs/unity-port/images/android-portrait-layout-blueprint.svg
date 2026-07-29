@@ -1,0 +1,416 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1080" viewBox="0 0 1024 1080">
+  <defs>
+    <pattern id="sheetGrid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#164451" stroke-width="1" opacity=".34"/>
+    </pattern>
+    <pattern id="boardGrid" width="43" height="43" patternUnits="userSpaceOnUse">
+      <path d="M43 0H0V43" fill="none" stroke="#315e69" stroke-width="1"/>
+    </pattern>
+    <pattern id="scanLines" width="6" height="6" patternUnits="userSpaceOnUse">
+      <path d="M0 1H6" stroke="#7ce5df" stroke-width=".55" opacity=".08"/>
+    </pattern>
+    <filter id="cyanGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="2.1" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="redGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="2.4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <style>
+      .mono { font-family:"SFMono-Regular","Roboto Mono","Yu Gothic UI",monospace; }
+      .ui { font-family:"Roboto","Yu Gothic UI",sans-serif; }
+      .screen { fill:#06131d; stroke:#71909b; stroke-width:1.5; }
+      .panel { fill:#0a2635; stroke:#315e69; stroke-width:1; }
+      .button { fill:#0a2635; stroke:#71909b; stroke-width:1; }
+      .buttonActive { fill:#164451; stroke:#7ce5df; stroke-width:1.5; }
+      .buttonAlert { fill:#351d26; stroke:#ff8585; stroke-width:1.5; }
+      .buttonDisabled { fill:#071a25; stroke:#315e69; stroke-width:1; opacity:.55; }
+      .title { fill:#d8fffb; font-size:15px; font-weight:700; letter-spacing:1.6px; }
+      .heading { fill:#7ce5df; font-size:11px; font-weight:700; letter-spacing:1px; }
+      .copy { fill:#b0ced0; font-size:10px; }
+      .muted { fill:#71909b; font-size:9px; }
+      .micro { fill:#71909b; font-size:7.5px; letter-spacing:.35px; }
+      .buttonText { fill:#d8fffb; font-size:9px; font-weight:700; letter-spacing:.45px; }
+      .buttonSub { fill:#71909b; font-size:6.8px; }
+      .boardLabel { fill:#71909b; font-size:8px; text-anchor:middle; }
+      .ship { fill:#71909b; opacity:.88; }
+      .shipDeck { fill:#b0ced0; opacity:.75; }
+      .noteLine { fill:none; stroke:#e5d78a; stroke-width:1; stroke-dasharray:3 3; }
+    </style>
+  </defs>
+
+  <!-- Blueprint sheet -->
+  <rect width="1024" height="1080" fill="#06131d"/>
+  <rect x="18" y="18" width="988" height="1044" fill="url(#sheetGrid)" stroke="#315e69"/>
+  <text x="54" y="50" class="mono title" font-size="20">DEEP BLUE GRID / ANDROID PORTRAIT LAYOUT BLUEPRINT</text>
+  <text x="54" y="72" class="mono copy">412 × 915 logical px reference · vertical, single-board-at-a-time · NOT A RUNTIME SCREENSHOT</text>
+  <text x="970" y="50" text-anchor="end" class="mono muted">UNITY HANDOFF / 2026-07-29</text>
+
+  <!-- ================================================================ -->
+  <!-- LEFT: FLEET DEPLOYMENT                                            -->
+  <!-- ================================================================ -->
+  <g transform="translate(64 92)">
+    <rect width="412" height="915" rx="16" class="screen"/>
+    <rect x="1" y="1" width="410" height="913" rx="15" fill="url(#scanLines)"/>
+
+    <!-- Safe-area guides -->
+    <rect x="8" y="8" width="396" height="24" fill="#071a25" opacity=".9"/>
+    <path d="M8 32H404M8 879H404" stroke="#e5d78a" stroke-width=".8" stroke-dasharray="4 3" opacity=".8"/>
+    <text x="16" y="22" class="mono micro" fill="#e5d78a">TOP SAFE AREA</text>
+    <text x="396" y="22" text-anchor="end" class="mono micro">412 × 915 / PORTRAIT</text>
+
+    <!-- Compact command header -->
+    <rect x="8" y="36" width="396" height="48" class="panel"/>
+    <text x="20" y="55" class="mono heading">FLEET DEPLOYMENT</text>
+    <text x="20" y="72" class="mono muted">STAGE 03 / CRUISER GAP</text>
+    <g transform="translate(296 40)">
+      <rect width="46" height="40" class="button"/>
+      <text x="23" y="16" text-anchor="middle" class="mono micro">LOG</text>
+      <text x="23" y="29" text-anchor="middle" class="mono buttonText">≡</text>
+      <rect x="50" width="46" height="40" class="button"/>
+      <text x="73" y="16" text-anchor="middle" class="mono micro">AUDIO</text>
+      <text x="73" y="29" text-anchor="middle" class="mono buttonText">◉</text>
+    </g>
+
+    <!-- State message -->
+    <rect x="8" y="88" width="396" height="45" class="panel"/>
+    <rect x="8" y="88" width="3" height="45" fill="#7ce5df"/>
+    <text x="20" y="106" class="mono heading">SELECT VESSEL / 艦を選択</text>
+    <text x="20" y="122" class="ui muted">艦影をドラッグ。タップで選択、もう一度タップで配置確定。</text>
+
+    <!-- Board title -->
+    <text x="34" y="151" class="mono heading">OWN WATERS / 自軍海域</text>
+    <text x="378" y="151" text-anchor="end" class="mono micro">DEPLOYMENT GRID</text>
+
+    <!-- 8×8 board, 43 px cells, centered -->
+    <g transform="translate(34 166)">
+      <rect x="0" y="0" width="344" height="344" fill="#071e2a" stroke="#71909b" stroke-width="1.5"/>
+      <rect x="0" y="0" width="344" height="344" fill="url(#boardGrid)"/>
+      <g class="mono boardLabel">
+        <text x="21.5" y="-7">1</text><text x="64.5" y="-7">2</text>
+        <text x="107.5" y="-7">3</text><text x="150.5" y="-7">4</text>
+        <text x="193.5" y="-7">5</text><text x="236.5" y="-7">6</text>
+        <text x="279.5" y="-7">7</text><text x="322.5" y="-7">8</text>
+        <text x="-11" y="25">A</text><text x="-11" y="68">B</text>
+        <text x="-11" y="111">C</text><text x="-11" y="154">D</text>
+        <text x="-11" y="197">E</text><text x="-11" y="240">F</text>
+        <text x="-11" y="283">G</text><text x="-11" y="326">H</text>
+      </g>
+
+      <!-- Flat procedural-style silhouettes only -->
+      <g transform="translate(22 64)">
+        <path d="M-15,-3 L147,-9 L164,0 L147,9 L-15,3Z" class="ship"/>
+        <rect x="28" y="-2" width="101" height="4" class="shipDeck"/>
+        <rect x="66" y="-5" width="5" height="10" fill="#173b45"/>
+        <path d="M-13,0H134" stroke="#173b45" stroke-width="3"/>
+      </g>
+      <g transform="translate(108 150) rotate(90)">
+        <path d="M-15,-3 L104,-9 L121,0 L104,9 L-15,3Z" class="ship"/>
+        <rect x="20" y="-2" width="67" height="4" class="shipDeck"/>
+        <path d="M-13,0H92" stroke="#173b45" stroke-width="3"/>
+      </g>
+      <g transform="translate(236 236)">
+        <path d="M-15,-3 L61,-9 L78,0 L61,9 L-15,3Z" class="ship"/>
+        <rect x="14" y="-2" width="35" height="4" class="shipDeck"/>
+      </g>
+      <g transform="translate(279 107) rotate(90)">
+        <path d="M-15,-3 L18,-9 L35,0 L18,9 L-15,3Z" class="ship"/>
+        <rect x="-3" y="-2" width="18" height="4" class="shipDeck"/>
+      </g>
+      <g transform="translate(64 279)">
+        <path d="M-15,-3 L104,-9 L121,0 L104,9 L-15,3Z" class="ship"/>
+        <rect x="20" y="-2" width="68" height="4" class="shipDeck"/>
+        <!-- Selected vessel outline -->
+        <rect x="-20" y="-18" width="148" height="36" fill="none" stroke="#7ce5df" stroke-width="1.5" filter="url(#cyanGlow)"/>
+        <path d="M54 -24V24M47 -24H61M47 24H61" stroke="#7ce5df" stroke-width="1"/>
+      </g>
+      <circle cx="322.5" cy="322.5" r="7" fill="#173b45" class="ship"/>
+      <path d="M317 322.5H328M322.5 317V328" stroke="#b0ced0" stroke-width="1.5"/>
+    </g>
+
+    <!-- Fleet dock: no horizontal scrolling -->
+    <text x="12" y="531" class="mono micro">FLEET DOCK / TAP A VESSEL TO EDIT</text>
+    <g transform="translate(8 540)">
+      <g>
+        <rect width="128" height="48" class="button"/>
+        <text x="8" y="17" class="mono buttonText">CV-08</text>
+        <text x="8" y="33" class="mono buttonSub">CARRIER · DEPLOYED</text>
+      </g>
+      <g transform="translate(134 0)">
+        <rect width="128" height="48" class="button"/>
+        <text x="8" y="17" class="mono buttonText">BB-05</text>
+        <text x="8" y="33" class="mono buttonSub">BATTLESHIP · DEPLOYED</text>
+      </g>
+      <g transform="translate(268 0)">
+        <rect width="128" height="48" class="button"/>
+        <text x="8" y="17" class="mono buttonText">CA-04</text>
+        <text x="8" y="33" class="mono buttonSub">CRUISER · DEPLOYED</text>
+      </g>
+      <g transform="translate(0 54)">
+        <rect width="128" height="48" class="buttonActive"/>
+        <text x="8" y="17" class="mono buttonText">DD-03</text>
+        <text x="8" y="33" class="mono buttonSub">DESTROYER · EDITING</text>
+      </g>
+      <g transform="translate(134 54)">
+        <rect width="128" height="48" class="button"/>
+        <text x="8" y="17" class="mono buttonText">DE-02</text>
+        <text x="8" y="33" class="mono buttonSub">ESCORT · DEPLOYED</text>
+      </g>
+      <g transform="translate(268 54)">
+        <rect width="128" height="48" class="button"/>
+        <text x="8" y="17" class="mono buttonText">SS-01</text>
+        <text x="8" y="33" class="mono buttonSub">SUBMARINE · DEPLOYED</text>
+      </g>
+    </g>
+
+    <!-- Placement actions: grouped, all >=44 high -->
+    <text x="12" y="661" class="mono micro">SELECTED / DD-03 · EAST · D-2</text>
+    <g transform="translate(8 670)">
+      <g>
+        <rect width="128" height="48" class="buttonActive"/>
+        <text x="64" y="19" text-anchor="middle" class="mono buttonText">ROTATE 90°</text>
+        <text x="64" y="34" text-anchor="middle" class="mono buttonSub">E → S → W → N</text>
+      </g>
+      <g transform="translate(134 0)">
+        <rect width="128" height="48" class="button"/>
+        <text x="64" y="19" text-anchor="middle" class="mono buttonText">PLACE HERE</text>
+        <text x="64" y="34" text-anchor="middle" class="mono buttonSub">配置決定</text>
+      </g>
+      <g transform="translate(268 0)">
+        <rect width="128" height="48" class="button"/>
+        <text x="64" y="19" text-anchor="middle" class="mono buttonText">RESTORE</text>
+        <text x="64" y="34" text-anchor="middle" class="mono buttonSub">元の位置へ</text>
+      </g>
+    </g>
+
+    <!-- Fleet utilities -->
+    <g transform="translate(8 724)">
+      <g>
+        <rect width="195" height="48" class="button"/>
+        <text x="97.5" y="21" text-anchor="middle" class="mono buttonText">CLEAR</text>
+        <text x="97.5" y="35" text-anchor="middle" class="mono buttonSub">配置を解除</text>
+      </g>
+      <g transform="translate(201 0)">
+        <rect width="195" height="48" class="button"/>
+        <text x="97.5" y="21" text-anchor="middle" class="mono buttonText">RANDOM</text>
+        <text x="97.5" y="35" text-anchor="middle" class="mono buttonSub">再配置</text>
+      </g>
+    </g>
+
+    <!-- Primary CTA -->
+    <g transform="translate(8 778)">
+      <rect width="396" height="56" class="buttonAlert" filter="url(#redGlow)"/>
+      <text x="198" y="23" text-anchor="middle" class="mono buttonText" font-size="11">COMMENCE ENGAGEMENT</text>
+      <text x="198" y="41" text-anchor="middle" class="mono buttonSub" fill="#ffb2b2">全艦配置済み / 交戦開始</text>
+    </g>
+
+    <!-- Bottom safe area -->
+    <text x="16" y="856" class="mono muted">NO MICRO-SCROLL REQUIRED</text>
+    <text x="396" y="856" text-anchor="end" class="mono muted">MIN TARGET 44 dp</text>
+    <rect x="148" y="894" width="116" height="4" rx="2" fill="#71909b" opacity=".7"/>
+    <text x="206" y="873" text-anchor="middle" class="mono micro" fill="#e5d78a">BOTTOM SAFE AREA</text>
+  </g>
+
+  <!-- ================================================================ -->
+  <!-- RIGHT: BATTLE / DAMAGE ASSESSMENT                                 -->
+  <!-- ================================================================ -->
+  <g transform="translate(548 92)">
+    <rect width="412" height="915" rx="16" class="screen"/>
+    <rect x="1" y="1" width="410" height="913" rx="15" fill="url(#scanLines)"/>
+
+    <!-- Safe-area guides -->
+    <rect x="8" y="8" width="396" height="24" fill="#071a25" opacity=".9"/>
+    <path d="M8 32H404M8 879H404" stroke="#e5d78a" stroke-width=".8" stroke-dasharray="4 3" opacity=".8"/>
+    <text x="16" y="22" class="mono micro" fill="#e5d78a">TOP SAFE AREA</text>
+    <text x="396" y="22" text-anchor="end" class="mono micro">SINGLE ACTIVE PLOT</text>
+
+    <!-- Compact command header -->
+    <rect x="8" y="36" width="396" height="42" class="panel"/>
+    <text x="20" y="53" class="mono heading">AWAITING ORDERS</text>
+    <text x="20" y="68" class="mono muted">STAGE 03 / TURN 07</text>
+    <g transform="translate(314 38)">
+      <rect width="40" height="38" class="button"/>
+      <text x="20" y="16" text-anchor="middle" class="mono micro">AUDIO</text>
+      <text x="20" y="28" text-anchor="middle" class="mono buttonText">◉</text>
+      <rect x="44" width="40" height="38" class="button"/>
+      <text x="64" y="16" text-anchor="middle" class="mono micro">RETRY</text>
+      <text x="64" y="29" text-anchor="middle" class="mono buttonText">↻</text>
+    </g>
+
+    <!-- Plot switcher: 44dp targets -->
+    <g transform="translate(8 84)">
+      <rect width="126" height="44" class="button"/>
+      <text x="63" y="18" text-anchor="middle" class="mono buttonText">OWN WATERS</text>
+      <text x="63" y="33" text-anchor="middle" class="mono buttonSub">自軍海域</text>
+      <rect x="132" width="126" height="44" class="buttonActive"/>
+      <text x="195" y="18" text-anchor="middle" class="mono buttonText">HOSTILE WATERS</text>
+      <text x="195" y="33" text-anchor="middle" class="mono buttonSub">敵軍海域</text>
+      <rect x="264" width="64" height="44" class="button"/>
+      <text x="296" y="18" text-anchor="middle" class="mono buttonText">LOG</text>
+      <text x="296" y="33" text-anchor="middle" class="mono buttonSub">≡</text>
+      <rect x="334" width="62" height="44" class="button"/>
+      <text x="365" y="18" text-anchor="middle" class="mono buttonText">REPORT</text>
+      <text x="365" y="33" text-anchor="middle" class="mono buttonSub">最新</text>
+    </g>
+
+    <!-- Weapon detail, collapses to one strip -->
+    <rect x="8" y="134" width="396" height="55" class="panel"/>
+    <rect x="8" y="134" width="3" height="55" fill="#7ce5df"/>
+    <text x="20" y="151" class="mono heading">NORMAL FIRE / 通常砲撃</text>
+    <text x="20" y="168" class="ui muted">敵海域の未攻撃1区画を指定。</text>
+    <text x="388" y="151" text-anchor="end" class="mono muted">USE ∞</text>
+    <text x="388" y="174" text-anchor="end" class="mono micro">⌃ COLLAPSE</text>
+
+    <!-- Board title -->
+    <text x="34" y="208" class="mono heading">HOSTILE WATERS / 敵軍海域</text>
+    <text x="378" y="208" text-anchor="end" class="mono micro">CONTACT GRID</text>
+
+    <!-- 8×8 board -->
+    <g transform="translate(34 223)">
+      <rect x="0" y="0" width="344" height="344" fill="#071e2a" stroke="#71909b" stroke-width="1.5"/>
+      <rect x="0" y="0" width="344" height="344" fill="url(#boardGrid)"/>
+      <g class="mono boardLabel">
+        <text x="21.5" y="-7">1</text><text x="64.5" y="-7">2</text>
+        <text x="107.5" y="-7">3</text><text x="150.5" y="-7">4</text>
+        <text x="193.5" y="-7">5</text><text x="236.5" y="-7">6</text>
+        <text x="279.5" y="-7">7</text><text x="322.5" y="-7">8</text>
+        <text x="-11" y="25">A</text><text x="-11" y="68">B</text>
+        <text x="-11" y="111">C</text><text x="-11" y="154">D</text>
+        <text x="-11" y="197">E</text><text x="-11" y="240">F</text>
+        <text x="-11" y="283">G</text><text x="-11" y="326">H</text>
+      </g>
+
+      <!-- Target cursor -->
+      <rect x="129.5" y="215.5" width="43" height="43" fill="#7ce5df" opacity=".13"/>
+      <rect x="131.5" y="217.5" width="39" height="39" fill="none" stroke="#7ce5df" stroke-width="1.5" filter="url(#cyanGlow)"/>
+      <path d="M142 237H160M151 228V246" stroke="#7ce5df" stroke-width="1.5"/>
+
+      <!-- Miss -->
+      <circle cx="64.5" cy="107.5" r="6" fill="none" stroke="#71909b" stroke-width="2"/>
+      <circle cx="64.5" cy="107.5" r="1.8" fill="#71909b"/>
+
+      <!-- Orthogonal echo -->
+      <g transform="translate(236.5 64.5)" stroke="#7ce5df" stroke-width="1.5" fill="none">
+        <circle r="6"/>
+        <path d="M0-7V-14M0 7V14M-7 0H-14M7 0H14"/>
+        <path d="M-3-11L0-14L3-11M-3 11L0 14L3 11M-11-3L-14 0L-11 3M11-3L14 0L11 3"/>
+      </g>
+
+      <!-- Hit / identified vital compartment -->
+      <g transform="translate(279.5 150.5)">
+        <path d="M0-9L9 0L0 9L-9 0Z" fill="#ff8585" opacity=".85"/>
+        <path d="M0-13L13 0L0 13L-13 0Z" fill="none" stroke="#e5d78a" stroke-width="1"/>
+        <text x="0" y="25" text-anchor="middle" class="mono micro" fill="#e5d78a">DD</text>
+      </g>
+
+      <!-- Radar contact: dashed rings on candidate cells -->
+      <g stroke="#e5d78a" stroke-width="1.2" fill="none" stroke-dasharray="3 2" opacity=".9">
+        <circle cx="107.5" cy="193.5" r="13"/>
+        <circle cx="150.5" cy="193.5" r="13"/>
+        <circle cx="107.5" cy="236.5" r="13"/>
+        <circle cx="150.5" cy="236.5" r="13"/>
+      </g>
+
+      <!-- Submarine wake: same-phase ripple -->
+      <g transform="translate(322.5 279.5)" fill="none" stroke="#7ce5df" opacity=".65">
+        <circle r="4" stroke-width="1.5"/>
+        <circle r="9" stroke-width="1"/>
+        <circle r="14" stroke-width=".8"/>
+      </g>
+    </g>
+
+    <!-- Compact contact cards -->
+    <g transform="translate(8 575)">
+      <rect width="128" height="42" class="panel"/>
+      <text x="8" y="16" class="mono buttonText">CONTACT 01</text>
+      <text x="8" y="31" class="mono buttonSub">UNKNOWN / ∎∎∎∎∎</text>
+      <rect x="134" width="128" height="42" class="panel"/>
+      <text x="142" y="16" class="mono buttonText">DD-03</text>
+      <text x="142" y="31" class="mono buttonSub">IDENTIFIED / HULL MASKED</text>
+      <rect x="268" width="128" height="42" class="panel"/>
+      <text x="276" y="16" class="mono buttonText">CONTACT 03</text>
+      <text x="276" y="31" class="mono buttonSub">UNKNOWN / ∎∎∎∎∎</text>
+    </g>
+
+    <!-- 4 columns × 2 rows weapon/action grid; all 44 high -->
+    <text x="12" y="633" class="mono micro">ARSENAL / 4 × 2 GRID — NO THIRD ROW</text>
+    <g transform="translate(8 641)">
+      <g>
+        <rect width="96" height="46" class="buttonActive"/>
+        <text x="48" y="17" text-anchor="middle" class="mono buttonText">1 / FIRE</text>
+        <text x="48" y="33" text-anchor="middle" class="mono buttonSub">∞</text>
+      </g>
+      <g transform="translate(100 0)">
+        <rect width="96" height="46" class="button"/>
+        <text x="48" y="17" text-anchor="middle" class="mono buttonText">2 / F-4</text>
+        <text x="48" y="33" text-anchor="middle" class="mono buttonSub">1 / 2</text>
+      </g>
+      <g transform="translate(200 0)">
+        <rect width="96" height="46" class="button"/>
+        <text x="48" y="17" text-anchor="middle" class="mono buttonText">3 / HARPOON</text>
+        <text x="48" y="33" text-anchor="middle" class="mono buttonSub">2 / 3</text>
+      </g>
+      <g transform="translate(300 0)">
+        <rect width="96" height="46" class="buttonDisabled"/>
+        <text x="48" y="17" text-anchor="middle" class="mono buttonText">4 / SPARROW</text>
+        <text x="48" y="33" text-anchor="middle" class="mono buttonSub">NOT EMBARKED</text>
+      </g>
+
+      <g transform="translate(0 50)">
+        <rect width="96" height="46" class="button"/>
+        <text x="48" y="17" text-anchor="middle" class="mono buttonText">5 / MK-45</text>
+        <text x="48" y="33" text-anchor="middle" class="mono buttonSub">1 / 1</text>
+      </g>
+      <g transform="translate(100 50)">
+        <rect width="96" height="46" class="button"/>
+        <text x="48" y="17" text-anchor="middle" class="mono buttonText">6 / RADAR</text>
+        <text x="48" y="33" text-anchor="middle" class="mono buttonSub">2 / 2</text>
+      </g>
+      <g transform="translate(200 50)">
+        <rect width="96" height="46" class="button"/>
+        <text x="48" y="20" text-anchor="middle" class="mono buttonText">CANCEL</text>
+        <text x="48" y="34" text-anchor="middle" class="mono buttonSub">指定解除</text>
+      </g>
+      <g transform="translate(300 50)">
+        <rect width="96" height="46" class="buttonActive"/>
+        <text x="48" y="20" text-anchor="middle" class="mono buttonText">FIRE</text>
+        <text x="48" y="34" text-anchor="middle" class="mono buttonSub">F-6 / READY</text>
+      </g>
+    </g>
+
+    <!-- Persistent assessment strip, right-leaning primary action -->
+    <g transform="translate(8 755)">
+      <rect width="396" height="76" class="panel"/>
+      <rect width="3" height="76" fill="#e5d78a"/>
+      <text x="14" y="19" class="mono heading" fill="#e5d78a">DAMAGE ASSESSMENT</text>
+      <text x="14" y="36" class="ui muted">敵攻撃終了。自軍海域と報告を確認。</text>
+      <text x="14" y="54" class="mono micro">PERSISTS UNTIL REVIEWED</text>
+      <g transform="translate(238 10)">
+        <rect width="148" height="56" class="buttonActive" filter="url(#cyanGlow)"/>
+        <text x="74" y="22" text-anchor="middle" class="mono buttonText">REVIEW REPORT</text>
+        <text x="74" y="40" text-anchor="middle" class="mono buttonSub">戦況報告を確認</text>
+      </g>
+    </g>
+
+    <!-- Bottom safe area -->
+    <text x="16" y="856" class="mono muted">PRIMARY REVIEW ACTION / RIGHT THUMB</text>
+    <text x="396" y="856" text-anchor="end" class="mono muted">MIN TARGET 44 dp</text>
+    <rect x="148" y="894" width="116" height="4" rx="2" fill="#71909b" opacity=".7"/>
+    <text x="206" y="873" text-anchor="middle" class="mono micro" fill="#e5d78a">BOTTOM SAFE AREA</text>
+  </g>
+
+  <!-- Sheet footer / implementation notes -->
+  <g transform="translate(64 1028)">
+    <text x="0" y="0" class="mono copy">
+      SAFE AREA → COMPACT HEADER → ONE ACTIVE 8×8 PLOT → CONTEXT CONTROLS → PRIMARY ACTION
+    </text>
+    <text x="896" y="0" text-anchor="end" class="mono copy">
+      FLAT CIC GEOMETRY · NO BITMAP SHIP ATLAS · NO MICRO-SCROLL
+    </text>
+    <path d="M0 14H896" stroke="#315e69"/>
+    <text x="0" y="32" class="mono muted">
+      Blueprint intent: preserve Web rules and visual language while making every required turn action reachable inside one Android portrait viewport.
+    </text>
+  </g>
+</svg>

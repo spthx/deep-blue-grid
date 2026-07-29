@@ -1,0 +1,430 @@
+{
+  "schemaVersion": 1,
+  "title": "DEEP BLUE GRID",
+  "canonicalSource": {
+    "repository": "https://github.com/spthx/deep-blue-grid",
+    "commit": "69f5c566ebfde8cb0eca814fe0f5d8f04b291834",
+    "generatedAt": "2026-07-29",
+    "authorityOrder": [
+      "tests/game-rules.test.ts",
+      "app/game/constants.ts",
+      "app/game/Campaign.ts",
+      "app/game/engine.ts",
+      "app/game/EnemyAI.ts",
+      "app/game/SubmarineWake.ts",
+      "app/game/DeepBlueGrid.tsx",
+      "app/game/Renderer.ts",
+      "app/game/AudioManager.ts",
+      "app/globals.css"
+    ]
+  },
+  "display": {
+    "primaryOrientation": "portrait",
+    "gridSize": 8,
+    "columns": ["1", "2", "3", "4", "5", "6", "7", "8"],
+    "rows": ["A", "B", "C", "D", "E", "F", "G", "H"],
+    "coordinateDisplayFormat": "A-1",
+    "internalOrigin": "top-left",
+    "orientationCycle": ["east", "south", "west", "north"],
+    "compactPortrait": {
+      "showOneBoardAtATime": true,
+      "placementBoardCss": "min(100%, 680px, max(240px, 100dvh - 425px))",
+      "battleBoardCss": "min(100%, 650px, max(240px, 100dvh - 385px))",
+      "weaponGrid": {"columns": 4, "rows": 2, "gapPx": 5, "minimumButtonHeightPx": 50},
+      "minimumTouchTargetPx": 44,
+      "damageAssessment": {"fixedToBottom": true, "minimumHeightPx": 72, "minimumButtonHeightPx": 58}
+    }
+  },
+  "ships": [
+    {
+      "id": "carrier",
+      "name": "空母",
+      "code": "CV-08",
+      "hitPoints": 8,
+      "footprintEastWest": {"width": 4, "height": 2},
+      "weapon": "phantom",
+      "criticalLocalEast": {"x": 2, "y": 0}
+    },
+    {
+      "id": "battleship",
+      "name": "戦艦",
+      "code": "BB-05",
+      "hitPoints": 5,
+      "footprintEastWest": {"width": 5, "height": 1},
+      "weapon": "harpoon",
+      "criticalLocalEast": {"x": 2, "y": 0}
+    },
+    {
+      "id": "cruiser",
+      "name": "巡洋艦",
+      "code": "CA-04",
+      "hitPoints": 4,
+      "footprintEastWest": {"width": 4, "height": 1},
+      "weapon": "sparrow",
+      "criticalLocalEast": {"x": 2, "y": 0}
+    },
+    {
+      "id": "destroyer",
+      "name": "駆逐艦",
+      "code": "DD-03",
+      "hitPoints": 3,
+      "footprintEastWest": {"width": 3, "height": 1},
+      "weapon": "mk45",
+      "criticalLocalEast": {"x": 1, "y": 0}
+    },
+    {
+      "id": "escort",
+      "name": "護衛艦",
+      "code": "DE-02",
+      "hitPoints": 2,
+      "footprintEastWest": {"width": 2, "height": 1},
+      "weapon": null,
+      "criticalLocalEast": {"x": 1, "y": 0}
+    },
+    {
+      "id": "submarine",
+      "name": "潜水艦",
+      "code": "SS-01",
+      "hitPoints": 1,
+      "footprintEastWest": {"width": 1, "height": 1},
+      "weapon": "radar",
+      "criticalLocalEast": {"x": 0, "y": 0}
+    },
+    {
+      "id": "silentSubmarine",
+      "name": "特殊潜航艦",
+      "code": "SSX-00",
+      "hitPoints": 2,
+      "occupiedCells": 1,
+      "footprintEastWest": {"width": 1, "height": 1},
+      "weapon": null,
+      "criticalLocalEast": {"x": 0, "y": 0},
+      "special": "SURVIVAL Stage 5 only. Relocates once after the first hit and sinks on a hit at the relocated cell."
+    }
+  ],
+  "stages": [
+    {
+      "id": 1,
+      "title": "FIRST CONTACT",
+      "subtitle": "初期艦隊で索敵の基本を掴め",
+      "fleet": ["battleship", "destroyer", "submarine"],
+      "baseAiSkill": 0.82
+    },
+    {
+      "id": 2,
+      "title": "ESCORT LINE",
+      "subtitle": "護衛艦を加えた近海防衛線",
+      "fleet": ["battleship", "destroyer", "escort", "submarine"],
+      "baseAiSkill": 0.92
+    },
+    {
+      "id": 3,
+      "title": "CRUISER GAP",
+      "subtitle": "巡洋艦と範囲兵装が戦線を拡大",
+      "fleet": ["battleship", "cruiser", "destroyer", "escort", "submarine"],
+      "baseAiSkill": 1.0
+    },
+    {
+      "id": 4,
+      "title": "CROSS FIRE",
+      "subtitle": "複数兵装を温存し敵中枢を狙え",
+      "fleet": ["battleship", "cruiser", "destroyer", "escort", "submarine"],
+      "baseAiSkill": 1.05
+    },
+    {
+      "id": 5,
+      "title": "CARRIER SCREEN",
+      "subtitle": "全6艦種による総力海戦",
+      "fleet": ["carrier", "battleship", "cruiser", "destroyer", "escort", "submarine"],
+      "baseAiSkill": 1.1
+    },
+    {
+      "id": 6,
+      "title": "DEEP BLUE GRID",
+      "subtitle": "最終海域。敵全艦を撃沈せよ",
+      "fleet": ["carrier", "battleship", "cruiser", "destroyer", "escort", "submarine"],
+      "baseAiSkill": 1.16
+    }
+  ],
+  "modes": {
+    "casual": {
+      "firstMover": "player",
+      "tacticsIdentificationRules": false,
+      "enemyCardInformation": "ship identity, exact hit points and damage are always visible",
+      "enemyUnsunkSilhouetteVisible": false,
+      "aiProfile": "casual",
+      "aiMultiplier": 1.38
+    },
+    "tactics": {
+      "firstMover": "enemy",
+      "tacticsIdentificationRules": true,
+      "enemyCardInformation": "UNKNOWN CONTACT until critical identification or sinking; 5 dummy durability bars while unsunk",
+      "identifiedInformation": ["ship name", "ship code"],
+      "stillHiddenAfterIdentification": ["orientation", "remaining hit points", "unhit cells"],
+      "aiProfile": "tactics",
+      "aiMultiplier": 1.7
+    },
+    "survival": {
+      "firstMover": "enemy",
+      "tacticsIdentificationRules": true,
+      "startingFleet": ["carrier", "battleship", "cruiser", "destroyer", "escort", "submarine"],
+      "repairBetweenStages": "all surviving ships are fully repaired",
+      "rearmBetweenStages": "all weapons are fully replenished",
+      "lossRule": "ships sunk in a cleared stage and their weapons are permanently unavailable",
+      "retryRule": "restart the current stage with the fleet that entered that stage; losses from the failed attempt are not committed",
+      "stageCount": 6
+    }
+  },
+  "effectiveAiSkill": {
+    "casual": [1.1316, 1.2696, 1.38, 1.449, 1.518, 1.6008],
+    "tactics": [1.394, 1.564, 1.7, 1.785, 1.819, 1.972],
+    "survival": [1.394, 1.564, 1.7, 1.785, 1.819, 1.785],
+    "survivalStage6HuntBreadth": 3,
+    "normalHuntBreadth": 1
+  },
+  "weapons": [
+    {
+      "id": "fire",
+      "label": "通常砲撃",
+      "carrier": null,
+      "targets": 1,
+      "pattern": [{"x": 0, "y": 0}],
+      "uses": "unlimited",
+      "damages": true
+    },
+    {
+      "id": "phantom",
+      "label": "F-4 PHANTOM",
+      "carrier": "carrier",
+      "targets": 4,
+      "pattern": "four distinct player-selected unknown cells",
+      "baseUses": 1,
+      "maximumMagazine": 2,
+      "linkedUses": 2,
+      "damages": true
+    },
+    {
+      "id": "harpoon",
+      "label": "HARPOON",
+      "carrier": "battleship",
+      "targets": 1,
+      "pattern": [
+        {"x": -1, "y": -1},
+        {"x": 1, "y": -1},
+        {"x": 0, "y": 0},
+        {"x": -1, "y": 1},
+        {"x": 1, "y": 1}
+      ],
+      "baseUses": 2,
+      "maximumMagazine": 3,
+      "linkedUses": 3,
+      "clipsAtBoardEdge": true,
+      "damages": true
+    },
+    {
+      "id": "sparrow",
+      "label": "SEA SPARROW",
+      "carrier": "cruiser",
+      "targets": 1,
+      "pattern": [{"x": 0, "y": 0}, {"x": 1, "y": 0}, {"x": 0, "y": 1}, {"x": 1, "y": 1}],
+      "uses": 1,
+      "clipsAtBoardEdge": true,
+      "damages": true
+    },
+    {
+      "id": "mk45",
+      "label": "MK-45 II",
+      "carrier": "destroyer",
+      "targets": 2,
+      "pattern": "two distinct player-selected unknown cells",
+      "uses": 1,
+      "damages": true
+    },
+    {
+      "id": "radar",
+      "label": "SPS-10 RADAR",
+      "carrier": "submarine",
+      "targets": 1,
+      "pattern": [{"x": 0, "y": 0}, {"x": 1, "y": 0}, {"x": 0, "y": 1}, {"x": 1, "y": 1}],
+      "uses": 2,
+      "playerOriginMustAllowFull2x2": true,
+      "damages": false,
+      "countsAsTacticalAction": true,
+      "countsAsShotForAccuracy": false
+    }
+  ],
+  "escortSupport": {
+    "adjacency": "orthogonal only",
+    "condition": "every occupied escort cell must have Manhattan distance 1 from at least one occupied cell of the living supported ship",
+    "requiresLivingEscort": true,
+    "requiresLivingTarget": true,
+    "carrierEffect": "F-4 maximum uses 1 -> 2",
+    "battleshipEffect": "HARPOON maximum uses 2 -> 3",
+    "dualLinkAllowed": true,
+    "damageDoesNotBreakLinkUntilSunk": true
+  },
+  "attackResolution": {
+    "alreadyAttackedCell": "ALREADY; no damage",
+    "emptyCellWithoutNeighbor": "MISS",
+    "emptyCellWithLiveOrthogonalNeighbor": "ECHO",
+    "shipCell": "HIT",
+    "lastRequiredHit": "SUNK and every occupied ship cell becomes SUNK",
+    "criticalHitBonusDamage": false
+  },
+  "echo": {
+    "mode": "orthogonal",
+    "directions": [{"x": 0, "y": -1}, {"x": 0, "y": 1}, {"x": -1, "y": 0}, {"x": 1, "y": 0}],
+    "diagonalsCount": false,
+    "appliesOnlyToEmptyAttackedCell": true,
+    "revealsShipIdentity": false
+  },
+  "criticalIdentification": {
+    "enabledModes": ["tactics", "survival"],
+    "criticalCellsPerShip": 1,
+    "playerOwnCriticalAlwaysVisible": true,
+    "enemyCriticalVisibleBeforeHit": false,
+    "revealedOnHit": ["ship name", "ship code"],
+    "notRevealedOnHit": ["orientation", "remaining hit points", "unhit cells"],
+    "enemyAiRecordsPlayerIdentityOnCriticalHit": true,
+    "sinkingRevealsIdentityAndFullSilhouette": true
+  },
+  "radar": {
+    "area": "2x2",
+    "candidateFilter": "only cells not previously attacked",
+    "contactCondition": "one or more candidate cells contain an unhit cell of a living ship",
+    "resultValues": ["CONTACT", "NO CONTACT"],
+    "doesNotReveal": ["contact count", "exact cell", "ship identity"],
+    "contactDisplayClearsWhenAStoredCandidateLaterBecomesHitOrSunk": true,
+    "noContactDisplayPersists": true,
+    "sameRulesAndUsesForEnemy": true
+  },
+  "submarineWake": {
+    "normalTrigger": "after an action by the side whose only living ship is a submarine",
+    "silentHunterTrigger": "after a firing action by the explicitly selected submarine actor",
+    "silentHoldProducesWake": false,
+    "candidateArea": "8 neighboring cells",
+    "exclude": [
+      "the submarine cell",
+      "any occupied ship cell",
+      "MISS/ECHO/HIT/SUNK display",
+      "unresolved radar display",
+      "existing wake"
+    ],
+    "ifNoCandidate": "no wake",
+    "oldWakesPersist": true,
+    "allWakesShareGlobalAnimationPhase": true,
+    "publicToOpponent": true
+  },
+  "survivalStage5": {
+    "missionTitle": "SILENT HUNTER",
+    "missionSubtitle": "通常潜水艦と無音潜航する特殊潜航艦を捕捉し、艦隊を温存せよ。",
+    "enemyFleet": ["submarine", "silentSubmarine"],
+    "aiProfile": "silent",
+    "behavior": [
+      "while SS-01 is alive, SS-01 fires normal fire every enemy action",
+      "after SS-01 sinks, SSX-00 alternates HOLD, FIRE, HOLD, FIRE",
+      "HOLD produces neither shot nor wake",
+      "after first SSX-00 hit, relocate once to an unknown non-overlapping cell",
+      "second hit sinks SSX-00"
+    ]
+  },
+  "turnFlow": {
+    "casual": ["placement", "player", "enemy", "damageAssessment", "player"],
+    "tacticsAndSurvival": ["placement", "enemyFirstStrike", "damageAssessment", "player", "enemy"],
+    "afterDamageAssessment": "select normal fire, clear targets, show enemy plot",
+    "playerVictory": "resolve immediately without enemy action",
+    "playerDefeat": "resolve immediately without damage assessment"
+  },
+  "timingsMs": {
+    "turnOverlay": 1050,
+    "enemyTargeting": 750,
+    "enemyRadarTargeting": 800,
+    "enemyPerImpact": 260,
+    "playerLaunchLead": 400,
+    "playerPerImpact": 220,
+    "radarResult": 1450,
+    "postAction": 850,
+    "contactIdentification": 1650,
+    "emergencyDive": 1750,
+    "screenShake": 280,
+    "weaponPeek": 2600
+  },
+  "rendering": {
+    "externalRuntimeSprites": false,
+    "externalRuntimeFonts": false,
+    "externalRuntimeAudioClips": false,
+    "fontStack": ["Courier New", "Yu Gothic UI", "monospace"],
+    "palette": {
+      "abyss": "#06131d",
+      "navy": "#0a2635",
+      "teal": "#144b59",
+      "steel": "#71909b",
+      "cyan": "#7ce5df",
+      "foam": "#e2fff8",
+      "danger": "#ff8585",
+      "amber": "#e5d78a",
+      "shipSuperstructure": "#b0ced0",
+      "sunkHull": "#584e51"
+    },
+    "wake": {
+      "rings": 2,
+      "phaseFormula": "(timeSeconds * 1.25) % 1",
+      "secondRingPhaseOffset": 0.42,
+      "radiusCellRange": [0.13, 0.47],
+      "alphaFormula": "0.65 * (1 - phase)"
+    },
+    "hitAndSunkPulse": "0.7 + 0.25 * sin(timeSeconds * 8)",
+    "criticalHitPulse": "0.78 + 0.2 * sin(timeSeconds * 7)",
+    "identificationPulse": "0.82 + 0.16 * sin(timeSeconds * 5)",
+    "radarPulse": "0.72 + 0.18 * sin(timeSeconds * 3.4)"
+  },
+  "audio": {
+    "synthesis": "runtime oscillator only",
+    "masterEnvelope": "start at requested gain; exponential ramp to 0.0001 at duration; no attack, reverb, filter, compressor or pan",
+    "cues": {
+      "cursor": [{"wave": "square", "startHz": 720, "endHz": 640, "durationMs": 25, "gain": 0.018}],
+      "confirm": [{"wave": "square", "startHz": 520, "endHz": 700, "durationMs": 60, "gain": 0.035}],
+      "cancel": [{"wave": "sawtooth", "startHz": 220, "endHz": 140, "durationMs": 80, "gain": 0.025}],
+      "fire": [{"wave": "sawtooth", "startHz": 110, "endHz": 530, "durationMs": 240, "gain": 0.06}],
+      "splash": [
+        {"wave": "triangle", "startHz": 160, "endHz": 60, "durationMs": 180, "gain": 0.045},
+        {"wave": "sine", "startHz": 670, "endHz": 170, "durationMs": 120, "gain": 0.025}
+      ],
+      "hit": [
+        {"wave": "square", "startHz": 80, "endHz": 40, "durationMs": 340, "gain": 0.07},
+        {"wave": "sawtooth", "startHz": 520, "endHz": 220, "durationMs": 100, "gain": 0.035}
+      ],
+      "sonar": {
+        "intervalMs": 120,
+        "tones": [
+          {"wave": "sine", "startHz": 360, "endHz": 400, "durationMs": 120, "gain": 0.035},
+          {"wave": "sine", "startHz": 540, "endHz": 580, "durationMs": 120, "gain": 0.035},
+          {"wave": "sine", "startHz": 720, "endHz": 760, "durationMs": 120, "gain": 0.035}
+        ]
+      }
+    },
+    "bgm": {
+      "wave": "square",
+      "frequenciesHz": [55, 55, 73, 55, 82, 73, 55, 49],
+      "intervalMs": 260,
+      "toneDurationMs": 120,
+      "endFrequencyDeltaHz": -4,
+      "gain": 0.012
+    }
+  },
+  "logging": {
+    "lineLimit": null,
+    "clearedOnStageTransition": false,
+    "clearedOnRetry": false,
+    "newestFirst": true,
+    "timeFormat": "UTC HHMMZ without seconds",
+    "resultScreenShowsEntireOperationLog": true
+  },
+  "knownCurrentStateClarifications": [
+    "Stage 4 still exists in all modes.",
+    "SURVIVAL Stage 6 enemy fleet still includes escort.",
+    "No difficulty-specific animation speed adjustment exists.",
+    "No persistent save data exists; state lives in React memory.",
+    "The sole runtime image file is not used: public/og.png is social metadata only."
+  ]
+}

@@ -1,0 +1,225 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1480" viewBox="0 0 1600 1480">
+  <defs>
+    <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+      <path d="M 50 0 L 0 0 0 50" fill="none" stroke="#164451" stroke-width="1"/>
+    </pattern>
+    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <style>
+      .mono { font-family: "Courier New", "Yu Gothic UI", monospace; }
+      .label { fill:#d8fffb; font-size:24px; font-weight:700; letter-spacing:2px; }
+      .sub { fill:#71909b; font-size:18px; }
+      .note { fill:#9cb8bd; font-size:16px; }
+      .ship { fill:#71909b; opacity:.88; }
+      .deck { fill:#b0ced0; }
+      .deckDark { fill:#173b45; }
+      .hullLine { stroke:#163b45; stroke-width:3; fill:none; }
+      .panel { fill:#0a2635; stroke:#315e69; stroke-width:2; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="1480" fill="#06131d"/>
+  <rect x="24" y="24" width="1552" height="1432" rx="2" fill="url(#grid)" stroke="#315e69" stroke-width="2"/>
+  <text x="70" y="82" class="mono label" font-size="34">DEEP BLUE GRID / WEB PROCEDURAL VISUAL REFERENCE</text>
+  <text x="70" y="115" class="mono note">Canonical source: Renderer.ts @ 69f5c566ebfde8cb0eca814fe0f5d8f04b291834 — runtime Canvas 2D, not bitmap sprites</text>
+
+  <g transform="translate(70 145)">
+    <rect width="1460" height="96" class="panel"/>
+    <text x="24" y="31" class="mono label">PALETTE</text>
+    <g transform="translate(190 18)">
+      <rect width="112" height="42" fill="#06131d" stroke="#71909b"/><text x="56" y="70" text-anchor="middle" class="mono note">#06131D</text>
+      <rect x="142" width="112" height="42" fill="#0a2635" stroke="#71909b"/><text x="198" y="70" text-anchor="middle" class="mono note">#0A2635</text>
+      <rect x="284" width="112" height="42" fill="#71909b"/><text x="340" y="70" text-anchor="middle" class="mono note">#71909B</text>
+      <rect x="426" width="112" height="42" fill="#7ce5df"/><text x="482" y="70" text-anchor="middle" class="mono note">#7CE5DF</text>
+      <rect x="568" width="112" height="42" fill="#e5d78a"/><text x="624" y="70" text-anchor="middle" class="mono note">#E5D78A</text>
+      <rect x="710" width="112" height="42" fill="#ff8585"/><text x="766" y="70" text-anchor="middle" class="mono note">#FF8585</text>
+      <rect x="852" width="112" height="42" fill="#b0ced0"/><text x="908" y="70" text-anchor="middle" class="mono note">#B0CED0</text>
+      <rect x="994" width="112" height="42" fill="#584e51"/><text x="1050" y="70" text-anchor="middle" class="mono note">SUNK HULL</text>
+    </g>
+  </g>
+
+  <g transform="translate(70 270)">
+    <rect width="900" height="1110" class="panel"/>
+    <text x="24" y="38" class="mono label">SHIP SILHOUETTES / EAST FACING</text>
+    <text x="24" y="67" class="mono note">Renderer.drawShip geometry. Flat top-down CIC symbols only.</text>
+    <text x="24" y="89" class="mono note">No detailed paint, texture, shadow, perspective or external sprite.</text>
+
+    <!-- Carrier: cell=100, len=400, width=145 -->
+    <g transform="translate(620 185) scale(.88)">
+      <path d="M-192,-60.9 L152,-69.6 L200,-31.9 L200,31.9 L152,69.6 L-192,60.9 Z" class="ship"/>
+      <rect x="-144" y="-5.5" width="288" height="11" class="deckDark"/>
+      <rect x="-5" y="-55.1" width="12" height="110.2" class="deckDark"/>
+      <rect x="72" y="-53.65" width="38" height="32" class="deck"/>
+      <rect x="82" y="-75.4" width="10" height="18" class="deck"/>
+      <g class="deck">
+        <path d="M-108,-30 h26 M-95,-43 v26 M-58,25 h26 M-45,12 v26 M12,22 h26 M25,9 v26" stroke="#b0ced0" stroke-width="5"/>
+      </g>
+    </g>
+    <text x="24" y="191" class="mono label">CV-08 / 空母</text>
+    <text x="24" y="219" class="mono sub">GRID 4×2 / VITAL (2,0)</text>
+
+    <!-- Battleship: len=500, origin=-200 -->
+    <g transform="translate(620 340) translate(-200 0) scale(.88)">
+      <path d="M-38,-7 L442,-22 L482,0 L442,22 L-38,7 Z" class="ship"/>
+      <rect x="75" y="-6.25" width="95" height="12.5" class="deck"/>
+      <rect x="220" y="-5.5" width="72" height="11" class="deck"/>
+      <g class="deck">
+        <rect x="22" y="-3.25" width="42" height="6.5"/><rect x="56" y="-4.5" width="34" height="9"/>
+        <rect x="187" y="-3.25" width="42" height="6.5"/><rect x="221" y="-4.5" width="34" height="9"/>
+        <rect x="337" y="-3.25" width="42" height="6.5"/><rect x="371" y="-4.5" width="34" height="9"/>
+      </g>
+      <rect x="-13" y="-4" width="425" height="8" class="hullLine"/>
+    </g>
+    <text x="24" y="346" class="mono label">BB-05 / 戦艦</text>
+    <text x="24" y="374" class="mono sub">GRID 5×1 / VITAL (2,0)</text>
+
+    <!-- Cruiser -->
+    <g transform="translate(600 490) translate(-150 0) scale(.88)">
+      <path d="M-38,-7 L342,-22 L382,0 L342,22 L-38,7 Z" class="ship"/>
+      <rect x="72" y="-5.5" width="88" height="11" class="deck"/>
+      <rect x="182" y="-4.75" width="62" height="9.5" class="deck"/>
+      <g class="deck">
+        <rect x="18" y="-2.75" width="34" height="5.5"/><rect x="46" y="-3.5" width="28" height="7"/>
+        <rect x="265" y="-2.75" width="34" height="5.5"/><rect x="293" y="-3.5" width="28" height="7"/>
+      </g>
+      <rect x="-13" y="-4" width="325" height="8" class="hullLine"/>
+    </g>
+    <text x="24" y="496" class="mono label">CA-04 / 巡洋艦</text>
+    <text x="24" y="524" class="mono sub">GRID 4×1 / VITAL (2,0)</text>
+
+    <!-- Destroyer -->
+    <g transform="translate(600 640) translate(-100 0) scale(.88)">
+      <path d="M-38,-7 L242,-22 L282,0 L242,22 L-38,7 Z" class="ship"/>
+      <rect x="75" y="-4.75" width="70" height="9.5" class="deck"/>
+      <rect x="152" y="-2.75" width="45" height="5.5" class="deck"/>
+      <rect x="33" y="-3" width="28" height="6" class="deck"/>
+      <rect x="-13" y="-4" width="225" height="8" class="hullLine"/>
+    </g>
+    <text x="24" y="646" class="mono label">DD-03 / 駆逐艦</text>
+    <text x="24" y="674" class="mono sub">GRID 3×1 / VITAL (1,0)</text>
+
+    <!-- Escort -->
+    <g transform="translate(600 790) translate(-50 0) scale(.88)">
+      <path d="M-38,-7 L142,-22 L182,0 L142,22 L-38,7 Z" class="ship"/>
+      <rect x="42" y="-4.5" width="58" height="9" class="deck"/>
+      <rect x="105" y="-2.5" width="26" height="5" class="deck"/>
+      <rect x="12" y="-2.25" width="20" height="4.5" class="deck"/>
+      <rect x="-13" y="-4" width="125" height="8" class="hullLine"/>
+    </g>
+    <text x="24" y="796" class="mono label">DE-02 / 護衛艦</text>
+    <text x="24" y="824" class="mono sub">GRID 2×1 / VITAL (1,0)</text>
+
+    <!-- Submarine -->
+    <g transform="translate(600 930) scale(.88)">
+      <path d="M-38,-7 L42,-22 L82,0 L42,22 L-38,7 Z" class="ship"/>
+      <rect x="-18" y="-3" width="70" height="6" class="deck"/>
+      <rect x="5" y="-8" width="14" height="5" class="deck"/>
+      <rect x="10" y="-11" width="5" height="5.5" class="deck"/>
+      <rect x="-13" y="-4" width="25" height="8" class="hullLine"/>
+    </g>
+    <text x="24" y="936" class="mono label">SS-01 / 潜水艦</text>
+    <text x="24" y="964" class="mono sub">GRID 1×1 / HP 1 / VITAL = CELL</text>
+
+    <g transform="translate(600 1020) scale(.88)">
+      <path d="M-38,-7 L42,-22 L82,0 L42,22 L-38,7 Z" class="ship"/>
+      <rect x="-18" y="-3" width="70" height="6" class="deck"/>
+      <rect x="5" y="-8" width="14" height="5" class="deck"/>
+      <rect x="10" y="-11" width="5" height="5.5" class="deck"/>
+      <rect x="-13" y="-4" width="25" height="8" class="hullLine"/>
+    </g>
+    <text x="24" y="1026" class="mono label">SSX-00 / 特殊潜航艦</text>
+    <text x="24" y="1050" class="mono sub" font-size="15">GRID 1×1 / HP 2 / RELOCATE AFTER FIRST HIT</text>
+  </g>
+
+  <g transform="translate(1000 270)">
+    <rect width="530" height="1110" class="panel"/>
+    <text x="24" y="38" class="mono label">MARKERS &amp; EFFECTS</text>
+    <text x="24" y="67" class="mono note">Animated at runtime.</text>
+    <text x="24" y="89" class="mono note">Shapes below show a mid-animation frame.</text>
+
+    <g transform="translate(35 100)">
+      <rect width="210" height="140" fill="#071a25" stroke="#164451"/>
+      <circle cx="70" cy="65" r="13" fill="none" stroke="#71909b" stroke-width="5"/>
+      <rect x="67.5" y="62.5" width="5" height="5" fill="#71909b"/>
+      <text x="18" y="125" class="mono label">MISS</text>
+    </g>
+
+    <g transform="translate(280 100)">
+      <rect width="210" height="140" fill="#071a25" stroke="#164451"/>
+      <g transform="translate(105 65)" stroke="#7ce5df" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#softGlow)">
+        <circle r="8"/>
+        <path d="M0,-8 V-29 M-8,-20 L0,-29 L8,-20 M0,8 V29 M-8,20 L0,29 L8,20 M-8,0 H-29 M-20,-8 L-29,0 L-20,8 M8,0 H29 M20,-8 L29,0 L20,8"/>
+      </g>
+      <text x="18" y="125" class="mono label">ECHO / 4-DIR</text>
+    </g>
+
+    <g transform="translate(35 270)">
+      <rect width="210" height="140" fill="#071a25" stroke="#164451"/>
+      <path transform="translate(105 65)" d="M0,-27 L6,-11 L19,-19 L11,-6 L27,0 L11,6 L19,19 L6,11 L0,27 L-6,11 L-19,19 L-11,6 L-27,0 L-11,-6 L-19,-19 L-6,-11 Z" fill="#ff8585"/>
+      <text x="18" y="125" class="mono label">HIT</text>
+    </g>
+
+    <g transform="translate(280 270)">
+      <rect width="210" height="140" fill="#071a25" stroke="#164451"/>
+      <path transform="translate(105 65)" d="M0,-27 L6,-11 L19,-19 L11,-6 L27,0 L11,6 L19,19 L6,11 L0,27 L-6,11 L-19,19 L-11,6 L-27,0 L-11,-6 L-19,-19 L-6,-11 Z" fill="#e5d78a"/>
+      <text x="18" y="125" class="mono label">SUNK</text>
+    </g>
+
+    <g transform="translate(35 440)">
+      <rect width="210" height="140" fill="#071a25" stroke="#164451"/>
+      <rect x="88" y="48" width="34" height="34" transform="rotate(45 105 65)" fill="rgba(124,229,223,.68)" stroke="#7ce5df" stroke-width="4"/>
+      <text x="18" y="125" class="mono label">VITAL</text>
+    </g>
+
+    <g transform="translate(280 440)">
+      <rect width="210" height="140" fill="#071a25" stroke="#164451"/>
+      <rect x="82" y="42" width="46" height="46" transform="rotate(45 105 65)" fill="none" stroke="#e5d78a" stroke-width="4"/>
+      <text x="105" y="38" text-anchor="middle" class="mono label" fill="#fff0b5">CV</text>
+      <text x="18" y="125" class="mono label">IDENTIFIED</text>
+    </g>
+
+    <g transform="translate(35 610)">
+      <rect width="210" height="140" fill="#071a25" stroke="#164451"/>
+      <circle cx="105" cy="65" r="18" fill="none" stroke="#7ce5df" stroke-width="3" opacity=".55"/>
+      <circle cx="105" cy="65" r="38" fill="none" stroke="#7ce5df" stroke-width="3" opacity=".25"/>
+      <text x="18" y="125" class="mono label">SUB WAKE</text>
+    </g>
+
+    <g transform="translate(280 610)">
+      <rect width="210" height="140" fill="#071a25" stroke="#164451"/>
+      <rect x="55" y="15" width="100" height="100" fill="none" stroke="#e5d78a" stroke-width="3" stroke-dasharray="16 11"/>
+      <path d="M55 49 V15 H89 M121 15 H155 V49 M55 81 V115 H89 M121 115 H155 V81" fill="none" stroke="#e5d78a" stroke-width="5"/>
+      <circle cx="105" cy="65" r="25" fill="none" stroke="#e5d78a" stroke-width="3" stroke-dasharray="12 9"/>
+      <text x="18" y="132" class="mono label">CONTACT</text>
+    </g>
+
+    <g transform="translate(35 780)">
+      <rect width="210" height="140" fill="#071a25" stroke="#164451"/>
+      <rect x="55" y="15" width="100" height="100" fill="none" stroke="#60be9d" stroke-width="3" stroke-dasharray="8 12"/>
+      <path d="M55 49 V15 H89 M121 15 H155 V49 M55 81 V115 H89 M121 115 H155 V81" fill="none" stroke="#60be9d" stroke-width="5"/>
+      <path d="M60 65 H150" stroke="#7ce5df" stroke-width="3" opacity=".65"/>
+      <text x="18" y="132" class="mono label">NO CONTACT</text>
+    </g>
+
+    <g transform="translate(280 780)">
+      <rect width="210" height="140" fill="#071a25" stroke="#164451"/>
+      <rect x="20" y="20" width="70" height="70" fill="none" stroke="#7ce5df" stroke-width="3" stroke-dasharray="10 8"/>
+      <text x="29" y="42" class="mono label" font-size="18">CV</text>
+      <rect x="120" y="20" width="70" height="70" fill="none" stroke="#e5d78a" stroke-width="3" stroke-dasharray="10 8"/>
+      <text x="129" y="42" class="mono label" font-size="18" fill="#e5d78a">BB</text>
+      <rect x="70" y="42" width="70" height="70" fill="none" stroke="#fff0b5" stroke-width="3" stroke-dasharray="10 8"/>
+      <text x="79" y="64" class="mono label" font-size="18" fill="#fff0b5">CV+BB</text>
+      <text x="18" y="132" class="mono label">SUPPORT ZONE</text>
+    </g>
+
+    <g transform="translate(35 950)">
+      <text x="0" y="0" class="mono note">Opacity/timing anchors:</text>
+      <text x="0" y="28" class="mono note">• Wake: p=(t×1.25)%1; 2 rings, offset .42</text>
+      <text x="0" y="56" class="mono note">• Hit/Sunk pulse: α=.7+.25×sin(t×8)</text>
+      <text x="0" y="84" class="mono note">• Identification pulse: α=.82+.16×sin(t×5)</text>
+      <text x="0" y="112" class="mono note">• Radar pulse: α=.72+.18×sin(t×3.4)</text>
+    </g>
+  </g>
+</svg>
