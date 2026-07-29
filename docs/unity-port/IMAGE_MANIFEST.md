@@ -4,6 +4,33 @@
 
 ## 正本コード由来の描画資料
 
+### `cic-surface-damage-reference.svg` / `.png`
+
+- 出自: 正本コミットの `app/globals.css` と `app/game/Renderer.ts` から、CIC面の積層、全ボタン状態、用途別テロップ、被弾・重要区画・撃沈、盤面10段の描画順を1枚へ再構成。
+- 状態: **正本コード由来の視覚契約**。SVGは1920×1960、PNGは3840×3920。実際のランタイム画面を撮影したスクリーンショットではありません。
+- 用途: Unity版が「明るいSF HUD」へ逸れないよう、面全体の質感と被弾合成を同時に比較する最優先の閲覧資料。
+- 禁止用途: 画像全体をランタイム画面へ貼ること。色、線幅、相対寸法、周期、レイヤー順をUnity UI／Graphic／Animationとして実装してください。
+
+### `ui-surfaces/cic-scanline-noise-tile.svg` / `.png`
+
+- 出自: Web正本の4px走査線と29×31／43×47の低密度ノイズを透明64×64タイルへ再構成。
+- 状態: **正本コード由来の面材サンプル**。PNGは2倍密度の128×128。
+- 用途: UnityでRepeatまたは同等の手続き描画を構成する際のアルファと密度の照合。
+
+### `ui-surfaces/radar-board-surface-sample.svg` / `.png`
+
+- 出自: Web正本の上部radial glow、切欠きパネル、多重内枠、暗い8×8水面、vignette、7秒radar sweepを一枚へ再構成。
+- 状態: **正本コード由来の盤面材質サンプル**。SVGは768×768、PNGは1536×1536。
+- 用途: 盤面の明度、steel格子、scanline/noise、枠の抑制、sweepの相対強度を目視比較する資料。
+- 禁止用途: Unity盤面を固定背景画像へ置き換えること。
+
+### `ui-surfaces/command-button-state-strip.svg` / `.png`
+
+- 出自: Web正本の通常、選択、押下、無効、確認可能、交戦開始のボタン表面を積層構造ごと再構成。
+- 状態: **正本コード由来のボタン材質サンプル**。SVGは1480×236、PNGは2960×472。
+- 用途: Gradient、1px外縁、2px内縁、3px下辺、選択glow、押下時の2px移動をUnityの9-sliceまたはprocedural Graphicで再現する基準。
+- 禁止用途: 各ボタンへ横長画像をそのまま貼ること。
+
 ### `web-procedural-visual-reference.svg`
 
 - 出自: 正本コミット `69f5c566ebfde8cb0eca814fe0f5d8f04b291834` の `Renderer.ts` と `globals.css` にある形状、線、色、マーカー、発光表現を読み取り、資料用の1枚に再構成したSVG。

@@ -31,6 +31,13 @@ const effectPngs = [
   ["web-overlay-effect-storyboard.png", 1600, 2050],
 ];
 
+const visualReferencePngs = [
+  ["cic-surface-damage-reference.png", 3840, 3920],
+  ["ui-surfaces/cic-scanline-noise-tile.png", 128, 128],
+  ["ui-surfaces/radar-board-surface-sample.png", 1536, 1536],
+  ["ui-surfaces/command-button-state-strip.png", 2960, 472],
+];
+
 function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
@@ -98,6 +105,15 @@ for (const [file, expectedWidth, expectedHeight] of effectPngs) {
   );
 }
 
+for (const [file, expectedWidth, expectedHeight] of visualReferencePngs) {
+  const png = await readFile(path.join(handoffDir, "images", file));
+  const header = readPngHeader(png);
+  assert(
+    header.width === expectedWidth && header.height === expectedHeight,
+    `Unexpected visual reference dimensions: ${file}`,
+  );
+}
+
 console.log(
-  `Unity handoff verified: ${sourcePairs.length} canonical source copies, ${effectPngs.length} effect PNGs, commit ${expectedCommit}.`,
+  `Unity handoff verified: ${sourcePairs.length} canonical source copies, ${effectPngs.length} effect PNGs, ${visualReferencePngs.length} visual reference PNGs, commit ${expectedCommit}.`,
 );

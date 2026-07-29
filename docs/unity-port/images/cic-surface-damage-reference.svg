@@ -1,0 +1,613 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1960" viewBox="0 0 1920 1960" role="img" aria-labelledby="title desc">
+  <title id="title">DEEP BLUE GRID Web canonical CIC surface, controls, telegraphs and damage-layer reference</title>
+  <desc id="desc">Unity Android implementation reference derived from app/globals.css and app/game/Renderer.ts. It records the canonical palette, radar surface, every command button state, telegraph hierarchy, damage states, animation periods and board draw order.</desc>
+  <defs>
+    <linearGradient id="pageGlow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#174a5b"/>
+      <stop offset=".42" stop-color="#06131d"/>
+      <stop offset="1" stop-color="#041018"/>
+    </linearGradient>
+    <linearGradient id="panelFace" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#193843"/>
+      <stop offset=".025" stop-color="#0a202a"/>
+      <stop offset=".975" stop-color="#0a202a"/>
+      <stop offset="1" stop-color="#193843"/>
+    </linearGradient>
+    <linearGradient id="buttonNormal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#183b45"/>
+      <stop offset="1" stop-color="#0a222c"/>
+    </linearGradient>
+    <linearGradient id="buttonPrimary" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#30707a"/>
+      <stop offset="1" stop-color="#133b46"/>
+    </linearGradient>
+    <linearGradient id="buttonConfirm" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#756329"/>
+      <stop offset="1" stop-color="#302a17"/>
+    </linearGradient>
+    <linearGradient id="buttonBattle" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a8342f"/>
+      <stop offset="1" stop-color="#4a1210"/>
+    </linearGradient>
+    <linearGradient id="hostilePanel" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#35151a" stop-opacity=".93"/>
+      <stop offset="1" stop-color="#081820" stop-opacity=".95"/>
+    </linearGradient>
+    <radialGradient id="vignette" cx=".5" cy=".5" r=".72">
+      <stop offset=".58" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000000" stop-opacity=".72"/>
+    </radialGradient>
+    <linearGradient id="sweepBeam" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#7ce5df" stop-opacity="0"/>
+      <stop offset=".78" stop-color="#7ce5df" stop-opacity=".12"/>
+      <stop offset="1" stop-color="#7ce5df" stop-opacity=".72"/>
+    </linearGradient>
+    <pattern id="screenLines" width="4" height="4" patternUnits="userSpaceOnUse">
+      <rect width="4" height="4" fill="none"/>
+      <rect y="0" width="4" height="1" fill="#ffffff" opacity=".018"/>
+      <rect y="3" width="4" height="1" fill="#010a0f" opacity=".16"/>
+    </pattern>
+    <pattern id="fineNoise" width="43" height="47" patternUnits="userSpaceOnUse">
+      <circle cx="6" cy="9" r="1" fill="#dfffff"/>
+      <circle cx="31" cy="35" r="1" fill="#dfffff"/>
+      <circle cx="18" cy="21" r=".7" fill="#dfffff"/>
+    </pattern>
+    <pattern id="boardGrid" width="64" height="64" patternUnits="userSpaceOnUse">
+      <rect width="64" height="64" fill="#0a303a"/>
+      <rect width="64" height="64" fill="none" stroke="#71909b" stroke-opacity=".27" stroke-width="1"/>
+      <path d="M5 40 L54 30" fill="none" stroke="#7ce5df" stroke-opacity=".06" stroke-width="1"/>
+    </pattern>
+    <pattern id="smallGrid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <rect width="40" height="40" fill="#0a303a"/>
+      <rect width="40" height="40" fill="none" stroke="#71909b" stroke-opacity=".27" stroke-width="1"/>
+      <path d="M4 25 L34 19" fill="none" stroke="#7ce5df" stroke-opacity=".06" stroke-width="1"/>
+    </pattern>
+    <filter id="softCyan" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="softAmber" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="7" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="softDanger" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="7" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="panelShadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#000000" flood-opacity=".62"/>
+    </filter>
+    <filter id="buttonShadow" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="4" stdDeviation="2" flood-color="#000000" flood-opacity=".8"/>
+    </filter>
+    <filter id="pressedShadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="1" stdDeviation=".8" flood-color="#000000" flood-opacity=".9"/>
+    </filter>
+    <clipPath id="mainBoardClip"><rect x="96" y="228" width="512" height="512"/></clipPath>
+    <g id="hitStar">
+      <path d="M27 0 L11.31 11.31 L0 27 L-11.31 11.31 L-27 0 L-11.31 -11.31 L0 -27 L11.31 -11.31 Z"/>
+    </g>
+    <g id="smallHitStar">
+      <path d="M18 0 L7.5 7.5 L0 18 L-7.5 7.5 L-18 0 L-7.5 -7.5 L0 -18 L7.5 -7.5 Z"/>
+    </g>
+    <g id="criticalIntact">
+      <rect x="-11" y="-11" width="22" height="22" fill="#7ce5df" fill-opacity=".68" stroke="#7ce5df" stroke-width="2.4" transform="rotate(45)"/>
+    </g>
+    <g id="criticalHit">
+      <rect x="-22" y="-22" width="44" height="44" fill="#ff8585" fill-opacity=".08" stroke="#ff8585" stroke-width="3.2" transform="rotate(45)"/>
+    </g>
+    <g id="identification">
+      <rect x="-24" y="-24" width="48" height="48" fill="none" stroke="#e5d78a" stroke-width="3" transform="rotate(45)"/>
+      <text x="0" y="-28" text-anchor="middle" class="tiny amber strong">BB</text>
+    </g>
+    <g id="shipNormal">
+      <path d="M-52 -10 L35 -16 L55 0 L35 16 L-52 10 L-60 0 Z" fill="#71909b" opacity=".88"/>
+      <rect x="-15" y="-9" width="35" height="18" fill="#b0ced0"/>
+      <rect x="-44" y="-5" width="17" height="10" fill="#b0ced0"/>
+      <path d="M-45 0 H35" fill="none" stroke="#163b45" stroke-width="3"/>
+    </g>
+    <g id="shipSunk">
+      <path d="M-52 -10 L35 -16 L55 0 L35 16 L-52 10 L-60 0 Z" fill="#584e51" opacity=".55"/>
+      <rect x="-15" y="-9" width="35" height="18" fill="#4a3b3e" opacity=".55"/>
+      <rect x="-44" y="-5" width="17" height="10" fill="#4a3b3e" opacity=".55"/>
+      <path d="M-45 0 H35" fill="none" stroke="#30282a" stroke-width="3" opacity=".55"/>
+    </g>
+    <style><![CDATA[
+      text { font-family: "Courier New", "Yu Gothic UI", monospace; }
+      .title { fill:#e2fff8; font-size:30px; font-weight:900; letter-spacing:4px; }
+      .subtitle { fill:#71909b; font-size:13px; letter-spacing:1.5px; }
+      .section { fill:#7ce5df; font-size:17px; font-weight:900; letter-spacing:2.8px; }
+      .sectionNo { fill:#06131d; font-size:13px; font-weight:900; }
+      .label { fill:#e2fff8; font-size:13px; font-weight:700; }
+      .note { fill:#9ab1b6; font-size:11px; }
+      .micro { fill:#71909b; font-size:9px; }
+      .tiny { font-size:10px; }
+      .small { font-size:11px; }
+      .medium { font-size:13px; }
+      .strong { font-weight:900; }
+      .cyan { fill:#7ce5df; }
+      .foam { fill:#e2fff8; }
+      .steel { fill:#71909b; }
+      .amber { fill:#e5d78a; }
+      .danger { fill:#ff8585; }
+      .green { fill:#60be9d; }
+      .panelBox { fill:#071821; stroke:#34545e; }
+      .leader { fill:none; stroke:#52757d; stroke-width:1; stroke-dasharray:4 4; }
+      .rule { stroke:#294b55; stroke-width:1; }
+    ]]></style>
+  </defs>
+
+  <!-- Complete CIC screen material: base, blue crown glow, 1/4 px line field and dual sparse noise. -->
+  <rect width="1920" height="1960" fill="url(#pageGlow)"/>
+  <rect width="1920" height="1960" fill="url(#screenLines)"/>
+  <rect width="1920" height="1960" fill="url(#fineNoise)" opacity=".06"/>
+
+  <g aria-label="Document header">
+    <text x="40" y="47" class="title">DEEP BLUE GRID // WEB CANONICAL VISUAL TARGET</text>
+    <text x="40" y="75" class="subtitle">UNITY ANDROID PORT — CIC SURFACE / COMMAND MATERIAL / TELEGRAPH / DAMAGE COMPOSITING</text>
+    <text x="1880" y="48" text-anchor="end" class="micro">SOURCE: app/globals.css + app/game/Renderer.ts</text>
+    <text x="1880" y="68" text-anchor="end" class="micro">REFERENCE SCALE ONLY — RETAIN RELATIVE RATIOS AT ANY DPI</text>
+    <g transform="translate(40 91)">
+      <rect width="1840" height="29" fill="#071923" fill-opacity=".84" stroke="#376875"/>
+      <g transform="translate(12 7)">
+        <rect width="15" height="15" fill="#06131d"/><text x="22" y="12" class="micro">ABYSS #06131D</text>
+        <rect x="155" width="15" height="15" fill="#0a2635"/><text x="177" y="12" class="micro">NAVY #0A2635</text>
+        <rect x="300" width="15" height="15" fill="#144b59"/><text x="322" y="12" class="micro">TEAL #144B59</text>
+        <rect x="445" width="15" height="15" fill="#71909b"/><text x="467" y="12" class="micro">STEEL #71909B</text>
+        <rect x="600" width="15" height="15" fill="#7ce5df"/><text x="622" y="12" class="micro">CYAN #7CE5DF</text>
+        <rect x="755" width="15" height="15" fill="#e2fff8"/><text x="777" y="12" class="micro">FOAM #E2FFF8</text>
+        <rect x="910" width="15" height="15" fill="#ff8585"/><text x="932" y="12" class="micro">DANGER #FF8585</text>
+        <rect x="1080" width="15" height="15" fill="#e5d78a"/><text x="1102" y="12" class="micro">AMBER #E5D78A</text>
+        <text x="1270" y="12" class="micro">FONT: COURIER NEW → YU GOTHIC UI → MONOSPACE</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Section 01 -->
+  <g aria-label="CIC and radar surface reference">
+    <rect x="40" y="140" width="900" height="700" rx="3" fill="#06151d" fill-opacity=".74" stroke="#41636d"/>
+    <rect x="40" y="140" width="42" height="31" fill="#7ce5df"/>
+    <text x="61" y="161" text-anchor="middle" class="sectionNo">01</text>
+    <text x="96" y="162" class="section">CIC / RADAR SURFACE STACK</text>
+
+    <!-- tactical panel -->
+    <path d="M70 190 H617 L630 203 V753 L617 766 H70 Z" fill="url(#panelFace)" stroke="#41636d" stroke-width="1" filter="url(#panelShadow)"/>
+    <path d="M74 194 H613 L626 207 V749 L613 762 H74 Z" fill="none" stroke="#07141b" stroke-width="6"/>
+    <path d="M78 198 H609 L622 211 V745 L609 758 H78 Z" fill="none" stroke="#294d57" stroke-width="1"/>
+    <text x="96" y="218" class="tiny cyan strong" letter-spacing="2">HOSTILE WATERS // 敵軍海域</text>
+    <text x="607" y="218" text-anchor="end" class="micro">CONTACT GRID</text>
+
+    <!-- board frame and procedural board -->
+    <rect x="92" y="224" width="520" height="520" fill="#07131a" stroke="#52757d" stroke-width="2"/>
+    <rect x="96" y="228" width="512" height="512" fill="#092934"/>
+    <g clip-path="url(#mainBoardClip)">
+      <rect x="96" y="228" width="512" height="512" fill="url(#boardGrid)"/>
+      <!-- Sparse alternate cell luminance: Renderer uses #0d3943 when wave > .63. -->
+      <g fill="#0d3943" opacity=".5">
+        <rect x="160" y="228" width="64" height="64"/><rect x="352" y="292" width="64" height="64"/>
+        <rect x="480" y="420" width="64" height="64"/><rect x="224" y="548" width="64" height="64"/>
+      </g>
+      <g fill="none" stroke="#71909b" stroke-opacity=".27">
+        <rect x="160" y="228" width="64" height="64"/><rect x="352" y="292" width="64" height="64"/>
+        <rect x="480" y="420" width="64" height="64"/><rect x="224" y="548" width="64" height="64"/>
+      </g>
+      <!-- rotating 7 s sweep, opacity .09 in the Web CSS -->
+      <g transform="translate(352 484)" opacity=".12">
+        <path d="M0 0 L-52 -357 A361 361 0 0 1 194 -304 Z" fill="url(#sweepBeam)">
+          <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="7s" repeatCount="indefinite"/>
+        </path>
+      </g>
+      <!-- representative ship silhouette -->
+      <g transform="translate(320 452) scale(1.05)"><use href="#shipNormal"/></g>
+      <!-- 2x2 radar contact: corner brackets + dashed circular probability, not pale tile fill -->
+      <g transform="translate(448 324)" stroke="#e5d78a" fill="none" opacity=".88">
+        <path d="M8 28 V8 H28 M100 8 H120 V28 M8 100 V120 H28 M100 120 H120 V100" stroke-width="2"/>
+        <circle cx="64" cy="64" r="31" stroke-width="2" stroke-dasharray="10 7">
+          <animate attributeName="r" values="30;33;30" dur="1.47s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="64" cy="64" r="45" stroke-opacity=".42" stroke-dasharray="10 7"/>
+      </g>
+      <!-- 2x2 no-contact: green dashed brackets + horizontal scan -->
+      <g transform="translate(160 548)" stroke="#60be9d" fill="none" opacity=".78">
+        <path d="M8 28 V8 H28 M100 8 H120 V28 M8 100 V120 H28 M100 120 H120 V100" stroke-width="2"/>
+        <rect x="8" y="8" width="112" height="112" stroke-dasharray="5 8"/>
+        <line x1="10" y1="28" x2="118" y2="28" stroke="#7ce5df" stroke-opacity=".7">
+          <animate attributeName="y1" values="24;100;24" dur="3.57s" repeatCount="indefinite"/>
+          <animate attributeName="y2" values="24;100;24" dur="3.57s" repeatCount="indefinite"/>
+        </line>
+      </g>
+      <rect x="96" y="228" width="512" height="512" fill="url(#vignette)"/>
+    </g>
+    <text x="352" y="785" text-anchor="middle" class="micro">CANVAS 1:1 · WEB MAX 570 PX · MARGIN 7.5% · DEVICE PIXEL RATIO CAPPED AT 2</text>
+    <text x="352" y="803" text-anchor="middle" class="micro cyan">RADAR SWEEP: 7.0 S LINEAR / OPACITY .09</text>
+
+    <!-- surface stack notes -->
+    <g transform="translate(660 196)">
+      <text x="0" y="0" class="label cyan">SURFACE LAYERS // BACK → FRONT</text>
+      <g transform="translate(0 24)">
+        <rect width="246" height="46" fill="#06131d" stroke="#294b55"/>
+        <text x="10" y="17" class="tiny strong foam">1  SCREEN BASE</text>
+        <text x="10" y="34" class="micro">#06131D + crown glow #174A5B / 42%</text>
+      </g>
+      <g transform="translate(0 77)">
+        <rect width="246" height="46" fill="#071923" stroke="#294b55"/>
+        <rect width="246" height="46" fill="url(#screenLines)"/>
+        <text x="10" y="17" class="tiny strong foam">2  LINE FIELD</text>
+        <text x="10" y="34" class="micro">1 px highlight / 4 px repeat</text>
+      </g>
+      <g transform="translate(0 130)">
+        <rect width="246" height="46" fill="#071923" stroke="#294b55"/>
+        <rect width="246" height="46" fill="url(#fineNoise)" opacity=".06"/>
+        <text x="10" y="17" class="tiny strong foam">3  DUAL NOISE</text>
+        <text x="10" y="34" class="micro">opacity .06 · 29×31 + 43×47</text>
+      </g>
+      <g transform="translate(0 183)">
+        <rect width="246" height="56" fill="url(#panelFace)" stroke="#41636d"/>
+        <rect x="3" y="3" width="240" height="50" fill="none" stroke="#07141b" stroke-width="5"/>
+        <rect x="5" y="5" width="236" height="46" fill="none" stroke="#294d57"/>
+        <text x="10" y="21" class="tiny strong foam">4  TACTICAL PANEL</text>
+        <text x="10" y="38" class="micro">1 px frame · inset 3 px + 4 px</text>
+      </g>
+      <g transform="translate(0 246)">
+        <rect width="246" height="56" fill="#092934" stroke="#52757d" stroke-width="2"/>
+        <rect x="4" y="4" width="238" height="48" fill="none" stroke="#07131a" stroke-width="4"/>
+        <rect width="246" height="56" fill="url(#vignette)"/>
+        <text x="10" y="21" class="tiny strong foam">5  CANVAS WELL</text>
+        <text x="10" y="38" class="micro">inner 30 px + vignette 40 px</text>
+      </g>
+      <g transform="translate(0 309)">
+        <rect width="246" height="76" fill="url(#boardGrid)" stroke="#294b55"/>
+        <text x="10" y="19" class="tiny strong foam">6  PROCEDURAL WATER</text>
+        <text x="10" y="37" class="micro">base #082630 · cells #0A303A</text>
+        <text x="10" y="53" class="micro">wave high #0D3943 · grid steel 27%</text>
+        <text x="10" y="68" class="micro">intra-cell water line cyan 6%</text>
+      </g>
+      <path d="M-17 400 H246" class="rule"/>
+      <text x="0" y="426" class="label amber">NON-NEGOTIABLE</text>
+      <text x="0" y="448" class="note">The “radar feel” is the composite.</text>
+      <text x="0" y="465" class="note">Do not replace it with one blue panel</text>
+      <text x="0" y="482" class="note">or a flat grid texture. Global scanline,</text>
+      <text x="0" y="499" class="note">sparse noise, recessed frame, water</text>
+      <text x="0" y="516" class="note">variation and sweep must coexist.</text>
+      <text x="0" y="548" class="micro cyan">SCANLINE: 3–4 px / 4 px, multiply .16</text>
+      <text x="0" y="566" class="micro cyan">IMAGE SMOOTHING: OFF (PIXEL-PRECISE)</text>
+    </g>
+  </g>
+
+  <!-- Section 02 -->
+  <g aria-label="Command button material and state reference">
+    <rect x="970" y="140" width="910" height="470" rx="3" fill="#06151d" fill-opacity=".74" stroke="#41636d"/>
+    <rect x="970" y="140" width="42" height="31" fill="#7ce5df"/>
+    <text x="991" y="161" text-anchor="middle" class="sectionNo">02</text>
+    <text x="1026" y="162" class="section">COMMAND MATERIAL — ALL STATES</text>
+    <text x="1850" y="162" text-anchor="end" class="micro">BASE: MIN 112×46 · PAD 6×10 · TEXT LEFT</text>
+
+    <!-- Row 1 -->
+    <g transform="translate(1008 190)">
+      <rect y="3" width="252" height="68" fill="#041015"/>
+      <rect width="252" height="68" fill="url(#buttonNormal)" stroke="#52727a" filter="url(#buttonShadow)"/>
+      <rect x="2" y="2" width="248" height="64" fill="none" stroke="#07171f" stroke-width="2"/>
+      <text x="12" y="29" class="medium cyan strong">1 / FIRE</text><text x="12" y="49" class="micro">NORMAL · #183B45 → #0A222C</text>
+      <text x="0" y="87" class="micro">NORMAL · bottom extrusion 3 px</text>
+    </g>
+    <g transform="translate(1300 190)">
+      <rect y="3" width="252" height="68" fill="#041015"/>
+      <rect width="252" height="68" fill="url(#buttonNormal)" stroke="#52727a"/>
+      <rect width="252" height="68" fill="#ffffff" opacity=".095"/>
+      <rect x="2" y="2" width="248" height="64" fill="none" stroke="#07171f" stroke-width="2"/>
+      <text x="12" y="29" class="medium cyan strong">1 / FIRE</text><text x="12" y="49" class="micro">HOVER · brightness 1.28</text>
+      <text x="0" y="87" class="micro">HOVER · visual only, no geometry shift</text>
+    </g>
+    <g transform="translate(1592 192)">
+      <rect y="1" width="252" height="68" fill="#041015"/>
+      <rect width="252" height="68" fill="url(#buttonNormal)" stroke="#52727a" filter="url(#pressedShadow)"/>
+      <rect x="2" y="2" width="248" height="64" fill="none" stroke="#07171f" stroke-width="2"/>
+      <text x="12" y="29" class="medium cyan strong">1 / FIRE</text><text x="12" y="49" class="micro">PRESSED · Y +2 · extrusion 1 px</text>
+      <text x="0" y="85" class="micro">PRESS · .10 s transform response</text>
+    </g>
+
+    <!-- Row 2 -->
+    <g transform="translate(1008 300)">
+      <rect y="3" width="252" height="68" fill="#041015"/>
+      <rect width="252" height="68" fill="url(#buttonNormal)" stroke="#7ce5df" filter="url(#softCyan)"/>
+      <rect x="2" y="2" width="248" height="64" fill="none" stroke="#07171f" stroke-width="2"/>
+      <text x="12" y="29" class="medium cyan strong">3 / HARPOON</text><text x="12" y="49" class="micro">SELECTED · CYAN GLOW 14 px</text>
+      <text x="0" y="87" class="micro">SELECTED · glow #61DBD64D</text>
+    </g>
+    <g transform="translate(1300 300)">
+      <rect y="3" width="252" height="68" fill="#041015"/>
+      <rect width="252" height="68" fill="url(#buttonPrimary)" stroke="#93f2e9"/>
+      <rect x="2" y="2" width="248" height="64" fill="none" stroke="#07171f" stroke-width="2"/>
+      <text x="12" y="29" class="medium cyan strong">FIRE CONTROL</text><text x="12" y="49" class="micro">PRIMARY · #30707A → #133B46</text>
+      <text x="0" y="87" class="micro">PRIMARY · border #93F2E9</text>
+    </g>
+    <g transform="translate(1592 300)">
+      <rect width="252" height="68" fill="url(#buttonConfirm)" stroke="#e5d78a" filter="url(#softAmber)"/>
+      <rect x="2" y="2" width="248" height="64" fill="none" stroke="#151108" stroke-width="2"/>
+      <text x="12" y="29" class="medium strong" fill="#fff6bd">REPORT ACKNOWLEDGED</text><text x="12" y="49" class="micro">CONFIRM READY · 1.10 s alternate</text>
+      <animate attributeName="opacity" values=".88;1;.88" dur="1.1s" repeatCount="indefinite"/>
+      <text x="0" y="87" class="micro">brightness 1 → 1.22 · glow 16 → 25 px</text>
+    </g>
+
+    <!-- Row 3 -->
+    <g transform="translate(1008 410)">
+      <rect width="252" height="68" fill="url(#buttonBattle)" stroke="#ff8585" filter="url(#softDanger)"/>
+      <rect x="2" y="2" width="248" height="64" fill="none" stroke="#07171f" stroke-width="2"/>
+      <text x="12" y="29" class="medium strong" fill="#ffe4e0">BATTLE START</text><text x="12" y="49" font-size="9" fill="#ffb9b0">RED IS RESERVED FOR SORTIE</text>
+      <text x="0" y="87" class="micro">BATTLE · glow #FF575733</text>
+    </g>
+    <g transform="translate(1300 410)" opacity=".4">
+      <rect y="3" width="252" height="68" fill="#041015"/>
+      <rect width="252" height="68" fill="url(#buttonNormal)" stroke="#52727a"/>
+      <rect x="2" y="2" width="248" height="64" fill="none" stroke="#07171f" stroke-width="2"/>
+      <text x="12" y="29" class="medium cyan strong">F-4 PHANTOM</text><text x="12" y="49" class="micro">DISABLED · OPACITY .40</text>
+      <text x="0" y="87" class="micro">DISABLED · saturation .30 · no action</text>
+    </g>
+    <g transform="translate(1592 410)" opacity=".56">
+      <rect y="3" width="252" height="68" fill="#041015"/>
+      <rect width="252" height="68" fill="url(#buttonNormal)" stroke="#52727a"/>
+      <rect x="2" y="2" width="248" height="64" fill="none" stroke="#07171f" stroke-width="2"/>
+      <text x="12" y="29" class="medium cyan strong">SEA SPARROW</text><text x="12" y="49" class="micro">UNAVAILABLE · STILL EXPLAINABLE</text>
+      <text x="0" y="87" class="micro">UNAVAILABLE · opacity .56 · cursor help</text>
+    </g>
+    <text x="1008" y="590" class="micro amber">UNITY: NINE-SLICE THE FRAME. KEEP INNER 2 PX RECESS + BOTTOM EXTRUSION; DO NOT USE A FLAT COLOR RECT.</text>
+  </g>
+
+  <!-- Section 03 -->
+  <g aria-label="Telegraph and alert hierarchy reference">
+    <rect x="970" y="630" width="910" height="710" rx="3" fill="#06151d" fill-opacity=".74" stroke="#41636d"/>
+    <rect x="970" y="630" width="42" height="31" fill="#7ce5df"/>
+    <text x="991" y="651" text-anchor="middle" class="sectionNo">03</text>
+    <text x="1026" y="652" class="section">TELEGRAPH HIERARCHY / TIMING</text>
+    <text x="1850" y="652" text-anchor="end" class="micro">TEXT IS A SIGNAL LAYER, NOT A TOAST</text>
+
+    <!-- Status strip -->
+    <g transform="translate(1008 684)">
+      <rect width="834" height="61" fill="#071923" fill-opacity=".87" stroke="#376875"/>
+      <rect width="4" height="61" fill="#7ce5df"/>
+      <rect x="14" y="15" width="94" height="30" fill="#7ce5df"/>
+      <text x="61" y="35" text-anchor="middle" class="tiny strong" fill="#06131d">COMMAND</text>
+      <text x="126" y="29" class="tiny foam">自軍攻撃：敵軍海域を表示</text>
+      <text x="126" y="46" class="micro">LEFT 4 PX = STATE COLOR · BASELINE STATUS IS ALWAYS VISIBLE</text>
+      <text x="820" y="35" text-anchor="end" class="micro">TURN 07</text>
+    </g>
+    <g transform="translate(1008 752)">
+      <rect width="270" height="24" fill="#071923" stroke="#8b4d52"/><rect width="4" height="24" fill="#ff8585"/>
+      <text x="12" y="16" class="micro danger strong">ENEMY ACTION · DANGER</text>
+      <rect x="282" width="270" height="24" fill="#071923" stroke="#8d793f"/><rect x="282" width="4" height="24" fill="#e5d78a"/>
+      <text x="294" y="16" class="micro amber strong">DAMAGE ASSESSMENT · REVIEW</text>
+      <text x="570" y="16" class="micro">strip min-height 47 px · inner shadow 20 px</text>
+    </g>
+
+    <!-- Turn flash -->
+    <g transform="translate(1008 800)">
+      <rect width="398" height="100" fill="#06131d" fill-opacity=".67" stroke="#294b55"/>
+      <line x1="0" y1="31" x2="398" y2="31" stroke="#7ce5df"/>
+      <line x1="0" y1="76" x2="398" y2="76" stroke="#7ce5df"/>
+      <text x="199" y="58" text-anchor="middle" class="section cyan" filter="url(#softCyan)">YOUR ACTION</text>
+      <text x="12" y="94" class="micro">TURN FLASH · FULL SCREEN VEIL #06131DAA · 1.05 s</text>
+    </g>
+    <g transform="translate(1426 800)">
+      <rect width="416" height="100" fill="#071920" fill-opacity=".95" stroke="#7ce5df" stroke-width="1"/>
+      <rect width="3" height="100" fill="#7ce5df"/>
+      <text x="208" y="21" text-anchor="middle" class="micro">SPS-10 RADAR REPORT</text>
+      <text x="208" y="57" text-anchor="middle" class="section cyan" filter="url(#softCyan)">NO CONTACT</text>
+      <text x="208" y="80" text-anchor="middle" class="tiny foam">対象海域に反応なし</text>
+      <text x="12" y="95" class="micro">RADAR RESULT · CENTER · 1.45 s · SCALE .92 → 1</text>
+    </g>
+
+    <!-- Contact and hostile contact -->
+    <g transform="translate(1008 920)">
+      <rect width="398" height="104" fill="#071920" fill-opacity=".95" stroke="#e5d78a"/>
+      <rect width="3" height="104" fill="#e5d78a"/>
+      <text x="199" y="23" text-anchor="middle" class="micro">SPS-10 RADAR REPORT</text>
+      <text x="199" y="62" text-anchor="middle" class="section amber" filter="url(#softAmber)">— CONTACT! —</text>
+      <text x="199" y="85" text-anchor="middle" class="tiny foam">4区画内に生存艦反応</text>
+      <text x="12" y="99" class="micro">CONTACT: AMBER / SAME 1.45 s ENVELOPE</text>
+    </g>
+    <g transform="translate(1426 920)">
+      <rect width="416" height="104" fill="url(#hostilePanel)" stroke="#ff8585"/>
+      <rect width="3" height="104" fill="#ff8585"/>
+      <rect x="7" y="7" width="402" height="90" fill="none" stroke="#ff8585" stroke-opacity=".27">
+        <animate attributeName="opacity" values="1;.25;1" dur=".42s" calcMode="discrete" repeatCount="indefinite"/>
+      </rect>
+      <text x="208" y="23" text-anchor="middle" class="micro danger strong">HOSTILE SENSOR LOCK</text>
+      <text x="208" y="62" text-anchor="middle" class="section danger" filter="url(#softDanger)">CONTACTED</text>
+      <text x="208" y="85" text-anchor="middle" class="tiny foam">敵に自軍反応を捕捉されました</text>
+      <text x="12" y="99" class="micro">HOSTILE: RED + .42 s STEPPED INNER LOCK FRAME</text>
+    </g>
+
+    <!-- Identification and dive -->
+    <g transform="translate(1008 1044)">
+      <rect width="398" height="94" fill="#15170e" fill-opacity=".92" stroke="#e5d78a"/>
+      <rect x="3" y="3" width="392" height="88" fill="none" stroke="#071219" stroke-width="3"/>
+      <text x="199" y="36" text-anchor="middle" class="medium amber strong" letter-spacing="2">IMPORTANT SECTION HIT</text>
+      <text x="199" y="59" text-anchor="middle" class="tiny foam">IDENTIFIED：戦艦 / BB-05</text>
+      <text x="12" y="86" class="micro">FRIENDLY IDENTIFICATION · TOP 14 DVH · 1.65 s</text>
+    </g>
+    <g transform="translate(1426 1044)">
+      <rect width="416" height="94" fill="#251216" fill-opacity=".93" stroke="#ff8585"/>
+      <rect x="3" y="3" width="410" height="88" fill="none" stroke="#071219" stroke-width="3"/>
+      <text x="208" y="36" text-anchor="middle" class="medium danger strong" letter-spacing="2">IMPORTANT SECTION HIT</text>
+      <text x="208" y="59" text-anchor="middle" class="tiny foam">敵に識別されました：航空母艦</text>
+      <text x="12" y="86" class="micro">HOSTILE VITAL WARNING · PERSIST UNTIL REVIEW CONFIRM</text>
+    </g>
+    <g transform="translate(1008 1158)">
+      <rect width="398" height="82" fill="#071920" fill-opacity=".95" stroke="#7ce5df"/>
+      <rect width="3" height="82" fill="#7ce5df"/>
+      <text x="199" y="34" text-anchor="middle" class="medium cyan strong" letter-spacing="2">EMERGENCY DIVE</text>
+      <text x="199" y="55" text-anchor="middle" class="tiny foam">特殊潜水艦、接触を断つ</text>
+      <text x="12" y="76" class="micro">DIVE ALERT · TOP 14 DVH · 1.75 s</text>
+    </g>
+    <g transform="translate(1426 1158)">
+      <rect width="416" height="82" fill="#071821" fill-opacity=".93" stroke="#8d793f"/>
+      <rect width="4" height="82" fill="#e5d78a"/>
+      <text x="14" y="22" class="micro amber" letter-spacing="2">DAMAGE ASSESSMENT</text>
+      <text x="14" y="45" class="tiny foam strong">戦況を記録し、次の攻撃へ移行</text>
+      <rect x="272" y="16" width="130" height="49" fill="url(#buttonConfirm)" stroke="#e5d78a"/>
+      <text x="337" y="45" text-anchor="middle" class="tiny strong" fill="#fff6bd">REPORT</text>
+      <text x="12" y="76" class="micro">STICKY BOTTOM · SAFE AREA + 5 PX · Z 21</text>
+    </g>
+
+    <g transform="translate(1008 1263)">
+      <text x="0" y="0" class="micro cyan">TIMING ENVELOPES:</text>
+      <text x="122" y="0" class="micro">TURN 0–25% IN / 25–70% HOLD / 70–100% OUT</text>
+      <text x="530" y="0" class="micro">RADAR 0–12% IN / 12–78% HOLD / OUT</text>
+      <text x="0" y="19" class="micro">IDENTIFICATION 0–14% IN / 14–75% HOLD / OUT · DIVE 0–12% IN / 12–76% HOLD / OUT</text>
+      <text x="0" y="38" class="micro danger">SCREEN SHAKE .28 s ONLY: (+4,-2) → (-5,+3) → (+3,+2) → ORIGIN. NEVER ACCUMULATE OFFSET.</text>
+    </g>
+  </g>
+
+  <!-- Section 04 -->
+  <g aria-label="Damage and identification compositing reference">
+    <rect x="40" y="860" width="900" height="620" rx="3" fill="#06151d" fill-opacity=".74" stroke="#41636d"/>
+    <rect x="40" y="860" width="42" height="31" fill="#7ce5df"/>
+    <text x="61" y="881" text-anchor="middle" class="sectionNo">04</text>
+    <text x="96" y="882" class="section">DAMAGE / VITAL / SUNK COMPOSITING</text>
+    <text x="910" y="882" text-anchor="end" class="micro">NO EXPLOSION SPRITE · NO CRATER · NO FULL-CELL RED FILL</text>
+
+    <!-- Four stage cards -->
+    <g transform="translate(66 920)">
+      <rect width="198" height="368" class="panelBox"/>
+      <text x="12" y="23" class="tiny cyan strong">A // INTACT</text>
+      <text x="12" y="40" class="micro">SHIP → INTACT VITAL</text>
+      <rect x="19" y="62" width="160" height="160" fill="url(#smallGrid)" stroke="#52757d"/>
+      <g transform="translate(99 142)"><use href="#shipNormal"/></g>
+      <g transform="translate(99 142)"><use href="#criticalIntact"/></g>
+      <text x="12" y="248" class="micro">HULL: #71909B / α .88</text>
+      <text x="12" y="265" class="micro">UPPER: #B0CED0</text>
+      <text x="12" y="282" class="micro">VITAL: CYAN FILLED DIAMOND</text>
+      <text x="12" y="299" class="micro">r = .17 CELL / α .92</text>
+      <path d="M12 316 H186" class="rule"/>
+      <text x="12" y="337" class="small foam strong">Calm, readable hull.</text>
+      <text x="12" y="354" class="micro">No idle “damage” texture.</text>
+    </g>
+
+    <g transform="translate(282 920)">
+      <rect width="198" height="368" class="panelBox"/>
+      <text x="12" y="23" class="tiny danger strong">B // HIT</text>
+      <text x="12" y="40" class="micro">SHIP → DOT → HIT MARK</text>
+      <rect x="19" y="62" width="160" height="160" fill="url(#smallGrid)" stroke="#52757d"/>
+      <g transform="translate(99 142)"><use href="#shipNormal"/></g>
+      <!-- structural damage point first -->
+      <circle cx="59" cy="142" r="5" fill="#ff8585"/>
+      <!-- tactical HIT mark is drawn after the ship point -->
+      <g transform="translate(59 142) scale(.78)" fill="#ff8585" opacity=".83"><use href="#smallHitStar"/>
+        <animate attributeName="opacity" values=".70;.95;.70" dur=".785s" repeatCount="indefinite"/>
+      </g>
+      <text x="12" y="248" class="micro">STRUCTURAL DOT: r = .12 CELL</text>
+      <text x="12" y="265" class="micro">THEN HIT STAR: .27 / .16 CELL</text>
+      <text x="12" y="282" class="micro">PULSE: .70 + .25·sin(t×8)</text>
+      <text x="12" y="299" class="micro">HULL REMAINS VISIBLE BELOW</text>
+      <path d="M12 316 H186" class="rule"/>
+      <text x="12" y="337" class="small danger strong">Impact is layered.</text>
+      <text x="12" y="354" class="micro">Not a replacement tile.</text>
+    </g>
+
+    <g transform="translate(498 920)">
+      <rect width="198" height="368" class="panelBox"/>
+      <text x="12" y="23" class="tiny danger strong">C // VITAL HIT</text>
+      <text x="12" y="40" class="micro">HIT → VITAL → IDENT ID</text>
+      <rect x="19" y="62" width="160" height="160" fill="url(#smallGrid)" stroke="#52757d"/>
+      <g transform="translate(99 142)"><use href="#shipNormal"/></g>
+      <circle cx="99" cy="142" r="5" fill="#ff8585"/>
+      <g transform="translate(99 142) scale(.78)" fill="#ff8585" opacity=".83"><use href="#smallHitStar"/></g>
+      <!-- Hit critical is intentionally above ordinary shot mark. -->
+      <g transform="translate(99 142) scale(.72)"><use href="#criticalHit"/>
+        <animate attributeName="opacity" values=".78;.98;.78" dur=".898s" repeatCount="indefinite"/>
+      </g>
+      <!-- identification is above critical -->
+      <g transform="translate(99 142) scale(.72)"><use href="#identification"/></g>
+      <text x="12" y="248" class="micro">HIT VITAL: OUTLINE DIAMOND</text>
+      <text x="12" y="265" class="micro">r = .31 CELL / sin(t×7)</text>
+      <text x="12" y="282" class="micro">IDENT: AMBER r = .34 CELL</text>
+      <text x="12" y="299" class="micro">LABEL ABOVE; NO HULL REVEAL</text>
+      <path d="M12 316 H186" class="rule"/>
+      <text x="12" y="337" class="small amber strong">Identity, not HP.</text>
+      <text x="12" y="354" class="micro">Direction stays concealed.</text>
+    </g>
+
+    <g transform="translate(714 920)">
+      <rect width="198" height="368" class="panelBox"/>
+      <text x="12" y="23" class="tiny amber strong">D // SUNK</text>
+      <text x="12" y="40" class="micro">SUNK HULL → ALL CELL MARKS</text>
+      <rect x="19" y="62" width="160" height="160" fill="url(#smallGrid)" stroke="#52757d"/>
+      <g transform="translate(99 142)"><use href="#shipSunk"/></g>
+      <circle cx="59" cy="142" r="5" fill="#ff8585"/><circle cx="99" cy="142" r="5" fill="#ff8585"/><circle cx="139" cy="142" r="5" fill="#ff8585"/>
+      <g fill="#e5d78a" opacity=".83">
+        <g transform="translate(59 142) scale(.78)"><use href="#smallHitStar"/></g>
+        <g transform="translate(99 142) scale(.78)"><use href="#smallHitStar"/></g>
+        <g transform="translate(139 142) scale(.78)"><use href="#smallHitStar"/></g>
+        <animate attributeName="opacity" values=".70;.95;.70" dur=".785s" repeatCount="indefinite"/>
+      </g>
+      <text x="12" y="248" class="micro">HULL: #584E51 / α .55</text>
+      <text x="12" y="265" class="micro">UPPER: #4A3B3E / α .55</text>
+      <text x="12" y="282" class="micro">EVERY FOOTPRINT CELL = SUNK</text>
+      <text x="12" y="299" class="micro">AMBER STAR / SAME sin(t×8)</text>
+      <path d="M12 316 H186" class="rule"/>
+      <text x="12" y="337" class="small amber strong">Muted wreck below.</text>
+      <text x="12" y="354" class="micro">Amber confirms the footprint.</text>
+    </g>
+
+    <!-- Exact size strip -->
+    <g transform="translate(66 1310)">
+      <rect width="846" height="142" fill="#071923" fill-opacity=".9" stroke="#34545e"/>
+      <text x="14" y="23" class="tiny cyan strong">CANONICAL CELL-RELATIVE GEOMETRY</text>
+      <text x="14" y="45" class="micro">SHIP DAMAGE POINT: radius .12c · HIT/SUNK STAR: outer .27c, inner .16c · INTACT VITAL: r .17c</text>
+      <text x="14" y="64" class="micro">HIT VITAL: r .31c, stroke max(1 px, .045c) · IDENTIFICATION: r .34c, stroke max(1.5 px, .045c)</text>
+      <text x="14" y="83" class="micro">HIT/SUNK PULSE: alpha .70 + .25 sin(t×8) · HIT VITAL: alpha .78 + .20 sin(t×7) · IDENT: .82 + .16 sin(t×5)</text>
+      <path d="M14 98 H832" class="rule"/>
+      <text x="14" y="120" class="tiny danger strong">UNITY FAILURE TO AVOID:</text>
+      <text x="164" y="120" class="micro">Do not swap the hull cell for a generic damage icon. Draw hull, structural dot, tactical mark, then vital/ID.</text>
+    </g>
+  </g>
+
+  <!-- Section 05 -->
+  <g aria-label="Board drawing order">
+    <rect x="40" y="1500" width="1840" height="410" rx="3" fill="#06151d" fill-opacity=".8" stroke="#41636d"/>
+    <rect x="40" y="1500" width="42" height="31" fill="#7ce5df"/>
+    <text x="61" y="1521" text-anchor="middle" class="sectionNo">05</text>
+    <text x="96" y="1522" class="section">BOARD DRAW ORDER — EXACT WEB COMPOSITING CONTRACT</text>
+    <text x="1850" y="1522" text-anchor="end" class="micro">LOWEST Z AT LEFT · HIGHEST Z AT RIGHT</text>
+
+    <g transform="translate(68 1564)">
+      <!-- Ten cards -->
+      <g transform="translate(0 0)"><rect width="166" height="118" class="panelBox"/><text x="12" y="23" class="tiny cyan strong">01 / WATER</text><rect x="12" y="35" width="142" height="38" fill="url(#smallGrid)"/><text x="12" y="91" class="micro">base / cells</text><text x="12" y="106" class="micro">grid / labels</text></g>
+      <path d="M170 59 H181" stroke="#7ce5df"/><path d="M177 55 L181 59 L177 63" fill="none" stroke="#7ce5df"/>
+      <g transform="translate(184 0)"><rect width="166" height="118" class="panelBox"/><text x="12" y="23" class="tiny cyan strong">02 / RADAR</text><rect x="12" y="35" width="142" height="38" fill="#0a303a"/><circle cx="83" cy="54" r="14" fill="none" stroke="#e5d78a" stroke-dasharray="5 4"/><text x="12" y="91" class="micro">unresolved scan</text><text x="12" y="106" class="micro">contact / clear</text></g>
+      <path d="M354 59 H365" stroke="#7ce5df"/><path d="M361 55 L365 59 L361 63" fill="none" stroke="#7ce5df"/>
+      <g transform="translate(368 0)"><rect width="166" height="118" class="panelBox"/><text x="12" y="23" class="tiny cyan strong">03 / SHIPS</text><rect x="12" y="35" width="142" height="38" fill="#0a303a"/><g transform="translate(83 54) scale(.65)"><use href="#shipNormal"/></g><text x="12" y="91" class="micro">visible own</text><text x="12" y="106" class="micro">or sunk enemy</text></g>
+      <path d="M538 59 H549" stroke="#7ce5df"/><path d="M545 55 L549 59 L545 63" fill="none" stroke="#7ce5df"/>
+      <g transform="translate(552 0)"><rect width="166" height="118" class="panelBox"/><text x="12" y="23" class="tiny cyan strong">04 / VITAL</text><rect x="12" y="35" width="142" height="38" fill="#0a303a"/><g transform="translate(83 54) scale(.65)"><use href="#criticalIntact"/></g><text x="12" y="91" class="micro">intact own</text><text x="12" y="106" class="micro">critical marker</text></g>
+      <path d="M722 59 H733" stroke="#7ce5df"/><path d="M729 55 L733 59 L729 63" fill="none" stroke="#7ce5df"/>
+      <g transform="translate(736 0)"><rect width="166" height="118" class="panelBox"/><text x="12" y="23" class="tiny danger strong">05 / MARKS</text><rect x="12" y="35" width="142" height="38" fill="#0a303a"/><g transform="translate(83 54) scale(.55)" fill="#ff8585"><use href="#hitStar"/></g><text x="12" y="91" class="micro">MISS / ECHO</text><text x="12" y="106" class="micro">HIT / SUNK</text></g>
+      <path d="M906 59 H917" stroke="#7ce5df"/><path d="M913 55 L917 59 L913 63" fill="none" stroke="#7ce5df"/>
+      <g transform="translate(920 0)"><rect width="166" height="118" class="panelBox"/><text x="12" y="23" class="tiny danger strong">06 / HIT VITAL</text><rect x="12" y="35" width="142" height="38" fill="#0a303a"/><g transform="translate(83 54) scale(.56)"><use href="#criticalHit"/></g><text x="12" y="91" class="micro">above shot</text><text x="12" y="106" class="micro">marker</text></g>
+      <path d="M1090 59 H1101" stroke="#7ce5df"/><path d="M1097 55 L1101 59 L1097 63" fill="none" stroke="#7ce5df"/>
+      <g transform="translate(1104 0)"><rect width="166" height="118" class="panelBox"/><text x="12" y="23" class="tiny amber strong">07 / IDENT</text><rect x="12" y="35" width="142" height="38" fill="#0a303a"/><g transform="translate(83 58) scale(.52)"><use href="#identification"/></g><text x="12" y="91" class="micro">amber diamond</text><text x="12" y="106" class="micro">+ hull class</text></g>
+      <path d="M1274 59 H1285" stroke="#7ce5df"/><path d="M1281 55 L1285 59 L1281 63" fill="none" stroke="#7ce5df"/>
+      <g transform="translate(1288 0)"><rect width="166" height="118" class="panelBox"/><text x="12" y="23" class="tiny cyan strong">08 / WAKE</text><rect x="12" y="35" width="142" height="38" fill="#0a303a"/><g fill="none" stroke="#7ce5df" transform="translate(83 54)"><circle r="8" opacity=".65"/><circle r="18" opacity=".25"/></g><text x="12" y="91" class="micro">shared phase</text><text x="12" y="106" class="micro">two rings</text></g>
+      <path d="M1458 59 H1469" stroke="#7ce5df"/><path d="M1465 55 L1469 59 L1465 63" fill="none" stroke="#7ce5df"/>
+      <g transform="translate(1472 0)"><rect width="166" height="118" class="panelBox"/><text x="12" y="23" class="tiny amber strong">09 / TARGET</text><rect x="12" y="35" width="142" height="38" fill="#0a303a"/><rect x="65" y="39" width="36" height="30" fill="none" stroke="#e5d78a" stroke-width="2"/><text x="12" y="91" class="micro">cursor / active</text><text x="12" y="106" class="micro">selection</text></g>
+      <path d="M1642 59 H1653" stroke="#7ce5df"/><path d="M1649 55 L1653 59 L1649 63" fill="none" stroke="#7ce5df"/>
+      <g transform="translate(1656 0)"><rect width="116" height="118" class="panelBox"/><text x="10" y="23" class="tiny cyan strong">10</text><rect x="10" y="35" width="96" height="38" fill="#7ce5df" opacity=".17" stroke="#7ce5df"/><text x="10" y="91" class="micro">preview</text><text x="10" y="106" class="micro">support</text></g>
+    </g>
+
+    <g transform="translate(68 1712)">
+      <rect width="1772" height="166" fill="#071923" fill-opacity=".9" stroke="#34545e"/>
+      <text x="14" y="25" class="tiny cyan strong">UNITY IMPLEMENTATION ACCEPTANCE CHECK</text>
+      <g transform="translate(14 45)">
+        <circle cx="5" cy="0" r="3" fill="#7ce5df"/><text x="17" y="4" class="micro">CIC atmosphere remains visible under every phase; overlays do not erase scanline/noise identity.</text>
+        <circle cx="5" cy="23" r="3" fill="#7ce5df"/><text x="17" y="27" class="micro">Buttons show recess, border, lower extrusion and state color; flat Material color alone is not accepted.</text>
+        <circle cx="5" cy="46" r="3" fill="#7ce5df"/><text x="17" y="50" class="micro">Telegraphs use their defined screen position and timing. Friendly cyan, review amber, hostile danger red.</text>
+        <circle cx="5" cy="69" r="3" fill="#7ce5df"/><text x="17" y="73" class="micro">A hit never deletes the ship silhouette: structural dot + pulsing tactical star are composited over the hull.</text>
+        <circle cx="5" cy="92" r="3" fill="#7ce5df"/><text x="17" y="96" class="micro">Critical hit outline is above HIT; identification is above critical; sinking recolors hull and marks the complete footprint.</text>
+        <circle cx="5" cy="115" r="3" fill="#e5d78a"/><text x="17" y="119" class="micro amber">Judge the result from an actual portrait screenshot and a 1920×1080 landscape screenshot, not Scene view alone.</text>
+      </g>
+    </g>
+  </g>
+
+  <text x="40" y="1942" class="micro">DEEP BLUE GRID / CANONICAL WEB COMMIT 69F5C566EBFDE8CB0ECA814FE0F5D8F04B291834 / VISUAL VALUES ARE IMPLEMENTATION DATA, NOT MOOD-BOARD APPROXIMATION</text>
+  <text x="1880" y="1942" text-anchor="end" class="micro cyan">END OF CIC VISUAL CONTRACT</text>
+</svg>

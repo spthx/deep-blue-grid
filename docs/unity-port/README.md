@@ -24,13 +24,16 @@ Unity版の担当タスクは、実装に着手する前に次の順序で確認
 11. `canonical-source/globals.css`
 12. `DEEP_BLUE_GRID_Unity_Android移植仕様書.md`
 13. `UNITY_CORRECTION_CHECKLIST.md`
-14. `VALIDATION_REPORT.md`
-15. `IMAGE_MANIFEST.md`
-16. `images/web-procedural-visual-reference.png`
-17. `images/android-portrait-layout-blueprint.png`
-18. `images/effects/web-overlay-effect-storyboard.png`
-19. `images/effects/README.md`
-20. `images/effects/effect-assets.json`
+14. `UNITY_VISUAL_PARITY_SPEC.md`
+15. `images/cic-surface-damage-reference.png`
+16. `images/ui-surfaces/README.md`
+17. `VALIDATION_REPORT.md`
+18. `IMAGE_MANIFEST.md`
+19. `images/web-procedural-visual-reference.png`
+20. `images/android-portrait-layout-blueprint.png`
+21. `images/effects/web-overlay-effect-storyboard.png`
+22. `images/effects/README.md`
+23. `images/effects/effect-assets.json`
 
 仕様が食い違う場合は、上にある項目を優先します。テストと正本コードが最優先であり、スクリーンショットや既存Unity実装を根拠にルールを変更してはいけません。
 
@@ -42,16 +45,22 @@ Unity版の担当タスクは、実装に着手する前に次の順序で確認
   Android縦持ちを前提に、正本の挙動とUnity側の実装条件をまとめた本文です。
 - `UNITY_CORRECTION_CHECKLIST.md`
   Unity版の既知の相違点、修正優先度、合格条件です。
+- `UNITY_VISUAL_PARITY_SPEC.md`
+  レーダー端末の面材、ボタン背景、テロップ階層、被弾・重要区画・撃沈の合成順を、正本の色・寸法・周期で固定した視覚契約です。
 - `VALIDATION_REPORT.md`
   正本の回帰テスト、ビルド、JSON、画像資料の検証結果です。
 - `canonical-source/`
   上記コミットから固定した正本コードと回帰テストの写しです。
 - `images/`
   正本コードから起こした描画資料、透明演出スプライトシート、演出ストーリーボード、旧Web画面、修正前Unity画面、OG画像です。用途と正本性は `IMAGE_MANIFEST.md` を参照してください。
+- `images/cic-surface-damage-reference.*` と `images/ui-surfaces/`
+  Web正本のCIC面、暗い水面、積層ボタン、用途別テロップ、被弾合成をUnityへ移すためのSVG／PNG資料です。固定画面として貼らず、Unity UIと手続き描画で再構成します。
+- `render-visual-references.mjs`
+  新しいSVG視覚資料を閲覧用PNGへ決定的に変換します。
 - `verify-handoff.mjs`
   JSONの主要不変条件と、`canonical-source/`が正本コードとバイト単位で一致することを検証します。
 - `MANIFEST.sha256`
-  パッケージ内43ファイルのSHA-256一覧です。ZIP展開後の破損確認に使います。
+  パッケージ内54ファイルのSHA-256一覧です。ZIP展開後の破損確認に使います。
 
 ## 現在の重要な確定事項
 

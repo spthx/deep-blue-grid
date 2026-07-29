@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="64"
+     height="64"
+     viewBox="0 0 64 64"
+     fill="none">
+  <title>DEEP BLUE GRID CIC scanline and phosphor-noise tile</title>
+  <desc>
+    Transparent, repeatable 64 pixel overlay derived from app/globals.css.
+    It combines the four-pixel CRT scan rhythm with restrained cyan phosphor noise.
+  </desc>
+
+  <!-- CSS body highlight: rgba(255,255,255,.018), one pixel in every four. -->
+  <path d="M0 .5H64 M0 4.5H64 M0 8.5H64 M0 12.5H64
+           M0 16.5H64 M0 20.5H64 M0 24.5H64 M0 28.5H64
+           M0 32.5H64 M0 36.5H64 M0 40.5H64 M0 44.5H64
+           M0 48.5H64 M0 52.5H64 M0 56.5H64 M0 60.5H64"
+        stroke="#ffffff"
+        stroke-opacity=".018"
+        stroke-width="1"/>
+
+  <!-- CSS .game-shell::before: dark fourth row, rgba(1,10,15,.16). -->
+  <path d="M0 3.5H64 M0 7.5H64 M0 11.5H64 M0 15.5H64
+           M0 19.5H64 M0 23.5H64 M0 27.5H64 M0 31.5H64
+           M0 35.5H64 M0 39.5H64 M0 43.5H64 M0 47.5H64
+           M0 51.5H64 M0 55.5H64 M0 59.5H64 M0 63.5H64"
+        stroke="#010a0f"
+        stroke-opacity=".16"
+        stroke-width="1"/>
+
+  <!--
+    Deterministic stand-in for the two CSS repeating-radial fields:
+    #dfffff at .06, periods 29x31 and 43x47.
+    Dots crossing an edge are repeated on the opposite edge so the tile is seamless.
+  -->
+  <g fill="#dfffff" fill-opacity=".06">
+    <circle cx="4" cy="7" r=".72"/>
+    <circle cx="33" cy="7" r=".72"/>
+    <circle cx="62" cy="7" r=".72"/>
+    <circle cx="4" cy="38" r=".72"/>
+    <circle cx="33" cy="38" r=".72"/>
+    <circle cx="62" cy="38" r=".72"/>
+
+    <circle cx="14" cy="18" r=".62"/>
+    <circle cx="57" cy="18" r=".62"/>
+    <circle cx="14" cy="63" r=".62"/>
+    <circle cx="57" cy="63" r=".62"/>
+  </g>
+</svg>
