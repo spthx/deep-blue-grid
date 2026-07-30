@@ -12,6 +12,7 @@
     "preview:pages": "vite preview --config vite.pages.config.ts",
     "start": "vinext start",
     "test": "npm run build && node --experimental-strip-types --test tests/game-rules.test.ts tests/rendered-html.test.mjs",
+    "measure:survival": "node --experimental-strip-types scripts/measure-survival.ts",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate"
   },

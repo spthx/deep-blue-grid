@@ -22,7 +22,7 @@ export function drawBoard(canvas: HTMLCanvasElement, board: Board, opts: RenderO
   ctx.fillStyle="#71909b";ctx.font=`bold ${Math.max(9,cell*.2)}px monospace`;ctx.textAlign="center";ctx.textBaseline="middle";
   for(let i=0;i<GRID_SIZE;i++){ctx.fillText(String(i+1),m+i*cell+cell/2,m*.42);ctx.fillText(CELL_LABELS[i],m*.43,m+i*cell+cell/2);}
   for(const scan of board.radarScans){
-    const contactResolved=scan.contact&&scan.candidates.some(c=>board.shots[c.y][c.x]==="hit"||board.shots[c.y][c.x]==="sunk");
+    const contactResolved=scan.contact&&scan.candidates.some(c=>board.shots[c.y][c.x]==="hit"||board.shots[c.y][c.x]==="lost"||board.shots[c.y][c.x]==="sunk");
     if(contactResolved)continue;
     drawRadarScan(ctx,scan.origin,scan.contact,m,cell,t,dpr);
   }
@@ -132,7 +132,7 @@ function drawShip(ctx:CanvasRenderingContext2D,id:ShipId,cells:Coord[],orientati
   if(id==="battleship"){ctx.fillRect(cell*.75,-w*.25,cell*.95,w*.5);ctx.fillRect(cell*2.2,-w*.22,cell*.72,w*.44);for(const x of [0,1.65,3.15]){ctx.fillRect(cell*(x+.22),-w*.13,cell*.42,w*.26);ctx.fillRect(cell*(x+.56),-cell*.045,cell*.34,cell*.09);}}
   if(id==="destroyer"){ctx.fillRect(cell*.75,-w*.19,cell*.7,w*.38);ctx.fillRect(cell*1.52,-w*.11,cell*.45,w*.22);ctx.fillRect(cell*.33,-w*.12,cell*.28,w*.24);}
   if(id==="cruiser"){ctx.fillRect(cell*.72,-w*.22,cell*.88,w*.44);ctx.fillRect(cell*1.82,-w*.19,cell*.62,w*.38);for(const x of [.18,2.65]){ctx.fillRect(cell*x,-w*.11,cell*.34,w*.22);ctx.fillRect(cell*(x+.28),-cell*.035,cell*.28,cell*.07);}}
-  if(id==="escort"){ctx.fillRect(cell*.42,-w*.18,cell*.58,w*.36);ctx.fillRect(cell*1.05,-w*.1,cell*.26,w*.2);ctx.fillRect(cell*.12,-w*.09,cell*.2,w*.18);}
+  if(id==="escort"||id==="escortBravo"){ctx.fillRect(cell*.42,-w*.18,cell*.58,w*.36);ctx.fillRect(cell*1.05,-w*.1,cell*.26,w*.2);ctx.fillRect(cell*.12,-w*.09,cell*.2,w*.18);}
   if(id==="submarine"||id==="silentSubmarine"){ctx.fillRect(-cell*.18,-w*.12,cell*.7,w*.24);ctx.fillRect(cell*.05,-w*.32,cell*.14,w*.2);ctx.fillRect(cell*.1,-w*.42,cell*.05,w*.11);}
   ctx.strokeStyle=ghost?"#143b43":sunk?"#30282a":"#163b45";ctx.lineWidth=Math.max(1,cell*.035);ctx.strokeRect(-cell*.13,-cell*.04,len-cell*.75,cell*.08);ctx.restore();
   for(const c of cells) if(hits.has(`${c.x},${c.y}`)){ctx.fillStyle="#ff8585";ctx.beginPath();ctx.arc(m+(c.x+.5)*cell,m+(c.y+.5)*cell,cell*.12,0,Math.PI*2);ctx.fill();}
@@ -162,6 +162,14 @@ function drawMark(ctx:CanvasRenderingContext2D,c:Coord,mark:string,m:number,cell
       ctx.stroke();
     }
     ctx.globalAlpha=1;ctx.restore();
+  }
+  if(mark==="lost"){
+    const pulse=.58+.18*Math.sin(t*3.2),r=cell*.24;
+    ctx.save();ctx.translate(x,y);ctx.rotate(Math.PI/4);ctx.globalAlpha=pulse;
+    ctx.strokeStyle="#e5d78a";ctx.lineWidth=Math.max(1,cell*.035);ctx.setLineDash([cell*.07,cell*.055]);
+    ctx.strokeRect(-r,-r,r*2,r*2);ctx.rotate(-Math.PI/4);ctx.setLineDash([]);
+    ctx.fillStyle="#fff0b5";ctx.font=`bold ${Math.max(7,cell*.12)}px monospace`;ctx.textAlign="center";ctx.textBaseline="middle";
+    ctx.fillText("LKC",0,-cell*.32);ctx.restore();
   }
   if(mark==="hit"||mark==="sunk"){ctx.fillStyle=mark==="sunk"?"#e5d78a":"#ff8585";ctx.globalAlpha=.7+.25*Math.sin(t*8);ctx.beginPath();for(let i=0;i<8;i++){const a=i*Math.PI/4,r=i%2?cell*.16:cell*.27;ctx.lineTo(x+Math.cos(a)*r,y+Math.sin(a)*r);}ctx.closePath();ctx.fill();ctx.globalAlpha=1;}
 }

@@ -4,7 +4,7 @@ import { submarineWakeCandidates } from "./SubmarineWake.ts";
 
 export type AIState = "HUNT" | "TARGET" | "SEARCH";
 export type AIProfile = "casual" | "tactics" | "silent";
-export type AIDecision = { weapon: "fire" | "phantom" | "harpoon" | "sparrow" | "mk45" | "radar" | "hold"; targets: Coord[]; state: AIState; actor?: ShipId };
+export type AIDecision = { weapon: "fire" | "phantom" | "harpoon" | "sparrow" | "mk45" | "radar" | "silentMove"; targets: Coord[]; state: AIState; actor?: ShipId };
 
 export class EnemyAI {
   state: AIState = "HUNT";
@@ -33,10 +33,9 @@ export class EnemyAI {
 
   decide(ownBoard: Board): AIDecision {
     if (this.profile === "silent") {
-      if (ownBoard.alive("submarine")) return { weapon: "fire", targets: [this.chooseShot()], state: this.state, actor: "submarine" };
       if (ownBoard.alive("silentSubmarine")) {
         this.silentCycle += 1;
-        if (this.silentCycle % 2 === 1) return { weapon: "hold", targets: [], state: "HUNT", actor: "silentSubmarine" };
+        if (this.silentCycle % 2 === 0) return { weapon: "silentMove", targets: [], state: "HUNT", actor: "silentSubmarine" };
         return { weapon: "fire", targets: [this.chooseShot()], state: this.state, actor: "silentSubmarine" };
       }
     }
@@ -163,7 +162,7 @@ export class EnemyAI {
         for (let dy = 0; dy < height; dy++) for (let dx = 0; dx < width; dx++) cells.push({ x: x + dx, y: y + dy });
         const overlapsOtherIdentification = [...this.identifiedShips].some(([identifiedId, coord]) => identifiedId !== id && cells.some((cell) => sameCoord(cell, coord)));
         if (overlapsOtherIdentification) continue;
-        if (cells.every((cell) => !["miss", "echo", "sunk"].includes(this.knowledge[cell.y][cell.x]))) placements.push(cells);
+        if (cells.every((cell) => !["miss", "echo", "lost", "sunk"].includes(this.knowledge[cell.y][cell.x]))) placements.push(cells);
       }
     }
     return placements;

@@ -192,7 +192,7 @@ test("responsive command surfaces cover iPhone portrait and full-HD play", async
   assert.match(game, /className="placement-tools compact-placement-bottom"/);
   assert.match(game, /SYSTEM STATUS/);
   assert.match(game, /VESSEL DATA/);
-  assert.match(game, /確認完了/);
+  assert.match(game, /戦闘記録へ記載/);
   assert.match(css, /\.desktop-command-rail \{ display:none; \}/);
   assert.match(css, /@media \(min-width:960px\) and \(orientation:landscape\)/);
   assert.match(css, /\.combat-workspace\.active \{ display:grid; grid-template-columns:minmax\(0,1fr\) clamp\(286px,24vw,326px\)/);
@@ -207,10 +207,18 @@ test("responsive command surfaces cover iPhone portrait and full-HD play", async
 test("survival SEA BAT and escort link are explained in the interface", async () => {
   const game = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
   const campaign = await readFile(new URL("../app/game/Campaign.ts", import.meta.url), "utf8");
-  assert.match(campaign, /SURVIVAL_STAGE_FIVE_FLEET/);
+  const record = await readFile(new URL("../app/game/OperationRecord.ts", import.meta.url), "utf8");
+  assert.match(campaign, /SURVIVAL_STAGES/);
+  assert.match(campaign, /DOUBLE SCREEN/);
+  assert.match(campaign, /\["carrier", "battleship", "escort", "escortBravo"\]/);
+  assert.match(campaign, /fleet: \["silentSubmarine"\]/);
   assert.match(campaign, /SEA BAT/);
-  assert.match(game, /EMERGENCY DIVE/);
-  assert.match(game, /ENEMY SILENT RUNNING/);
+  assert.match(game, /SILENT RUNNING/);
+  assert.match(game, /SONAR CONTACT LOST/);
+  assert.match(game, /4作戦/);
+  assert.match(game, /OPERATION RECORD/);
+  assert.match(record, /noteRetry/);
+  assert.match(record, /noteDamage/);
   assert.match(game, /護衛艦の全区画を空母へ上下左右で隣接/);
   assert.match(game, /LINK ACTIVE/);
   assert.match(game, /FIRE CONTROL LINK：ACTIVE。HARPOON発射＋1/);
@@ -228,7 +236,7 @@ test("battle log drawer and victory battlefield review remain accessible", async
   assert.doesNotMatch(game, /slice\(-40\)/);
   assert.match(game, /FULL OPERATION LOG/);
   assert.match(game, /CIC戦闘経過記録/);
-  assert.match(game, /＝ STAGE \$\{stage\.id\} \/ \$\{stageAttemptRef/);
+  assert.match(game, /difficultyRef\.current === "survival" \? "OPERATION" : "STAGE"/);
   assert.match(game, /＝ REARM & REPAIR \/ 修復・再補給 ＝/);
   assert.match(game, /戦果：敵\$\{enemySunk\}艦撃沈/);
   assert.match(game, /LOST_CAPABILITY\[struckShip\.id\]/);

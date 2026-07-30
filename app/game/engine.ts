@@ -1,10 +1,16 @@
-import { ECHO_DIRECTIONS, GRID_SIZE, HARPOON_PATTERN, ORIENTATIONS, SHIPS, STANDARD_FLEET, WEAPON_MAX, isHorizontal, type Coord, type Orientation, type ShipId } from "./constants.ts";
+import { ECHO_DIRECTIONS, GRID_SIZE, HARPOON_PATTERN, ORIENTATIONS, SHIPS, STANDARD_FLEET, WEAPON_MAX, isEscort, isHorizontal, type Coord, type Orientation, type ShipId } from "./constants.ts";
 
-export type ShotMark = "unknown" | "miss" | "echo" | "hit" | "sunk";
+export type ShotMark = "unknown" | "miss" | "echo" | "hit" | "lost" | "sunk";
 export type AttackKind = "MISS" | "ECHO" | "HIT" | "SUNK" | "ALREADY";
 export type Ship = { id: ShipId; name: string; size: number; orientation: Orientation; cells: Coord[]; critical: Coord; hits: Set<string>; sunk: boolean };
 export type AttackResult = { coord: Coord; kind: AttackKind; shipId?: ShipId; shipName?: string; revealed?: Coord[]; criticalHit?: boolean };
 export type RadarScan = { origin: Coord; contact: boolean; candidates: Coord[] };
+export type RelocationOptions = {
+  blocked?: Coord[];
+  leaveLastKnown?: boolean;
+  relaxSignalBlocksWhenTrapped?: boolean;
+  resolveContainmentWhenTrapped?: boolean;
+};
 
 export class SeededRandom {
   private state: number;
@@ -58,46 +64,88 @@ export class Board {
     if (index < 0) return null;
     return this.ships.splice(index, 1)[0];
   }
+  visibleRadarCells() {
+    return this.radarScans.flatMap((scan) => {
+      const contactResolved = scan.contact && scan.candidates.some((candidate) => {
+        const mark = this.shots[candidate.y][candidate.x];
+        return mark === "hit" || mark === "lost" || mark === "sunk";
+      });
+      return contactResolved ? [] : scan.candidates.map((candidate) => ({ ...candidate }));
+    });
+  }
   randomize(rng: SeededRandom, fleet: ShipId[] = STANDARD_FLEET) {
-    this.reset();
-    const supportTargets = (["carrier", "battleship"] as const).filter((id) => fleet.includes(id));
-    const placementOrder: ShipId[] = fleet.includes("escort") && supportTargets.length
-      ? [...supportTargets, "escort", ...fleet.filter((id) => !supportTargets.includes(id as "carrier" | "battleship") && id !== "escort")]
-      : [...fleet];
-    for (const id of placementOrder) {
-      const def = SHIPS.find((ship) => ship.id === id)!;
-      const candidates: Array<{ start: Coord; orientation: Orientation }> = [];
-      for (let y = 0; y < GRID_SIZE; y++) for (let x = 0; x < GRID_SIZE; x++) for (const orientation of ORIENTATIONS) {
-        if (this.canPlace(def.id, { x, y }, orientation)) candidates.push({ start: { x, y }, orientation });
+    const requireDualScreen = fleet.includes("escort") && fleet.includes("escortBravo") && fleet.includes("carrier") && fleet.includes("battleship");
+    for (let attempt = 0; attempt < 200; attempt++) {
+      this.reset();
+      const supportTargets = (["carrier", "battleship"] as const).filter((id) => fleet.includes(id));
+      const escorts = fleet.filter(isEscort);
+      const placementOrder: ShipId[] = escorts.length && supportTargets.length
+        ? [...supportTargets, ...escorts, ...fleet.filter((id) => !supportTargets.includes(id as "carrier" | "battleship") && !isEscort(id))]
+        : [...fleet];
+      let failed = false;
+      for (const id of placementOrder) {
+        const def = SHIPS.find((ship) => ship.id === id)!;
+        const candidates: Array<{ start: Coord; orientation: Orientation }> = [];
+        for (let y = 0; y < GRID_SIZE; y++) for (let x = 0; x < GRID_SIZE; x++) for (const orientation of ORIENTATIONS) {
+          if (this.canPlace(def.id, { x, y }, orientation)) candidates.push({ start: { x, y }, orientation });
+        }
+        if (!candidates.length) { failed = true; break; }
+        const capitalShips = this.ships.filter((ship) => (ship.id === "carrier" || ship.id === "battleship") && !ship.sunk);
+        const preferredTarget = id === "escortBravo" ? "battleship" : "carrier";
+        const preferredCapital = capitalShips.find((ship) => ship.id === preferredTarget);
+        const linked = isEscort(id) && capitalShips.length
+          ? candidates.filter(({ start, orientation }) => {
+              const escortCells = this.cellsFor(start, def.size, orientation, id);
+              const eligibleCapitals = preferredCapital ? [preferredCapital] : capitalShips;
+              return eligibleCapitals.some((capitalShip) => escortCells.every((escortCell) =>
+                capitalShip.cells.some((capitalCell) => Math.abs(escortCell.x - capitalCell.x) + Math.abs(escortCell.y - capitalCell.y) === 1),
+              ));
+            })
+          : [];
+        const choice = rng.pick(linked.length ? linked : candidates);
+        if (!choice || !this.placeShip(def.id, choice.start, choice.orientation)) { failed = true; break; }
       }
-      const capitalShips = this.ships.filter((ship) => (ship.id === "carrier" || ship.id === "battleship") && !ship.sunk);
-      const linked = id === "escort" && capitalShips.length
-        ? candidates.filter(({ start, orientation }) => {
-            const escortCells = this.cellsFor(start, def.size, orientation, id);
-            return capitalShips.some((capitalShip) => escortCells.every((escortCell) =>
-              capitalShip.cells.some((capitalCell) => Math.abs(escortCell.x - capitalCell.x) + Math.abs(escortCell.y - capitalCell.y) === 1),
-            ));
-          })
-        : [];
-      const choice = rng.pick(linked.length ? linked : candidates);
-      this.placeShip(def.id, choice.start, choice.orientation);
+      if (failed) continue;
+      if (requireDualScreen && (!hasEscortLink(this) || !hasFireControlLink(this))) continue;
+      return;
     }
+    throw new Error("Unable to produce a legal fleet deployment.");
   }
   shipAt(coord: Coord) { return this.ships.find((ship) => ship.cells.some((c) => sameCoord(c, coord))); }
-  relocateShip(id: ShipId, rng: SeededRandom) {
+  relocateShip(id: ShipId, rng: SeededRandom, options: RelocationOptions = {}) {
     const ship = this.ships.find((candidate) => candidate.id === id && !candidate.sunk);
     if (!ship) return null;
     const definition = SHIPS.find((candidate) => candidate.id === id)!;
-    const candidates: Array<{ start: Coord; orientation: Orientation; cells: Coord[] }> = [];
-    for (let y = 0; y < GRID_SIZE; y++) for (let x = 0; x < GRID_SIZE; x++) for (const orientation of ORIENTATIONS) {
-      const start = { x, y };
-      const cells = this.cellsFor(start, definition.size, orientation, id);
-      if (!cells.every(inBounds) || !cells.every((cell) => this.shots[cell.y][cell.x] === "unknown")) continue;
-      if (cells.some((cell) => this.ships.some((other) => other !== ship && other.cells.some((occupied) => sameCoord(occupied, cell))))) continue;
-      candidates.push({ start, orientation, cells });
+    const current = new Set(ship.cells.map(keyOf));
+    const blocked = new Set(options.blocked?.map(keyOf) ?? []);
+    const radar = new Set(this.visibleRadarCells().map(keyOf));
+    const candidatesFor = (respectSignals: boolean) => {
+      const result: Array<{ start: Coord; orientation: Orientation; cells: Coord[] }> = [];
+      for (let y = 0; y < GRID_SIZE; y++) for (let x = 0; x < GRID_SIZE; x++) for (const orientation of ORIENTATIONS) {
+        const start = { x, y };
+        const cells = this.cellsFor(start, definition.size, orientation, id);
+        if (!cells.every(inBounds) || !cells.every((cell) => this.shots[cell.y][cell.x] === "unknown")) continue;
+        if (cells.some((cell) => current.has(keyOf(cell)))) continue;
+        if (respectSignals && cells.some((cell) => blocked.has(keyOf(cell)) || radar.has(keyOf(cell)))) continue;
+        if (cells.some((cell) => this.ships.some((other) => other !== ship && other.cells.some((occupied) => sameCoord(occupied, cell))))) continue;
+        result.push({ start, orientation, cells });
+      }
+      return result;
+    };
+    let candidates = candidatesFor(true);
+    if (!candidates.length && options.relaxSignalBlocksWhenTrapped) candidates = candidatesFor(false);
+    if (!candidates.length && options.resolveContainmentWhenTrapped) {
+      ship.sunk = true;
+      ship.cells.forEach((cell) => { this.shots[cell.y][cell.x] = "sunk"; });
+      return { ...ship.cells[0] };
     }
     if (!candidates.length) return null;
     const choice = rng.pick(candidates);
+    if (options.leaveLastKnown) {
+      ship.cells.forEach((cell) => {
+        if (this.shots[cell.y][cell.x] === "hit") this.shots[cell.y][cell.x] = "lost";
+      });
+    }
     ship.cells = choice.cells;
     ship.orientation = choice.orientation;
     ship.critical = criticalCoordFor(id, choice.start, choice.orientation);
@@ -156,10 +204,22 @@ export function straddleCells(anchor: Coord, orientation: Orientation) {
 }
 function hasEscortLinkTo(board: Board, targetId: "carrier" | "battleship") {
   const target = board.ships.find((ship) => ship.id === targetId && !ship.sunk);
-  const escort = board.ships.find((ship) => ship.id === "escort" && !ship.sunk);
-  return Boolean(target && escort && escort.cells.every((escortCell) =>
+  const escorts = board.ships.filter((ship) => isEscort(ship.id) && !ship.sunk);
+  return Boolean(target && escorts.some((escort) => escort.cells.every((escortCell) =>
     target.cells.some((targetCell) => Math.abs(escortCell.x - targetCell.x) + Math.abs(escortCell.y - targetCell.y) === 1),
-  ));
+  )));
+}
+
+export function escortLinksFor(board: Board, escortId: ShipId) {
+  const escort = board.ships.find((ship) => ship.id === escortId && isEscort(ship.id) && !ship.sunk);
+  if (!escort) return { carrier: false, battleship: false };
+  const linked = (targetId: "carrier" | "battleship") => {
+    const target = board.ships.find((ship) => ship.id === targetId && !ship.sunk);
+    return Boolean(target && escort.cells.every((escortCell) =>
+      target.cells.some((targetCell) => Math.abs(escortCell.x - targetCell.x) + Math.abs(escortCell.y - targetCell.y) === 1),
+    ));
+  };
+  return { carrier: linked("carrier"), battleship: linked("battleship") };
 }
 
 export function hasEscortLink(board: Board) { return hasEscortLinkTo(board, "carrier"); }

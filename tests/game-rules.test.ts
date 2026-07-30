@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { SHIPS, STAGES } from "../app/game/constants.ts";
+import { GRID_SIZE, SHIPS, STAGES } from "../app/game/constants.ts";
 import { Arsenal, Board, SeededRandom, criticalCoordFor, harpoonCells, hasEscortLink, hasFireControlLink, radarCells, straddleCells } from "../app/game/engine.ts";
 import { EnemyAI } from "../app/game/EnemyAI.ts";
 import { nextSubmarineWake, submarineWakeCandidates } from "../app/game/SubmarineWake.ts";
-import { FULL_FLEET, aiSkillFor, enemyFleetFor, missionFor, playerFleetFor, survivingFleet, usesTacticsRules } from "../app/game/Campaign.ts";
+import { FULL_FLEET, SURVIVAL_STAGES, aiSkillFor, enemyFleetFor, huntBreadthFor, missionFor, playerFleetFor, stagesFor, survivingFleet, usesTacticsRules } from "../app/game/Campaign.ts";
 import { commandAssessment, formatElapsed, formatLocal, formatZulu } from "../app/game/AfterAction.ts";
+import { OperationRecorder, formatOperationDuration } from "../app/game/OperationRecord.ts";
+import { MUSIC_INTERVAL_MS, pulseIntervalForLosses } from "../app/game/AudioManager.ts";
 
 test("campaign is condensed to six escalating stages", () => {
   assert.equal(STAGES.length, 6);
@@ -16,12 +18,12 @@ test("campaign is condensed to six escalating stages", () => {
 });
 
 test("ship class codes are distinct from hull sections and new systems have canonical names", () => {
-  assert.deepEqual(SHIPS.slice(0, 6).map((ship) => ship.code), ["CV", "BB", "CA", "DD", "DE", "SS"]);
+  assert.deepEqual(SHIPS.slice(0, 7).map((ship) => ship.code), ["CV", "BB", "CA", "DD", "DE-01", "DE-02", "SS"]);
   assert.equal(SHIPS.find((ship) => ship.id === "cruiser")?.weapon, "8-INCH STRADDLE");
   assert.equal(SHIPS.find((ship) => ship.id === "submarine")?.weapon, "PASSIVE SONAR");
 });
 
-test("stage five eases tactics while survival stage six returns to stage-four strength", () => {
+test("campaign stage five eases tactics while survival final returns to stage-four strength", () => {
   assert.equal(aiSkillFor("casual", 5, 1.1), 1.1 * 1.38);
   assert.equal(aiSkillFor("tactics", 5, 1.1), 1.819);
   assert.equal(aiSkillFor("survival", 5, 1.1), 1.819);
@@ -30,13 +32,17 @@ test("stage five eases tactics while survival stage six returns to stage-four st
   assert.equal(aiSkillFor("survival", 6, 1.16), 1.05 * 1.7);
 });
 
-test("survival stage five alone deploys the SEA BAT submarine pair", () => {
-  const stage = STAGES[4];
-  assert.deepEqual(enemyFleetFor("survival", stage), ["submarine", "silentSubmarine"]);
-  assert.deepEqual(enemyFleetFor("casual", stage), stage.fleet);
-  assert.deepEqual(enemyFleetFor("tactics", stage), stage.fleet);
-  assert.equal(missionFor("survival", stage).title, "SEA BAT");
-  assert.equal(missionFor("tactics", stage).title, stage.title);
+test("survival is a distinct four-operation end-game route", () => {
+  assert.equal(stagesFor("casual"), STAGES);
+  assert.equal(stagesFor("tactics"), STAGES);
+  assert.equal(stagesFor("survival"), SURVIVAL_STAGES);
+  assert.deepEqual(SURVIVAL_STAGES.map((stage) => stage.id), [1, 3, 5, 6]);
+  assert.deepEqual(SURVIVAL_STAGES.map((stage) => stage.title), ["DOUBLE SCREEN", "RANGING FIRE", "SEA BAT", "DEEP BLUE GRID"]);
+  assert.deepEqual(enemyFleetFor("survival", SURVIVAL_STAGES[2]), ["silentSubmarine"]);
+  assert.deepEqual(enemyFleetFor("survival", SURVIVAL_STAGES[3]), ["carrier", "battleship", "cruiser", "submarine"]);
+  assert.equal(missionFor("survival", SURVIVAL_STAGES[2]).title, "SEA BAT");
+  assert.deepEqual(SURVIVAL_STAGES.map((_, index) => huntBreadthFor("survival", index)), [8, 5, 1, 3]);
+  assert.equal(huntBreadthFor("tactics", 3), 1);
 });
 
 test("after-action timestamps use minute-precision Zulu and local time", () => {
@@ -114,6 +120,45 @@ test("survival starts with every ship and permanently removes sunk ships", () =>
   assert.equal(usesTacticsRules("survival"), true);
 });
 
+test("operation record preserves failed-attempt damage and retries across four operations", () => {
+  const record = new OperationRecorder(["DOUBLE SCREEN", "RANGING FIRE", "SEA BAT", "DEEP BLUE GRID"], 1000);
+  record.noteEngagement(0);
+  record.noteAction(0, 4, 1, true);
+  record.noteDamage(0, 3);
+  record.noteRetry(0);
+  record.noteEngagement(0);
+  record.noteAction(0, 2, 2, false);
+  record.noteDamage(0, 1);
+  record.completeStage(0, ["destroyer"], 61_000);
+  record.beginStage(1, 61_000);
+  record.noteEngagement(1);
+  record.noteAction(1, 1, 1, false);
+  record.completeStage(1, [], 91_000);
+  record.pause(91_000);
+  record.resume(121_000);
+  record.finish(131_000);
+  const snapshot = record.snapshot(131_000);
+  assert.equal(snapshot.activeMs, 100_000);
+  assert.equal(formatOperationDuration(snapshot.activeMs), "00:01:40");
+  assert.equal(snapshot.engagements, 3);
+  assert.equal(snapshot.retries, 1);
+  assert.equal(snapshot.damage, 4);
+  assert.equal(snapshot.shots, 7);
+  assert.equal(snapshot.hits, 4);
+  assert.deepEqual(snapshot.confirmedLosses, ["destroyer"]);
+  assert.equal(snapshot.stages[0].completed, true);
+  assert.equal(snapshot.stages[0].damage, 4);
+});
+
+test("command pulse accelerates monotonically with absolute fleet loss", () => {
+  assert.deepEqual(MUSIC_INTERVAL_MS, [260, 240, 220, 200, 185, 170]);
+  assert.equal(pulseIntervalForLosses(-2), 260);
+  assert.equal(pulseIntervalForLosses(0), 260);
+  assert.equal(pulseIntervalForLosses(3), 200);
+  assert.equal(pulseIntervalForLosses(99), 170);
+  assert.ok(MUSIC_INTERVAL_MS.every((value, index) => index === 0 || value < MUSIC_INTERVAL_MS[index - 1]));
+});
+
 test("random placement is legal and complete across many seeds", () => {
   for (let seed = 1; seed <= 100; seed++) {
     const board = new Board(); board.randomize(new SeededRandom(seed));
@@ -135,6 +180,21 @@ test("every campaign fleet can be placed legally", () => {
       const occupied = board.ships.flatMap((ship) => ship.cells.map((cell) => `${cell.x},${cell.y}`));
       assert.equal(new Set(occupied).size, occupied.length);
     }
+  }
+});
+
+test("DOUBLE SCREEN places two distinct escorts and links both capital ships", () => {
+  const fleet = SURVIVAL_STAGES[0].fleet;
+  assert.deepEqual(fleet, ["carrier", "battleship", "escort", "escortBravo"]);
+  for (let seed = 1; seed <= 100; seed++) {
+    const board = new Board();
+    board.randomize(new SeededRandom(7000 + seed), fleet);
+    assert.equal(board.allPlaced(fleet), true);
+    assert.equal(board.ships.filter((ship) => ship.id === "escort" || ship.id === "escortBravo").length, 2);
+    assert.equal(hasEscortLink(board), true);
+    assert.equal(hasFireControlLink(board), true);
+    const occupied = board.ships.flatMap((ship) => ship.cells.map((cell) => `${cell.x},${cell.y}`));
+    assert.equal(new Set(occupied).size, occupied.length);
   }
 });
 
@@ -259,17 +319,18 @@ test("wake marks avoid ships, shot marks, radar marks, and existing wakes", () =
 });
 
 
-test("SEA BAT relocates after the first hit and sinks on the second contact", () => {
+test("SEA BAT keeps damage across silent relocation and leaves last-known contact", () => {
   const board = new Board();
   board.placeShip("silentSubmarine", { x: 2, y: 2 }, "east");
   const original = { ...board.ships[0].cells[0] };
   const first = board.attack(original);
   assert.equal(first.kind, "HIT");
   assert.equal(first.criticalHit, true);
-  const relocated = board.relocateShip("silentSubmarine", new SeededRandom(5150));
+  const relocated = board.relocateShip("silentSubmarine", new SeededRandom(5150), { leaveLastKnown: true });
   assert.ok(relocated);
   assert.notDeepEqual(relocated, original);
   assert.equal(board.ships[0].hits.size, 1);
+  assert.equal(board.shots[original.y][original.x], "lost");
   assert.equal(board.shots[relocated.y][relocated.x], "unknown");
   const second = board.attack(relocated);
   assert.equal(second.kind, "SUNK");
@@ -277,26 +338,72 @@ test("SEA BAT relocates after the first hit and sinks on the second contact", ()
   assert.equal(board.ships[0].sunk, true);
 });
 
-test("SEA BAT attacks with the normal submarine, then alternates silence and fire", () => {
+test("SEA BAT alternates fire and silent relocation actions", () => {
   const own = new Board();
-  own.placeShip("submarine", { x: 0, y: 0 }, "east");
   own.placeShip("silentSubmarine", { x: 7, y: 7 }, "east");
   const ai = new EnemyAI(new SeededRandom(808), FULL_FLEET, 1.819, "silent");
-  const normalAction = ai.decide(own);
-  assert.equal(normalAction.weapon, "fire");
-  assert.equal(normalAction.actor, "submarine");
-  own.attack({ x: 0, y: 0 });
-  const silentAction = ai.decide(own);
-  assert.equal(silentAction.weapon, "hold");
-  assert.equal(silentAction.actor, "silentSubmarine");
   const firingAction = ai.decide(own);
   assert.equal(firingAction.weapon, "fire");
   assert.equal(firingAction.actor, "silentSubmarine");
+  const silentAction = ai.decide(own);
+  assert.equal(silentAction.weapon, "silentMove");
+  assert.equal(silentAction.actor, "silentSubmarine");
+  const nextFiringAction = ai.decide(own);
+  assert.equal(nextFiringAction.weapon, "fire");
   const wake = nextSubmarineWake(own, [], new SeededRandom(909), firingAction.actor);
   assert.ok(wake);
   assert.ok(Math.abs(wake.x - 7) <= 1 && Math.abs(wake.y - 7) <= 1);
   assert.notDeepEqual(wake, { x: 7, y: 7 });
 });
+
+test("SEA BAT silent relocation avoids current, shot, radar, wake, and occupied cells", () => {
+  const board = new Board();
+  board.placeShip("silentSubmarine", { x: 7, y: 7 }, "east");
+  board.placeShip("destroyer", { x: 0, y: 0 }, "east");
+  board.attack({ x: 3, y: 3 });
+  board.radar({ x: 4, y: 4 });
+  const wake = { x: 6, y: 6 };
+  const original = { ...board.ships.find((ship) => ship.id === "silentSubmarine")!.cells[0] };
+  const moved = board.relocateShip("silentSubmarine", new SeededRandom(9292), { blocked: [wake] });
+  assert.ok(moved);
+  assert.notDeepEqual(moved, original);
+  assert.notDeepEqual(moved, wake);
+  assert.equal(board.shots[moved.y][moved.x], "unknown");
+  assert.equal(board.radarScans.some((scan) => scan.candidates.some((coord) => coord.x === moved.x && coord.y === moved.y)), false);
+  assert.equal(board.ships.some((ship) => ship.id !== "silentSubmarine" && ship.cells.some((coord) => coord.x === moved.x && coord.y === moved.y)), false);
+});
+
+test("SEA BAT signal overlays cannot soft-lock an otherwise unknown relocation cell", () => {
+  const board = new Board();
+  const original = { x: 6, y: 6 };
+  board.placeShip("silentSubmarine", original, "east");
+  const blocked = Array.from({ length: GRID_SIZE }, (_, y) =>
+    Array.from({ length: GRID_SIZE }, (_, x) => ({ x, y })),
+  ).flat().filter((coord) => coord.x !== original.x || coord.y !== original.y);
+  const moved = board.relocateShip("silentSubmarine", new SeededRandom(89), {
+    blocked,
+    relaxSignalBlocksWhenTrapped: true,
+  });
+  assert.ok(moved);
+  assert.notDeepEqual(moved, original);
+});
+
+test("SEA BAT full-board containment resolves instead of becoming unwinnable", () => {
+  const board = new Board();
+  const lastKnown = { x: 3, y: 3 };
+  board.placeShip("silentSubmarine", lastKnown, "east");
+  assert.equal(board.attack(lastKnown).kind, "HIT");
+  for (let y = 0; y < GRID_SIZE; y++) for (let x = 0; x < GRID_SIZE; x++) {
+    if (x !== lastKnown.x || y !== lastKnown.y) board.attack({ x, y });
+  }
+  board.relocateShip("silentSubmarine", new SeededRandom(90), {
+    relaxSignalBlocksWhenTrapped: true,
+    resolveContainmentWhenTrapped: true,
+  });
+  assert.equal(board.allSunk(), true);
+  assert.equal(board.shots[lastKnown.y][lastKnown.x], "sunk");
+});
+
 test("AI receives the same public submarine wake candidates as the player", () => {
   const own = new Board(); own.placeShip("submarine", { x: 0, y: 0 }, "east");
   const ai = new EnemyAI(new SeededRandom(88), ["submarine"], 1.7, "tactics");
@@ -401,6 +508,23 @@ test("one escort can sustain carrier and battleship bonuses at the same time", (
   assert.equal(hasFireControlLink(own), true);
   assert.equal(arsenal.availableUses("phantom", own), 2);
   assert.equal(arsenal.availableUses("harpoon", own), 3);
+});
+
+test("two escorts never stack a capital-ship support bonus above its cap", () => {
+  const own = new Board();
+  own.placeShip("carrier", { x: 0, y: 0 }, "east");
+  own.placeShip("battleship", { x: 0, y: 4 }, "east");
+  own.placeShip("escort", { x: 0, y: 2 }, "east");
+  own.placeShip("escortBravo", { x: 0, y: 3 }, "east");
+  const arsenal = new Arsenal();
+  assert.equal(hasEscortLink(own), true);
+  assert.equal(hasFireControlLink(own), true);
+  assert.equal(arsenal.maxUses("phantom", own), 2);
+  assert.equal(arsenal.maxUses("harpoon", own), 3);
+  own.attack({ x: 0, y: 2 });
+  own.attack({ x: 1, y: 2 });
+  assert.equal(hasEscortLink(own), false);
+  assert.equal(hasFireControlLink(own), true);
 });
 
 test("escort grants one additional F-4 sortie while both ships survive", () => {

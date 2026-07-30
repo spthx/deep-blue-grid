@@ -13,13 +13,7 @@ function neighbors(center: Coord) {
 
 function hasVisibleRadarMark(board: Board, coord: Coord) {
   if (board.shots[coord.y][coord.x] !== "unknown") return false;
-  return board.radarScans.some((scan) => {
-    const contactResolved = scan.contact && scan.candidates.some((candidate) => {
-      const mark = board.shots[candidate.y][candidate.x];
-      return mark === "hit" || mark === "sunk";
-    });
-    return !contactResolved && scan.candidates.some((candidate) => sameCoord(candidate, coord));
-  });
+  return board.visibleRadarCells().some((candidate) => sameCoord(candidate, coord));
 }
 
 function hasExistingDisplay(board: Board, current: Coord[], coord: Coord) {
