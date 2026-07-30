@@ -1,10 +1,10 @@
 import { CELL_LABELS, GRID_SIZE, SHIPS, type Coord, type Orientation, type ShipId } from "./constants.ts";
-import { Board, criticalCoordFor, harpoonCells, keyOf, radarCells } from "./engine.ts";
+import { Board, criticalCoordFor, harpoonCells, keyOf, radarCells, straddleCells } from "./engine.ts";
 
 export type RenderOptions = {
   revealShips: boolean; cursor?: Coord; previewShip?: { id: ShipId; orientation: Orientation; valid: boolean };
   weapon?: "fire"|"phantom"|"harpoon"|"sparrow"|"mk45"|"radar"; selected?: Coord[]; active?: Coord[]; waves?: Coord[]; time?: number; scanActive?: boolean;
-  showCritical?: boolean; identifications?: Array<{ coord: Coord; id: ShipId }>; escortZone?: boolean;
+  attackOrientation?: Orientation; showCritical?: boolean; identifications?: Array<{ coord: Coord; id: ShipId }>; escortZone?: boolean;
 };
 
 export function drawBoard(canvas: HTMLCanvasElement, board: Board, opts: RenderOptions) {
@@ -35,7 +35,9 @@ export function drawBoard(canvas: HTMLCanvasElement, board: Board, opts: RenderO
   for(const wave of opts.waves??[])drawWake(ctx,wave,m,cell,t);
   if(opts.cursor){
     let cells=[opts.cursor]; if(opts.previewShip){const def=SHIPS.find(s=>s.id===opts.previewShip!.id)!;cells=board.cellsFor(opts.cursor,def.size,opts.previewShip.orientation,opts.previewShip.id);}
-    else if(opts.weapon==="harpoon")cells=harpoonCells(opts.cursor); else if(opts.weapon==="radar"||opts.weapon==="sparrow")cells=radarCells(opts.cursor);
+    else if(opts.weapon==="harpoon")cells=harpoonCells(opts.cursor);
+    else if(opts.weapon==="radar")cells=radarCells(opts.cursor);
+    else if(opts.weapon==="sparrow")cells=straddleCells(opts.cursor,opts.attackOrientation??"north");
     ctx.fillStyle=opts.previewShip&&!opts.previewShip.valid?"rgba(255,80,90,.28)":"rgba(124,229,223,.17)";ctx.strokeStyle=opts.previewShip&&!opts.previewShip.valid?"#ff8585":"#7ce5df";ctx.lineWidth=Math.max(1,dpr*1.4);
     for(const c of cells)if(c.x>=0&&c.y>=0&&c.x<8&&c.y<8){ctx.fillRect(m+c.x*cell,m+c.y*cell,cell,cell);ctx.strokeRect(m+c.x*cell+2,m+c.y*cell+2,cell-4,cell-4);}
     if(opts.previewShip&&cells.every(c=>c.x>=0&&c.y>=0&&c.x<8&&c.y<8)){

@@ -30,7 +30,7 @@ export type CommandAssessment = {
 const capabilityFinding: Partial<Record<ShipId, string>> = {
   carrier: "航空打撃能力を喪失。以後も通常攻撃能力は残存。",
   escort: "護衛支援能力を喪失。F-4追加出撃及びHARPOON追加発射不能。",
-  submarine: "音響捜索能力を喪失。以後、レーダーによる敵推定位置の絞り込み不能。",
+  submarine: "受動聴音能力を喪失。以後、PASSIVE SONARによる敵推定位置の絞り込み不能。",
 };
 
 function survivalFinding(input: AssessmentInput) {

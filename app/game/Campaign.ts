@@ -24,7 +24,7 @@ export function enemyFleetFor(mode: GameMode, stage: StageDefinition) {
 export function missionFor(mode: GameMode, stage: StageDefinition) {
   if (mode === "survival" && stage.id === 5) {
     return {
-      title: "SILENT HUNTER",
+      title: "SEA BAT",
       subtitle: "\u901a\u5e38\u6f5c\u6c34\u8266\u3068\u7121\u97f3\u6f5c\u822a\u3059\u308b\u7279\u6b8a\u6f5c\u822a\u8266\u3092\u6355\u6349\u3057\u3001\u8266\u968a\u3092\u6e29\u5b58\u305b\u3088\u3002",
     };
   }

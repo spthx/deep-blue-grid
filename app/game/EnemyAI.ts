@@ -1,5 +1,5 @@
-import { ECHO_DIRECTIONS, GRID_SIZE, ORIENTATIONS, SHIPS, STANDARD_FLEET, isHorizontal, type Coord, type ShipId } from "./constants.ts";
-import { Arsenal, Board, SeededRandom, criticalCoordFor, harpoonCells, inBounds, keyOf, radarCells, sameCoord, sparrowCells, type AttackResult, type ShotMark } from "./engine.ts";
+import { ECHO_DIRECTIONS, GRID_SIZE, ORIENTATIONS, SHIPS, STANDARD_FLEET, isHorizontal, type Coord, type Orientation, type ShipId } from "./constants.ts";
+import { Arsenal, Board, SeededRandom, criticalCoordFor, harpoonCells, inBounds, keyOf, radarCells, sameCoord, straddleCells, type AttackResult, type ShotMark } from "./engine.ts";
 import { submarineWakeCandidates } from "./SubmarineWake.ts";
 
 export type AIState = "HUNT" | "TARGET" | "SEARCH";
@@ -54,7 +54,7 @@ export class EnemyAI {
     }
     if ((this.targetHits.length || this.search.length) && this.arsenal.canUse("sparrow", ownBoard) && this.rng.next() < .24 * this.skill * tacticsPressure) {
       this.arsenal.spend("sparrow", ownBoard);
-      return { weapon: "sparrow", targets: sparrowCells(this.bestAreaOrigin()).filter((c) => this.isUnknown(c)), state: this.state };
+      return { weapon: "sparrow", targets: this.bestStraddle().cells.filter((c) => this.isUnknown(c)), state: this.state };
     }
     if (this.targetHits.length && this.arsenal.canUse("harpoon", ownBoard) && this.rng.next() < .32 * this.skill * tacticsPressure) {
       this.arsenal.spend("harpoon", ownBoard);
@@ -141,7 +141,7 @@ export class EnemyAI {
     const scored = this.unknownCells().map((coord) => {
       let score = (placementScores.get(keyOf(coord)) ?? 0) + this.rng.next() * .4;
       if (!submarineOnly && (coord.x + coord.y) % 2 === 0) score += 2;
-      for (const echo of this.findMarks("echo")) if (Math.abs(echo.x - coord.x) <= 1 && Math.abs(echo.y - coord.y) <= 1) score += 4;
+      for (const echo of this.findMarks("echo")) if (Math.abs(echo.x - coord.x) + Math.abs(echo.y - coord.y) === 1) score += 4;
       return { coord, score };
     });
     scored.sort((a, b) => b.score - a.score);
@@ -186,14 +186,16 @@ export class EnemyAI {
     }
     return options.sort((a, b) => b.score - a.score)[0].c;
   }
-  private bestAreaOrigin() {
-    const options: Array<{ c: Coord; score: number }> = [];
-    for (let y = 0; y < GRID_SIZE - 1; y++) for (let x = 0; x < GRID_SIZE - 1; x++) {
-      const c = { x, y }; const cells = sparrowCells(c);
+  private bestStraddle() {
+    const options: Array<{ origin: Coord; orientation: Orientation; cells: Coord[]; score: number }> = [];
+    for (let y = 0; y < GRID_SIZE; y++) for (let x = 0; x < GRID_SIZE; x++) for (const orientation of ORIENTATIONS) {
+      const origin = { x, y };
+      const cells = straddleCells(origin, orientation);
+      if (cells.length !== 4) continue;
       const score = cells.filter((p) => this.isUnknown(p)).length + cells.filter((p) => this.search.some((s) => keyOf(s) === keyOf(p))).length * 3 + this.rng.next();
-      options.push({ c, score });
+      options.push({ origin, orientation, cells, score });
     }
-    return options.sort((a, b) => b.score - a.score)[0].c;
+    return options.sort((a, b) => b.score - a.score)[0];
   }
   private bestHarpoonCenter() {
     const anchor = this.targetHits[0] ?? this.rankCandidates()[0];

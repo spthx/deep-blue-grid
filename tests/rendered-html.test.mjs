@@ -106,12 +106,13 @@ test("radar contact and clear scans use one restrained tactical frame", async ()
   assert.match(source, /const mark=board\.shots\[y\]\[x\];if\(mark!=="unknown"\)drawMark/);
 });
 
-test("radar scan announces its binary result over the playfield", async () => {
+test("passive sonar announces its binary result over the playfield", async () => {
   const game = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
   const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
   assert.match(game, /radarAlert\.hostile \? radarAlert\.contact \? "FLEET DETECTED" : "NO TRACK" : radarAlert\.contact \? "CONTACT!" : "NO CONTACT"/);
-  assert.match(game, /指定4区画内に未破壊艦区画あり/);
+  assert.match(game, /指定4区画内に未破壊艦区画の音響反応あり/);
   assert.match(game, /指定4区画内に反応なし/);
+  assert.match(game, /PASSIVE SONAR/);
   assert.match(game, /ESCORT SUPPORT：ACTIVE。F-4出撃＋1/);
   assert.match(css, /\.radar-result/);
   assert.match(game, /setActiveEffect\("scan"\)/);
@@ -119,14 +120,31 @@ test("radar scan announces its binary result over the playfield", async () => {
   assert.doesNotMatch(game, /active\.length \? "shake"/);
 });
 
-test("enemy radar uses the same four-cell scan and result overlay", async () => {
+test("enemy passive sonar uses the same four-cell listening area and result overlay", async () => {
   const game = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
   assert.match(game, /setActive\(decision\.weapon === "radar" \? radarCells\(decision\.targets\[0\]\) : decision\.targets\)/);
   assert.match(game, /sleep\(decision\.weapon === "radar" \? 800 : 750\)/);
   assert.match(game, /setRadarAlert\(\{ contact, hostile: true \}\)/);
-  assert.match(game, /HOSTILE RADAR CONTACT/);
+  assert.match(game, /HOSTILE SONAR CONTACT/);
   assert.match(game, /FLEET DETECTED/);
-  assert.match(game, /敵レーダーが自軍艦隊を捕捉/);
+  assert.match(game, /敵聴音が自軍艦隊を捕捉/);
+});
+
+test("cruiser straddle rotates without adding a ninth mobile command", async () => {
+  const game = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
+  const engine = await readFile(new URL("../app/game/engine.ts", import.meta.url), "utf8");
+  assert.match(game, /const \[attackOrientation, setAttackOrientation\] = useState<Orientation>\("north"\)/);
+  assert.match(game, /STRADDLE_ORIENTATIONS\[\(currentIndex \+ 1\) % STRADDLE_ORIENTATIONS\.length\]/);
+  assert.doesNotMatch(game, /valid\.includes\(candidate\)/);
+  assert.match(game, /散布界が盤外です。90°回転または照準変更/);
+  assert.match(game, /picked\.length && sameCoord\(picked\[0\], coord\)[\s\S]*?rotateStraddleAim\(\)/);
+  assert.match(game, /nextWeapon === "sparrow" && weapon === "sparrow"\) \{[\s\S]*?rotateStraddleAim\(\)/);
+  assert.match(game, /phase === "player" && weapon === "sparrow"\) rotateStraddleAim\(\)/);
+  assert.match(engine, /export function straddleCells/);
+  assert.match(game, /8-INCH STRADDLE/);
+  assert.match(game, /PASSIVE SONAR/);
+  assert.match(game, /HULL DATA MASKED/);
+  assert.doesNotMatch(game, /SEA SPARROW|SPS-10/);
 });
 
 test("tactics identification masks contacts and marks critical sections", async () => {
@@ -135,7 +153,8 @@ test("tactics identification masks contacts and marks critical sections", async 
   assert.match(game, /UNKNOWN CONTACT/);
   assert.match(game, /SIGNATURE UNKNOWN/);
   assert.match(game, /VITAL COMPARTMENT HIT/);
-  assert.match(game, /IDENTIFIED \/ DAMAGE STATUS UNKNOWN/);
+  assert.match(game, /HULL DATA MASKED/);
+  assert.match(game, /definition\.name \+ " \/ IDENTIFIED"/);
   assert.match(renderer, /drawCritical/);
   assert.match(renderer, /drawIdentification/);
 });
@@ -183,11 +202,11 @@ test("responsive command surfaces cover iPhone portrait and full-HD play", async
   assert.match(css, /orientation:portrait[\s\S]*?\.turn-review \{ position:fixed;[\s\S]*?grid-template-columns:minmax\(0,1fr\) minmax\(138px,44%\)/);
 });
 
-test("survival silent hunter and escort link are explained in the interface", async () => {
+test("survival SEA BAT and escort link are explained in the interface", async () => {
   const game = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
   const campaign = await readFile(new URL("../app/game/Campaign.ts", import.meta.url), "utf8");
   assert.match(campaign, /SURVIVAL_STAGE_FIVE_FLEET/);
-  assert.match(campaign, /SILENT HUNTER/);
+  assert.match(campaign, /SEA BAT/);
   assert.match(game, /EMERGENCY DIVE/);
   assert.match(game, /ENEMY SILENT RUNNING/);
   assert.match(game, /護衛艦の全区画を空母へ上下左右で隣接/);

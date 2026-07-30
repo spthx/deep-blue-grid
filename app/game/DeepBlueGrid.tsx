@@ -21,6 +21,7 @@ import {
   hasFireControlLink,
   harpoonCells,
   radarCells,
+  straddleCells,
   type AttackResult,
 } from "./engine.ts";
 import { EnemyAI } from "./EnemyAI.ts";
@@ -43,42 +44,44 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const coordName = (coord: Coord) => CELL_LABELS[coord.y] + "-" + (coord.x + 1);
 const sameCoord = (a: Coord, b: Coord) => a.x === b.x && a.y === b.y;
 const freshStats = (): Stats => ({ turns: 0, shots: 0, hits: 0, sunk: 0, specials: 0, damage: 0 });
+const STRADDLE_ORIENTATIONS: ReadonlyArray<Orientation> = ["north", "east", "south", "west"];
+const STRADDLE_DIRECTION: Record<Orientation, string> = { north: "北", east: "東", south: "南", west: "西" };
 
 const LOST_CAPABILITY: Record<ShipId, string> = {
   carrier: "航空打撃能力喪失。F-4 PHANTOM使用不能。",
   battleship: "長距離打撃能力喪失。HARPOON使用不能。",
-  cruiser: "面制圧能力喪失。SEA SPARROW使用不能。",
+  cruiser: "夾叉射撃能力喪失。8-INCH STRADDLE使用不能。",
   silentSubmarine: "特殊潜航能力喪失。",
   destroyer: "連続射撃能力喪失。MK-45 II使用不能。",
   escort: "護衛支援能力喪失。F-4追加出撃及びHARPOON追加発射不能。",
-  submarine: "音響捜索能力喪失。SPS-10 RADAR使用不能。",
+  submarine: "受動聴音能力喪失。PASSIVE SONAR使用不能。",
 };
 
 const WEAPON_META: Record<WeaponId, { label: string; carrier?: ShipId; help: string; requirement: string; pattern: string }> = {
   fire: { label: "通常砲撃", help: "敵海域の1マスを攻撃します。", requirement: "目標 1", pattern: "単点 / 1区画" },
   phantom: { label: "F-4 PHANTOM", carrier: "carrier", help: "異なる4マスへ航空攻撃。護衛艦の全区画が空母へ上下左右で隣接し、護衛リンクが成立している間は2回、それ以外は合計1回まで出撃できます。", requirement: "目標 4", pattern: "任意 / 4区画" },
   harpoon: { label: "HARPOON", carrier: "battleship", help: "照準を中心にX字5マスを攻撃。通常2回、護衛艦の全区画が戦艦へ上下左右で隣接し、射撃管制リンクが成立している間は3回まで使用できます。", requirement: "中心 1", pattern: "X字 / 5区画" },
-  sparrow: { label: "SEA SPARROW", carrier: "cruiser", help: "2×2の4マスを同時攻撃します。", requirement: "左上 1", pattern: "2×2 / 4区画" },
+  sparrow: { label: "8-INCH STRADDLE", carrier: "cruiser", help: "20.3cm主砲による夾叉斉射。照準区画とその前方3区画へ散布界を形成します。同じ照準または兵装を再タップ、またはRで90°回転します。", requirement: "基準 1", pattern: "方向指定 / 4区画" },
   mk45: { label: "MK-45 II", carrier: "destroyer", help: "異なる2マスを連続攻撃します。", requirement: "目標 2", pattern: "任意 / 2区画" },
-  radar: { label: "SPS-10 RADAR", carrier: "submarine", help: "指定した2×2の4区画を走査します。CONTACTは範囲内に未破壊艦区画あり、NO CONTACTは反応なしを示します。", requirement: "左上 1", pattern: "2×2探知 / 攻撃力なし" },
+  radar: { label: "PASSIVE SONAR", carrier: "submarine", help: "指定した2×2の4区画を受動聴音します。CONTACTは範囲内に未破壊艦区画の音響反応あり、NO CONTACTは反応なしを示します。", requirement: "左上 1", pattern: "2×2聴音 / 攻撃力なし" },
 };
 
 const ACTION_LABEL: Record<WeaponId, string> = {
   fire: "艦砲射撃",
   phantom: "攻撃隊発進",
   harpoon: "HARPOON 発射",
-  sparrow: "SEA SPARROW 斉射",
+  sparrow: "20.3cm砲 夾叉斉射",
   mk45: "MK-45 II 連続射撃",
-  radar: "走査開始",
+  radar: "聴音開始",
 };
 
 const SHIP_DOSSIER: Record<ShipId, { role: string; capability: string; loss: string }> = {
   carrier: { role: "8区画・航空打撃中枢", capability: "F-4 PHANTOMを運用。護衛リンク成立時は出撃回数＋1。", loss: "喪失するとF-4は以後使用不能。" },
   battleship: { role: "5区画・主力打撃艦", capability: "HARPOONによるX字5区画攻撃。護衛艦との射撃管制リンク成立時は使用回数＋1。", loss: "喪失するとHARPOONは以後使用不能。" },
-  cruiser: { role: "4区画・面制圧艦", capability: "SEA SPARROWによる2×2同時攻撃。", loss: "喪失するとSEA SPARROWは以後使用不能。" },
+  cruiser: { role: "4区画・砲戦巡洋艦", capability: "8-INCH STRADDLEで、照準区画と前方3区画へ方向指定の夾叉斉射。", loss: "喪失すると8-INCH STRADDLEは以後使用不能。" },
   destroyer: { role: "3区画・高速火力艦", capability: "MK-45 IIで異なる2区画を連続攻撃。", loss: "喪失するとMK-45 IIは以後使用不能。" },
   escort: { role: "2区画・艦隊護衛艦", capability: "全区画を空母へ上下左右で隣接させるとF-4＋1、戦艦へ隣接させるとHARPOON＋1。双方への同時リンクも成立。", loss: "喪失またはリンク不成立で追加行動を失う。密集陣形は範囲攻撃の危険を伴う。" },
-  submarine: { role: "1区画・音響捜索艦", capability: "SPS-10 RADARを2回使用。最後の1艦になると行動後に音紋が発生。", loss: "喪失するとレーダーは以後使用不能。" },
+  submarine: { role: "1区画・音響捜索艦", capability: "PASSIVE SONARを2回使用。最後の1艦になると行動後に音紋が発生。", loss: "喪失すると受動聴音は以後使用不能。" },
   silentSubmarine: { role: "1区画・特殊潜航艦", capability: "初回命中後に一度だけ緊急潜航。無音行動中は発砲せず音紋も残さない。", loss: "SURVIVAL第5海域専用の敵艦。" },
 };
 
@@ -127,6 +130,7 @@ export function DeepBlueGrid() {
   const [placementBackup, setPlacementBackup] = useState<PlacementBackup | null>(null);
   const [cursor, setCursor] = useState<Coord>({ x: 1, y: 2 });
   const [weapon, setWeapon] = useState<WeaponId>("fire");
+  const [attackOrientation, setAttackOrientation] = useState<Orientation>("north");
   const [picked, setPicked] = useState<Coord[]>([]);
   const [locked, setLocked] = useState(false);
   const [revision, setRevision] = useState(0);
@@ -215,6 +219,7 @@ export function DeepBlueGrid() {
     setPlacementBackup(null);
     setCursor({ x: 1, y: 2 });
     setWeapon("fire");
+    setAttackOrientation("north");
     setPicked([]);
     setLocked(false);
     setActive([]);
@@ -257,9 +262,10 @@ export function DeepBlueGrid() {
   const previewTargets = useMemo(() => {
     if (!picked.length) return [];
     if (weapon === "harpoon") return harpoonCells(picked[0]);
-    if (weapon === "sparrow" || weapon === "radar") return radarCells(picked[0]);
+    if (weapon === "sparrow") return straddleCells(picked[0], attackOrientation);
+    if (weapon === "radar") return radarCells(picked[0]);
     return picked;
-  }, [picked, weapon]);
+  }, [picked, weapon, attackOrientation]);
 
   const showIdentificationAlert = (id: ShipId, hostile: boolean) => {
     if (identificationTimer.current) clearTimeout(identificationTimer.current);
@@ -298,6 +304,7 @@ export function DeepBlueGrid() {
         revealShips: phase === "defeat" && resultReview,
         cursor: phase === "player" && !locked ? cursor : undefined,
         weapon,
+        attackOrientation,
         selected: previewTargets,
         active: phase === "player" ? active : [],
         waves: enemyWakes,
@@ -311,7 +318,7 @@ export function DeepBlueGrid() {
         time,
       });
     }
-  }, [phase, cursor, selectedShip, orientation, weapon, previewTargets, active, activeEffect, locked, placementPreviewActive, playerWakes, enemyWakes, enemyIdentified, enemyIdentificationCoords, identificationRules, resultReview, revision]);
+  }, [phase, cursor, selectedShip, orientation, weapon, attackOrientation, previewTargets, active, activeEffect, locked, placementPreviewActive, playerWakes, enemyWakes, enemyIdentified, enemyIdentificationCoords, identificationRules, resultReview, revision]);
 
   useEffect(() => {
     animation.current = requestAnimationFrame(render);
@@ -442,7 +449,7 @@ export function DeepBlueGrid() {
     } else if (decision.weapon === "radar") {
       const contact = player.current.radar(decision.targets[0]);
       ai.current.observeRadar(decision.targets[0], contact);
-      const report = contact ? "敵SPS-10 RADAR：指定4区画内に自軍艦反応。" : "敵SPS-10 RADAR：指定4区画内に反応なし。";
+      const report = contact ? "敵PASSIVE SONAR：指定4区画内に自軍艦の音響反応。" : "敵PASSIVE SONAR：指定4区画内に反応なし。";
       setMessage(report);
       addLog(report, contact ? "bad" : "info");
       setRadarAlert({ contact, hostile: true });
@@ -660,13 +667,28 @@ export function DeepBlueGrid() {
   const targetRequirement = weapon === "phantom" ? 4 : weapon === "mk45" ? 2 : 1;
   const confirmTargets = previewTargets.filter((coord) => enemy.current.shots[coord.y]?.[coord.x] === "unknown");
   const ready = picked.length === targetRequirement
-    && (weapon === "radar" ? previewTargets.length === 4 : confirmTargets.length > 0);
+    && (weapon === "radar" || weapon === "sparrow" ? previewTargets.length === 4 : true)
+    && (weapon === "radar" ? true : confirmTargets.length > 0);
+
+  const rotateStraddleAim = () => {
+    if (phase !== "player" || locked || weapon !== "sparrow") return;
+    const currentIndex = STRADDLE_ORIENTATIONS.indexOf(attackOrientation);
+    const next = STRADDLE_ORIENTATIONS[(currentIndex + 1) % STRADDLE_ORIENTATIONS.length];
+    setAttackOrientation(next);
+    const aimState = !picked.length
+      ? "敵情図で照準区画を選択してください。"
+      : straddleCells(picked[0], next).length === 4
+        ? "照準区画と前方3区画へ夾叉斉射。"
+        : "散布界が盤外にかかっています。もう一度90°回転するか、照準を変更してください。";
+    setMessage(`8-INCH STRADDLE：方位 ${STRADDLE_DIRECTION[next]}。${aimState}`);
+    audio.current?.cursor();
+  };
 
   const chooseTarget = (coord: Coord) => {
     if (phase !== "player" || locked) return;
     if (weapon === "radar" && (coord.x >= 7 || coord.y >= 7)) {
       setPicked([]);
-      setMessage("レーダーは2×2を走査します。右端・下端以外を左上として選んでください。");
+      setMessage("PASSIVE SONARは2×2を受動聴音します。右端・下端以外を左上として選んでください。");
       audio.current?.cancel();
       return;
     }
@@ -675,7 +697,17 @@ export function DeepBlueGrid() {
       audio.current?.cancel();
       return;
     }
-    if (weapon === "mk45" || weapon === "phantom") {
+    if (weapon === "sparrow") {
+      if (picked.length && sameCoord(picked[0], coord)) {
+        rotateStraddleAim();
+        return;
+      }
+      setPicked([coord]);
+      const complete = straddleCells(coord, attackOrientation).length === 4;
+      setMessage(complete
+        ? `8-INCH STRADDLE：照準 ${coordName(coord)} / 方位 ${STRADDLE_DIRECTION[attackOrientation]}。照準または兵装の再タップ、またはRで90°回転。`
+        : `8-INCH STRADDLE：照準 ${coordName(coord)} / 方位 ${STRADDLE_DIRECTION[attackOrientation]}。散布界が盤外にかかるため発射不可。90°回転または照準変更。`);
+    } else if (weapon === "mk45" || weapon === "phantom") {
       if (enemy.current.shots[coord.y][coord.x] !== "unknown") {
         setMessage("攻撃済みの座標は選択できません。");
         return;
@@ -713,9 +745,9 @@ export function DeepBlueGrid() {
       await sleep(800);
       const contact = enemy.current.radar(picked[0]);
       setStats((current) => ({ ...current, turns: current.turns + 1, specials: current.specials + 1 }));
-      const report = contact ? "CONTACT：指定4区画内に未破壊艦区画を探知。" : "NO CONTACT：指定4区画内に反応なし。";
+      const report = contact ? "CONTACT：指定4区画に有効音響反応。" : "NO CONTACT：有効音響反応なし。";
       setMessage(report);
-      addLog("SPS-10 RADAR： " + report, contact ? "good" : "info");
+      addLog("PASSIVE SONAR： " + report, contact ? "good" : "info");
       setRadarAlert({ contact, hostile: false });
       setPicked([]);
       bump();
@@ -744,8 +776,13 @@ export function DeepBlueGrid() {
       audio.current?.cancel();
       return;
     }
+    if (nextWeapon === "sparrow" && weapon === "sparrow") {
+      rotateStraddleAim();
+      return;
+    }
     setPicked([]);
     setWeapon(nextWeapon);
+    if (nextWeapon === "sparrow") setAttackOrientation("north");
     setMessage(WEAPON_META[nextWeapon].label + "： " + WEAPON_META[nextWeapon].help);
     audio.current?.cursor();
   };
@@ -959,8 +996,9 @@ export function DeepBlueGrid() {
         else cancelAim();
         return;
       }
-      if (event.key.toLowerCase() === "r" && phase === "placement") {
-        rotatePlacement();
+      if (event.key.toLowerCase() === "r") {
+        if (phase === "placement") rotatePlacement();
+        else if (phase === "player" && weapon === "sparrow") rotateStraddleAim();
         return;
       }
       const target = event.target instanceof HTMLElement ? event.target : null;
@@ -991,7 +1029,7 @@ export function DeepBlueGrid() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [phase, cursor, weapon, picked, locked, ready, selectedShip, orientation, placementPreviewActive, placementBackup, playerFleet, difficulty, logOpen]);
+  }, [phase, cursor, weapon, attackOrientation, picked, locked, ready, selectedShip, orientation, placementPreviewActive, placementBackup, playerFleet, difficulty, logOpen]);
 
   const shipCard = (board: Board, shipId: ShipId, options: ShipCardOptions = {}) => {
     const { selectable = false, concealDamage = false, concealIdentity = false, identified = false, contactIndex = 0 } = options;
@@ -1000,6 +1038,10 @@ export function DeepBlueGrid() {
     const revealDamage = !concealDamage || Boolean(ship?.sunk);
     const revealIdentity = !concealIdentity || identified || Boolean(ship?.sunk);
     const meterLength = concealDamage && !ship?.sunk ? 5 : definition.size;
+    const remainingHull = ship ? Math.max(0, definition.size - ship.hits.size) : definition.size;
+    const hullLabel = !revealDamage
+      ? "HULL DATA MASKED"
+      : `HULL ${remainingHull}/${definition.size}${ship?.sunk ? " // LOST" : ""}`;
     const airSupport = hasEscortLink(board);
     const fireControl = hasFireControlLink(board);
     const escortStatus = shipId === "escort" && revealIdentity && ship
@@ -1021,10 +1063,10 @@ export function DeepBlueGrid() {
         onPointerEnter={() => revealIdentity && setInspectedShip(shipId)}
         onFocus={() => revealIdentity && setInspectedShip(shipId)}
         onTouchStart={() => revealIdentity && setInspectedShip(shipId)}
-        title={!revealIdentity ? "未識別艦" : definition.weapon === "NONE" ? "特殊兵装なし" : "搭載兵装：" + definition.weapon}
+        title={!revealIdentity ? "未識別艦" : `${definition.name}／船体${definition.size}区画${definition.weapon === "NONE" ? "／特殊兵装なし" : "／搭載兵装：" + definition.weapon}`}
       >
-        <strong>{revealIdentity ? definition.name + " / " + definition.code : "UNKNOWN CONTACT / " + String(contactIndex + 1).padStart(2, "0")}</strong>
-        <small>{ship?.sunk ? "LOST" : !revealIdentity ? "SIGNATURE UNKNOWN" : escortStatus ?? (ship ? concealDamage ? "IDENTIFIED / DAMAGE STATUS UNKNOWN" : selectable ? "配置済み / タップで再配置" : "DEPLOYED" : selectable ? selectedShip === shipId ? "選択中 / 配置パネルで回転・決定" : "タップして選択" : concealDamage ? "DAMAGE STATUS UNKNOWN" : "UNKNOWN")}</small>
+        <strong>{revealIdentity ? `${definition.code} // ${hullLabel}` : "UNKNOWN CONTACT / " + String(contactIndex + 1).padStart(2, "0")}</strong>
+        <small>{ship?.sunk ? definition.name + " / LOST" : !revealIdentity ? "SIGNATURE UNKNOWN" : escortStatus ?? (ship ? concealDamage ? definition.name + " / IDENTIFIED" : selectable ? definition.name + " / 配置済み・再配置可" : definition.name + " / DEPLOYED" : selectable ? selectedShip === shipId ? definition.name + " / 選択中" : definition.name + " / タップして選択" : concealDamage ? "DAMAGE STATUS UNKNOWN" : "UNKNOWN")}</small>
         <span className={"hull-meter " + (!revealDamage ? "concealed" : "")}>
           {Array.from({ length: meterLength }, (_, index) => <i key={index} className={revealDamage && ship && index < ship.hits.size ? "hit" : ""} />)}
         </span>
@@ -1087,6 +1129,9 @@ export function DeepBlueGrid() {
   const displayedWeapon = weaponPeek ?? weapon;
   const displayedMeta = WEAPON_META[displayedWeapon];
   const displayedState = weaponState(displayedWeapon);
+  const displayedPattern = displayedWeapon === "sparrow"
+    ? `${displayedMeta.pattern} / 方位 ${STRADDLE_DIRECTION[attackOrientation]}`
+    : displayedMeta.pattern;
   const inspectedDefinition = SHIPS.find((ship) => ship.id === inspectedShip)!;
   const inspectedDossier = SHIP_DOSSIER[inspectedShip];
   useEffect(() => { setWithdrawArmed(false); }, [phase]);
@@ -1155,7 +1200,7 @@ export function DeepBlueGrid() {
       <div className={"weapon-peek " + (weaponPeek ? "visible" : "")} aria-live="polite">
         <span>SYSTEM STATUS</span>
         <b>{displayedMeta.label}</b>
-        <em>{displayedMeta.pattern} / {displayedState.status}</em>
+        <em>{displayedPattern} / {displayedState.status}</em>
         <small>{displayedState.available ? displayedState.reason || displayedMeta.help : displayedState.reason}</small>
       </div>
       {(["fire", "phantom", "harpoon", "sparrow", "mk45", "radar"] as WeaponId[]).map((id, index) => {
@@ -1182,7 +1227,7 @@ export function DeepBlueGrid() {
           <b>CANCEL</b><small>照準解除 / ESC</small>
         </button>
         <button className={"cmd confirm " + (ready ? "ready" : "")} onClick={() => void confirmAction()} disabled={!ready || locked}>
-          <b>{confirmLabel}</b><small>{picked.length} / {targetRequirement} SELECTED</small>
+          <b>{confirmLabel}</b><small>{weapon === "sparrow" ? `方位 ${STRADDLE_DIRECTION[attackOrientation]} / 4区画` : `${picked.length} / ${targetRequirement} SELECTED`}</small>
         </button>
       </div>
     </>
@@ -1195,7 +1240,7 @@ export function DeepBlueGrid() {
         className="placement-help placement-dossier"
         open={!compactViewport}
       >
-        <summary><span>VESSEL DATA</span><b>{inspectedDefinition.name} / {inspectedDefinition.code}</b><em>{inspectedDossier.role}</em><i>艦艇諸元</i></summary>
+        <summary><span>VESSEL DATA</span><b>{inspectedDefinition.name} // {inspectedDefinition.code} // HULL {inspectedDefinition.size}</b><em>{inspectedDossier.role}</em><i>艦艇諸元</i></summary>
         <div className="placement-dossier-body">
           <p>{inspectedDossier.capability}</p><small>{inspectedDossier.loss}</small>
           <footer>艦を選択 → ドラッグで移動 → 回転または配置決定　{identificationRules ? "◆は重要区画 / " : ""}二本指・Rで回転 / Enterで決定</footer>
@@ -1383,6 +1428,8 @@ export function DeepBlueGrid() {
                     ? "被害確認中。自軍戦術図の損傷を確認してください。"
                   : !selectedState.available
                     ? selectedState.reason
+                    : weapon === "sparrow" && picked.length && previewTargets.length !== 4
+                      ? "散布界が盤外です。90°回転または照準変更を行ってください。"
                     : ready
                       ? "照準確定。" + confirmLabel + "ボタンで実行します。"
                       : picked.length
@@ -1398,6 +1445,10 @@ export function DeepBlueGrid() {
               aria-label="敵情図8×8盤面"
               onPointerMove={onMove}
               onPointerDown={(event) => onBoardPointer("enemy", event)}
+              onContextMenu={(event) => {
+                event.preventDefault();
+                if (phase === "player" && weapon === "sparrow") rotateStraddleAim();
+              }}
             />
             <div className="radar-line" />
           </div>
@@ -1427,7 +1478,7 @@ export function DeepBlueGrid() {
             ) : (
               <>
                 <section className="rail-command-detail">
-                  <span>SELECTED SYSTEM</span><b>{displayedMeta.label}</b><em>{displayedMeta.pattern} / {displayedState.status}</em>
+                  <span>SELECTED SYSTEM</span><b>{displayedMeta.label}</b><em>{displayedPattern} / {displayedState.status}</em>
                   <p>{displayedState.available ? displayedState.reason || displayedMeta.help : displayedState.reason}</p>
                 </section>
                 <section className="command-deck rail-command-deck">{renderWeaponControls()}</section>
@@ -1462,7 +1513,7 @@ export function DeepBlueGrid() {
           <section className="command-deck compact-command-bottom">
             <div className={"weapon-peek " + (weaponPeek ? "visible" : "")} aria-live="polite">
               <span>SYSTEM STATUS</span><b>{displayedMeta.label}</b>
-              <em>{displayedMeta.pattern} / {displayedState.status}</em>
+              <em>{displayedPattern} / {displayedState.status}</em>
               <small>{displayedState.available ? displayedState.reason || displayedMeta.help : displayedState.reason}</small>
             </div>
             {(["fire", "phantom", "harpoon", "sparrow", "mk45", "radar"] as WeaponId[]).map((id, index) => {
@@ -1498,7 +1549,7 @@ export function DeepBlueGrid() {
               <span>SELECTED SYSTEM</span>
               <h3>{displayedMeta.label}</h3>
               <p>{displayedMeta.help}</p>
-              <small>{displayedMeta.pattern} / {displayedState.status}<br />{displayedState.available ? displayedState.reason || displayedMeta.requirement + "を選択後、実行ボタンで確定。" : displayedState.reason}</small>
+              <small>{displayedPattern} / {displayedState.status}<br />{displayedState.available ? displayedState.reason || displayedMeta.requirement + "を選択後、実行ボタンで確定。" : displayedState.reason}</small>
             </div>
           <div className="battle-log">
               <span>CIC EVENT LOG / ZULU TIME / ENTRIES {logs.length}</span>
@@ -1507,7 +1558,7 @@ export function DeepBlueGrid() {
           </section>
           <div className="legend compact-command-bottom">
             <span><i className="miss" />MISS</span><span><i className="echo" />ECHO</span><span><i className="hit" />HIT</span><span><i className="sunk" />SUNK</span>
-            {enemy.current.radarScans.length > 0 && <><span className="radar-contact-legend">◌ CONTACT AREA</span><span className="radar-clear-legend">□ NO CONTACT</span></>}
+            {enemy.current.radarScans.length > 0 && <><span className="radar-contact-legend">◌ SONAR CONTACT</span><span className="radar-clear-legend">□ NO CONTACT</span></>}
             {identificationRules && <span className="critical-legend">◆ 重要区画 / IDENTIFIED</span>}
             {enemyWakes.length > 0 && <span><i className="wake" />潜水艦音紋</span>}
           </div>
@@ -1523,11 +1574,11 @@ export function DeepBlueGrid() {
 
       {flash && <div className={"turn-flash " + flash}><div><strong>{flash === "player" ? "AWAITING ORDERS" : "HOSTILE ACTION"}</strong><small>{flash === "player" ? "指令待機" : "敵攻撃"}</small></div></div>}
       {radarAlert && <div className={"radar-result " + (radarAlert.contact ? "contact" : "clear") + (radarAlert.hostile ? " hostile" : "")} role="status" aria-live="assertive" aria-atomic="true">
-        <small>{radarAlert.hostile ? radarAlert.contact ? "HOSTILE RADAR CONTACT" : "ENEMY SPS-10 SCAN" : "SPS-10 RADAR SCAN"}</small>
+        <small>{radarAlert.hostile ? radarAlert.contact ? "HOSTILE SONAR CONTACT" : "ENEMY PASSIVE SONAR" : "PASSIVE SONAR LISTENING"}</small>
         <b>{radarAlert.hostile ? radarAlert.contact ? "FLEET DETECTED" : "NO TRACK" : radarAlert.contact ? "CONTACT!" : "NO CONTACT"}</b>
         <span>{radarAlert.hostile
-          ? radarAlert.contact ? "敵レーダーが自軍艦隊を捕捉。敵追跡データへ登録。" : "敵レーダーによる捕捉なし。自軍反応は追跡されず。"
-          : radarAlert.contact ? "指定4区画内に未破壊艦区画あり" : "指定4区画内に反応なし"}</span>
+          ? radarAlert.contact ? "敵聴音が自軍艦隊を捕捉。敵追跡データへ登録。" : "敵聴音による捕捉なし。自軍反応は追跡されず。"
+          : radarAlert.contact ? "指定4区画内に未破壊艦区画の音響反応あり" : "指定4区画内に反応なし"}</span>
       </div>}
       {diveAlert && <div className="dive-alert" role="status" aria-live="assertive">
         <b>EMERGENCY DIVE</b><span>敵特殊潜航艦、最終接触位置から離脱。再捕捉を要す。</span>

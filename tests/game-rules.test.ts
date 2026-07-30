@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { SHIPS, STAGES } from "../app/game/constants.ts";
-import { Arsenal, Board, SeededRandom, criticalCoordFor, harpoonCells, hasEscortLink, hasFireControlLink, radarCells, sparrowCells } from "../app/game/engine.ts";
+import { Arsenal, Board, SeededRandom, criticalCoordFor, harpoonCells, hasEscortLink, hasFireControlLink, radarCells, straddleCells } from "../app/game/engine.ts";
 import { EnemyAI } from "../app/game/EnemyAI.ts";
 import { nextSubmarineWake, submarineWakeCandidates } from "../app/game/SubmarineWake.ts";
 import { FULL_FLEET, aiSkillFor, enemyFleetFor, missionFor, playerFleetFor, survivingFleet, usesTacticsRules } from "../app/game/Campaign.ts";
@@ -12,6 +12,13 @@ test("campaign is condensed to six escalating stages", () => {
   assert.deepEqual(STAGES.map((stage) => stage.id), [1, 2, 3, 4, 5, 6]);
   assert.deepEqual(STAGES.map((stage) => stage.fleet.length), [3, 4, 5, 5, 6, 6]);
   assert.ok(STAGES.every((stage, index) => index === 0 || stage.aiSkill > STAGES[index - 1].aiSkill));
+  assert.equal(STAGES[2].title, "RANGING FIRE");
+});
+
+test("ship class codes are distinct from hull sections and new systems have canonical names", () => {
+  assert.deepEqual(SHIPS.slice(0, 6).map((ship) => ship.code), ["CV", "BB", "CA", "DD", "DE", "SS"]);
+  assert.equal(SHIPS.find((ship) => ship.id === "cruiser")?.weapon, "8-INCH STRADDLE");
+  assert.equal(SHIPS.find((ship) => ship.id === "submarine")?.weapon, "PASSIVE SONAR");
 });
 
 test("stage five eases tactics while survival stage six returns to stage-four strength", () => {
@@ -23,12 +30,12 @@ test("stage five eases tactics while survival stage six returns to stage-four st
   assert.equal(aiSkillFor("survival", 6, 1.16), 1.05 * 1.7);
 });
 
-test("survival stage five alone deploys the silent-hunter submarine pair", () => {
+test("survival stage five alone deploys the SEA BAT submarine pair", () => {
   const stage = STAGES[4];
   assert.deepEqual(enemyFleetFor("survival", stage), ["submarine", "silentSubmarine"]);
   assert.deepEqual(enemyFleetFor("casual", stage), stage.fleet);
   assert.deepEqual(enemyFleetFor("tactics", stage), stage.fleet);
-  assert.equal(missionFor("survival", stage).title, "SILENT HUNTER");
+  assert.equal(missionFor("survival", stage).title, "SEA BAT");
   assert.equal(missionFor("tactics", stage).title, stage.title);
 });
 
@@ -55,7 +62,7 @@ test("command assessment reports facts and avoids accusatory language", () => {
 test("command assessment changes its finding for prolonged low-accuracy searches", () => {
   const report = commandAssessment({
     enemyRemainingShips: 3, enemyRemainingCells: 8, accuracy: 18, shots: 22,
-    specialUsed: 0, unusedSpecials: [{ label: "SPS-10", uses: 2 }], firstLoss: "battleship",
+    specialUsed: 0, unusedSpecials: [{ label: "PASSIVE SONAR", uses: 2 }], firstLoss: "battleship",
     identified: 0, enemyTotalShips: 5, identificationRules: false,
   });
   assert.match(report.finding, /捜索射撃、命中率18%/);
@@ -252,7 +259,7 @@ test("wake marks avoid ships, shot marks, radar marks, and existing wakes", () =
 });
 
 
-test("silent hunter relocates after the first hit and sinks on the second contact", () => {
+test("SEA BAT relocates after the first hit and sinks on the second contact", () => {
   const board = new Board();
   board.placeShip("silentSubmarine", { x: 2, y: 2 }, "east");
   const original = { ...board.ships[0].cells[0] };
@@ -270,7 +277,7 @@ test("silent hunter relocates after the first hit and sinks on the second contac
   assert.equal(board.ships[0].sunk, true);
 });
 
-test("silent hunter attacks with the normal submarine, then alternates silence and fire", () => {
+test("SEA BAT attacks with the normal submarine, then alternates silence and fire", () => {
   const own = new Board();
   own.placeShip("submarine", { x: 0, y: 0 }, "east");
   own.placeShip("silentSubmarine", { x: 7, y: 7 }, "east");
@@ -322,14 +329,19 @@ test("tactics AI records a critical-section identification while casual AI ignor
   assert.equal(casual.identifiedShips.has("carrier"), false);
 });
 
-test("weapon patterns clip safely and radar never damages", () => {
+test("weapon patterns preserve legacy attacks while straddle rotates through four complete directions", () => {
   assert.equal(harpoonCells({ x: 4, y: 4 }).length, 5);
   assert.equal(harpoonCells({ x: 0, y: 0 }).length, 2);
   const b = new Board(); b.placeShip("submarine", { x: 1, y: 1 }, "east");
   assert.equal(radarCells({ x: 0, y: 0 }).length, 4);
   assert.equal(b.radar({ x: 0, y: 0 }), true);
   assert.equal(b.ships[0].hits.size, 0);
-  assert.equal(sparrowCells({ x: 7, y: 7 }).length, 1);
+  const anchor = { x: 3, y: 3 };
+  assert.deepEqual(straddleCells(anchor, "north"), [{ x: 3, y: 3 }, { x: 2, y: 2 }, { x: 3, y: 2 }, { x: 4, y: 2 }]);
+  assert.deepEqual(straddleCells(anchor, "east"), [{ x: 3, y: 3 }, { x: 4, y: 2 }, { x: 4, y: 3 }, { x: 4, y: 4 }]);
+  assert.deepEqual(straddleCells(anchor, "south"), [{ x: 3, y: 3 }, { x: 2, y: 4 }, { x: 3, y: 4 }, { x: 4, y: 4 }]);
+  assert.deepEqual(straddleCells(anchor, "west"), [{ x: 3, y: 3 }, { x: 2, y: 2 }, { x: 2, y: 3 }, { x: 2, y: 4 }]);
+  assert.equal(straddleCells({ x: 0, y: 0 }, "north").length < 4, true);
 });
 
 test("radar contact only records unbroken enemy sections", () => {

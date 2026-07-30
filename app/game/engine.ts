@@ -145,6 +145,15 @@ export class Board {
 
 export function harpoonCells(center: Coord) { return HARPOON_PATTERN.map((o) => ({ x: center.x + o.x, y: center.y + o.y })).filter(inBounds); }
 export function radarCells(origin: Coord) { return [{ x: origin.x, y: origin.y }, { x: origin.x + 1, y: origin.y }, { x: origin.x, y: origin.y + 1 }, { x: origin.x + 1, y: origin.y + 1 }].filter(inBounds); }
+export function straddleCells(anchor: Coord, orientation: Orientation) {
+  const offsets: Record<Orientation, ReadonlyArray<Coord>> = {
+    north: [{ x: 0, y: 0 }, { x: -1, y: -1 }, { x: 0, y: -1 }, { x: 1, y: -1 }],
+    east: [{ x: 0, y: 0 }, { x: 1, y: -1 }, { x: 1, y: 0 }, { x: 1, y: 1 }],
+    south: [{ x: 0, y: 0 }, { x: -1, y: 1 }, { x: 0, y: 1 }, { x: 1, y: 1 }],
+    west: [{ x: 0, y: 0 }, { x: -1, y: -1 }, { x: -1, y: 0 }, { x: -1, y: 1 }],
+  };
+  return offsets[orientation].map((offset) => ({ x: anchor.x + offset.x, y: anchor.y + offset.y })).filter(inBounds);
+}
 function hasEscortLinkTo(board: Board, targetId: "carrier" | "battleship") {
   const target = board.ships.find((ship) => ship.id === targetId && !ship.sunk);
   const escort = board.ships.find((ship) => ship.id === "escort" && !ship.sunk);
@@ -155,8 +164,6 @@ function hasEscortLinkTo(board: Board, targetId: "carrier" | "battleship") {
 
 export function hasEscortLink(board: Board) { return hasEscortLinkTo(board, "carrier"); }
 export function hasFireControlLink(board: Board) { return hasEscortLinkTo(board, "battleship"); }
-
-export const sparrowCells = radarCells;
 
 export class Arsenal {
   uses = { ...WEAPON_MAX };

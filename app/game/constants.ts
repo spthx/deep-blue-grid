@@ -11,14 +11,14 @@ export type Coord = { x: number; y: number };
 export const isHorizontal = (orientation: Orientation) => orientation === "east" || orientation === "west";
 
 export const SHIPS: ReadonlyArray<{ id: ShipId; name: string; code: string; size: number; width: number; height: number; weapon: string; critical: Coord }> = [
-  { id: "carrier", name: "空母", code: "CV-08", size: 8, width: 4, height: 2, weapon: "F-4 PHANTOM", critical: { x: 2, y: 0 } },
-  { id: "battleship", name: "戦艦", code: "BB-05", size: 5, width: 5, height: 1, weapon: "HARPOON", critical: { x: 2, y: 0 } },
-  { id: "cruiser", name: "巡洋艦", code: "CA-04", size: 4, width: 4, height: 1, weapon: "SEA SPARROW", critical: { x: 2, y: 0 } },
-  { id: "destroyer", name: "駆逐艦", code: "DD-03", size: 3, width: 3, height: 1, weapon: "MK-45 II", critical: { x: 1, y: 0 } },
-  { id: "escort", name: "護衛艦", code: "DE-02", size: 2, width: 2, height: 1, weapon: "NONE", critical: { x: 1, y: 0 } },
-  { id: "submarine", name: "潜水艦", code: "SS-01", size: 1, width: 1, height: 1, weapon: "SPS-10", critical: { x: 0, y: 0 } },
+  { id: "carrier", name: "空母", code: "CV", size: 8, width: 4, height: 2, weapon: "F-4 PHANTOM", critical: { x: 2, y: 0 } },
+  { id: "battleship", name: "戦艦", code: "BB", size: 5, width: 5, height: 1, weapon: "HARPOON", critical: { x: 2, y: 0 } },
+  { id: "cruiser", name: "巡洋艦", code: "CA", size: 4, width: 4, height: 1, weapon: "8-INCH STRADDLE", critical: { x: 2, y: 0 } },
+  { id: "destroyer", name: "駆逐艦", code: "DD", size: 3, width: 3, height: 1, weapon: "MK-45 II", critical: { x: 1, y: 0 } },
+  { id: "escort", name: "護衛艦", code: "DE", size: 2, width: 2, height: 1, weapon: "NONE", critical: { x: 1, y: 0 } },
+  { id: "submarine", name: "潜水艦", code: "SS", size: 1, width: 1, height: 1, weapon: "PASSIVE SONAR", critical: { x: 0, y: 0 } },
   // SURVIVAL STAGE 5 only: one occupied cell, but two successful contacts are required to sink it.
-  { id: "silentSubmarine", name: "特殊潜航艦", code: "SSX-00", size: 2, width: 1, height: 1, weapon: "NONE", critical: { x: 0, y: 0 } },
+  { id: "silentSubmarine", name: "特殊潜航艦", code: "SSX", size: 2, width: 1, height: 1, weapon: "NONE", critical: { x: 0, y: 0 } },
 ];
 
 export const STANDARD_FLEET: ShipId[] = ["carrier", "battleship", "cruiser", "destroyer", "escort", "submarine"];
@@ -35,7 +35,7 @@ export type StageDefinition = {
 export const STAGES: ReadonlyArray<StageDefinition> = [
   { id: 1, title: "FIRST CONTACT", subtitle: "初期艦隊で索敵の基本を掴め", fleet: ["battleship", "destroyer", "submarine"], aiSkill: .82 },
   { id: 2, title: "ESCORT LINE", subtitle: "護衛艦を加えた近海防衛線", fleet: ["battleship", "destroyer", "escort", "submarine"], aiSkill: .92 },
-  { id: 3, title: "CRUISER GAP", subtitle: "巡洋艦と範囲兵装が戦線を拡大", fleet: ["battleship", "cruiser", "destroyer", "escort", "submarine"], aiSkill: 1 },
+  { id: 3, title: "RANGING FIRE", subtitle: "巡洋艦の夾叉斉射で射界を制御せよ", fleet: ["battleship", "cruiser", "destroyer", "escort", "submarine"], aiSkill: 1 },
   { id: 4, title: "CROSS FIRE", subtitle: "複数兵装を温存し敵中枢を狙え", fleet: ["battleship", "cruiser", "destroyer", "escort", "submarine"], aiSkill: 1.05 },
   { id: 5, title: "CARRIER SCREEN", subtitle: "全6艦種による総力海戦", fleet: ["carrier", "battleship", "cruiser", "destroyer", "escort", "submarine"], aiSkill: 1.1 },
   { id: 6, title: "DEEP BLUE GRID", subtitle: "最終海域。敵全艦を撃沈せよ", fleet: ["carrier", "battleship", "cruiser", "destroyer", "escort", "submarine"], aiSkill: 1.16 },
