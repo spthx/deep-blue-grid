@@ -86,7 +86,7 @@ const SHIP_DOSSIER: Record<ShipId, { role: string; capability: string; loss: str
 };
 
 export function DeepBlueGrid() {
-  const seedRef = useRef(Date.now());
+  const seedRef = useRef(0);
   const rngRef = useRef(new SeededRandom(seedRef.current));
   const player = useRef(new Board());
   const enemy = useRef(new Board());
@@ -1290,7 +1290,7 @@ export function DeepBlueGrid() {
           <strong>{phaseStatus.english}</strong>
           <small>{phaseStatus.japanese} / STAGE {stage.id} / {difficulty?.toUpperCase() ?? "SELECT MODE"}</small>
         </div>
-        <div className="system-info">SCENARIO ID <b>{seedRef.current.toString(16).toUpperCase()}</b><br />TACTICAL DATA LINK <b>ONLINE</b></div>
+        <div className="system-info">SCENARIO ID <b>{seedRef.current ? seedRef.current.toString(16).toUpperCase() : "STANDBY"}</b><br />TACTICAL DATA LINK <b>ONLINE</b></div>
       </header>
 
       <nav className="campaign-track" aria-label="作戦進行">

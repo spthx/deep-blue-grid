@@ -17,6 +17,8 @@ test("server renders the finished game shell", async () => {
   assert.match(html, /<title>DEEP BLUE GRID/);
   assert.match(html, /DEEP/);
   assert.match(html, /FLEET DEPLOYMENT/);
+  assert.match(html, /SCENARIO ID/);
+  assert.match(html, /STANDBY/);
   assert.match(html, /OPERATION MODE/);
   assert.match(html, /CASUAL/);
   assert.match(html, /TACTICS/);
