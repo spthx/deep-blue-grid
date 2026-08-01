@@ -5,6 +5,7 @@ export type RenderOptions = {
   revealShips: boolean; cursor?: Coord; previewShip?: { id: ShipId; orientation: Orientation; valid: boolean };
   weapon?: "fire"|"phantom"|"harpoon"|"sparrow"|"mk45"|"radar"; selected?: Coord[]; active?: Coord[]; waves?: Coord[]; time?: number; scanActive?: boolean;
   attackOrientation?: Orientation; showCritical?: boolean; identifications?: Array<{ coord: Coord; id: ShipId }>; escortZone?: boolean;
+  missionZones?: Array<{ origin: Coord; label: string; complete: boolean }>;
 };
 
 export function drawBoard(canvas: HTMLCanvasElement, board: Board, opts: RenderOptions) {
@@ -33,6 +34,7 @@ export function drawBoard(canvas: HTMLCanvasElement, board: Board, opts: RenderO
   if(opts.showCritical)for(const ship of board.ships)if(ship.hits.has(keyOf(ship.critical)))drawCritical(ctx,ship.critical,m,cell,true,t);
   for(const identification of opts.identifications??[])drawIdentification(ctx,identification.coord,identification.id,m,cell,t);
   for(const wave of opts.waves??[])drawWake(ctx,wave,m,cell,t);
+  for(const zone of opts.missionZones??[])drawMissionZone(ctx,zone,m,cell,t);
   if(opts.cursor){
     let cells=[opts.cursor]; if(opts.previewShip){const def=SHIPS.find(s=>s.id===opts.previewShip!.id)!;cells=board.cellsFor(opts.cursor,def.size,opts.previewShip.orientation,opts.previewShip.id);}
     else if(opts.weapon==="harpoon")cells=harpoonCells(opts.cursor);
@@ -172,6 +174,12 @@ function drawMark(ctx:CanvasRenderingContext2D,c:Coord,mark:string,m:number,cell
     ctx.fillText("LKC",0,-cell*.32);ctx.restore();
   }
   if(mark==="hit"||mark==="sunk"){ctx.fillStyle=mark==="sunk"?"#e5d78a":"#ff8585";ctx.globalAlpha=.7+.25*Math.sin(t*8);ctx.beginPath();for(let i=0;i<8;i++){const a=i*Math.PI/4,r=i%2?cell*.16:cell*.27;ctx.lineTo(x+Math.cos(a)*r,y+Math.sin(a)*r);}ctx.closePath();ctx.fill();ctx.globalAlpha=1;}
+}
+function drawMissionZone(ctx:CanvasRenderingContext2D,zone:{origin:Coord;label:string;complete:boolean},m:number,cell:number,t:number){
+  const x=m+zone.origin.x*cell,y=m+zone.origin.y*cell,pad=cell*.08,pulse=.74+.16*Math.sin(t*3.2);
+  ctx.save();ctx.globalAlpha=zone.complete ? .65 : pulse;ctx.strokeStyle=zone.complete?"#60be9d":"#e5d78a";ctx.fillStyle=zone.complete?"#9be7c7":"#fff0b5";
+  ctx.lineWidth=Math.max(1,cell*.035);ctx.setLineDash([cell*.12,cell*.08]);ctx.strokeRect(x+pad,y+pad,cell*2-pad*2,cell*2-pad*2);ctx.setLineDash([]);
+  ctx.font=`bold ${Math.max(8,cell*.15)}px monospace`;ctx.textAlign="left";ctx.textBaseline="top";ctx.fillText(zone.complete?`${zone.label} ✓`:zone.label,x+pad*1.4,y+pad*1.3);ctx.restore();
 }
 
 export function pointerToCoord(canvas:HTMLCanvasElement,clientX:number,clientY:number):Coord|null{const rect=canvas.getBoundingClientRect();const size=rect.width,m=size*.075,cell=(size-m*1.18)/GRID_SIZE;const x=Math.floor((clientX-rect.left-m)/cell),y=Math.floor((clientY-rect.top-m)/cell);return x>=0&&y>=0&&x<8&&y<8?{x,y}:null;}

@@ -23,11 +23,12 @@ test("server renders the finished game shell", async () => {
   assert.match(html, /CASUAL/);
   assert.match(html, /TACTICS/);
   assert.match(html, /SURVIVAL/);
-  assert.match(html, /VITAL COMPARTMENT \/ 重要区画/);
+  assert.match(html, /MISSION/);
+  assert.match(html, /IMPORTANT SECTION \/ 重要区画/);
   assert.match(html, /追加ダメージなし/);
   assert.match(html, /敵指揮系統も同じ条件/);
-  assert.match(html, /敵指揮系統も探知済み情報だけで判断/);
-  assert.match(html, /複数海域/);
+  assert.match(html, /敵指揮系統は、いずれも実際に得た情報だけで判断します。/);
+  assert.match(html, /海域攻略・累積損耗・固定状況の限定任務/);
   assert.doesNotMatch(html, /DIFFICULTY|NORMAL|HARD|基本戦術・手加減なし/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|Your site is taking shape/);
 });
@@ -76,9 +77,9 @@ test("portrait play collapses redundant top and placement information", async ()
   assert.match(css, /@media \(max-width:760px\)[\s\S]*?\.quick-guide \{ display:none; \}/);
   assert.match(css, /orientation:portrait[\s\S]*?\.mobile-field-switch > div \{ display:none; \}/);
 });
-test("returning from damage review resets the command to normal fire", async () => {
+test("returning from damage review resets to normal fire or the mission's first permitted command", async () => {
   const source = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
-  assert.match(source, /const continueToPlayer = \(\) => \{[\s\S]*?setWeapon\("fire"\);\s*setPicked\(\[\]\);/);
+  assert.match(source, /const continueToPlayer = \(\) => \{[\s\S]*?setWeapon\(missionRule\?\.allowedWeapons\.includes\("fire"\) \? "fire" : missionRule\?\.allowedWeapons\[0\] \?\? "fire"\);\s*setPicked\(\[\]\);/);
 });
 
 test("survival retries the current stage with its entering fleet", async () => {
@@ -111,7 +112,7 @@ test("radar contact and clear scans use one restrained tactical frame", async ()
 test("passive sonar announces its binary result over the playfield", async () => {
   const game = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
   const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
-  assert.match(game, /radarAlert\.hostile \? radarAlert\.contact \? "FLEET DETECTED" : "NO TRACK" : radarAlert\.contact \? "CONTACT!" : "NO CONTACT"/);
+  assert.match(game, /radarAlert\.hostile \? radarAlert\.contact \? "FLEET DETECTED" : "NO CONTACT" : radarAlert\.contact \? "CONTACT!" : "NO CONTACT"/);
   assert.match(game, /指定4区画内に未破壊艦区画の音響反応あり/);
   assert.match(game, /指定4区画内に反応なし/);
   assert.match(game, /PASSIVE SONAR/);
@@ -154,7 +155,7 @@ test("tactics identification masks contacts and marks critical sections", async 
   const renderer = await readFile(new URL("../app/game/Renderer.ts", import.meta.url), "utf8");
   assert.match(game, /UNKNOWN CONTACT/);
   assert.match(game, /SIGNATURE UNKNOWN/);
-  assert.match(game, /VITAL COMPARTMENT HIT/);
+  assert.match(game, /IMPORTANT SECTION HIT/);
   assert.match(game, /HULL DATA MASKED/);
   assert.match(game, /definition\.name \+ " \/ IDENTIFIED"/);
   assert.match(renderer, /drawCritical/);
@@ -229,14 +230,14 @@ test("survival SEA BAT and escort link are explained in the interface", async ()
 test("battle log drawer and victory battlefield review remain accessible", async () => {
   const game = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
   const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
-  assert.match(game, /バトルログを開く/);
+  assert.match(game, /CIC交戦経過記録を開く/);
   assert.match(game, /className="log-drawer"/);
   assert.match(game, /TACTICAL PLOT REVIEW/);
   assert.match(game, /結果画面へ戻る/);
   assert.doesNotMatch(game, /slice\(-40\)/);
-  assert.match(game, /FULL OPERATION LOG/);
-  assert.match(game, /CIC戦闘経過記録/);
-  assert.match(game, /difficultyRef\.current === "survival" \? "OPERATION" : "STAGE"/);
+  assert.match(game, /FULL ENGAGEMENT LOG/);
+  assert.match(game, /CIC交戦経過記録/);
+  assert.match(game, /routeUnit\(difficultyRef\.current\)\.english/);
   assert.match(game, /＝ REARM & REPAIR \/ 修復・再補給 ＝/);
   assert.match(game, /戦果：敵\$\{enemySunk\}艦撃沈/);
   assert.match(game, /LOST_CAPABILITY\[struckShip\.id\]/);
@@ -246,6 +247,32 @@ test("battle log drawer and victory battlefield review remain accessible", async
   assert.match(css, /font-weight:800/);
   assert.match(css, /\.mobile-field-switch \.mobile-switch-utilities \{[\s\S]*?repeat\(3,44px\)/);
   assert.match(css, /\.result-review-bar/);
+});
+
+test("CIC terminology uses one canonical vocabulary across alerts, reports, and results", async () => {
+  const game = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
+  assert.match(game, /IMPORTANT SECTION HIT/);
+  assert.match(game, /FILE DAMAGE REPORT/);
+  assert.match(game, /FULL ENGAGEMENT LOG/);
+  assert.match(game, /STRIKE ACCURACY/);
+  assert.doesNotMatch(game, /VITAL COMPARTMENT|NO TRACK|REPORT LOGGED|FULL OPERATION LOG|FIRE ACCURACY/);
+});
+
+test("mission mode exposes a fixed brief, order budget, and thumb-reachable command surface", async () => {
+  const game = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
+  const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+  assert.match(game, /SITUATION \/ 状況/);
+  assert.match(game, /OBJECTIVE \/ 任務目標/);
+  assert.match(game, /CONSTRAINTS \/ 制約/);
+  assert.match(game, /ORDERS REMAINING/);
+  assert.match(game, /COMMENCE MISSION/);
+  assert.match(game, /RETRY MISSION/);
+  assert.match(game, /className="mission-brief"/);
+  assert.match(game, /className="mission-orders"/);
+  assert.match(game, /className="placement-tools compact-placement-bottom"/);
+  assert.match(css, /\.mission-brief/);
+  assert.match(css, /@media \(max-width:760px\)[\s\S]*?\.mission-brief/);
+  assert.equal((game.match(/if \(!missionRule && enemy\.current\.allSunk\(\)\)/g) ?? []).length, 2);
 });
 
 test("CIC logs use Zulu timestamps and defeat unlocks factual post-action intelligence", async () => {

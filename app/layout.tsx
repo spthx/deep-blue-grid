@@ -8,7 +8,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const protocol = requestHeaders.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
   const image = `${protocol}://${host}/og.png`;
   const title = "DEEP BLUE GRID — 海戦タクティクス";
-  const description = "8×8の戦術図で索敵・砲撃・特殊兵装を駆使し、複数海域を攻略する一人用海戦ゲーム。";
+  const description = "8×8の戦術図で索敵・砲撃・特殊兵装を指揮し、海域攻略・累積損耗・固定状況の限定任務へ挑む一人用海戦ゲーム。";
   return {
     title,
     description,

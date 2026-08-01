@@ -4,7 +4,8 @@ import { GRID_SIZE, SHIPS, STAGES } from "../app/game/constants.ts";
 import { Arsenal, Board, SeededRandom, criticalCoordFor, harpoonCells, hasEscortLink, hasFireControlLink, radarCells, straddleCells } from "../app/game/engine.ts";
 import { EnemyAI } from "../app/game/EnemyAI.ts";
 import { nextSubmarineWake, submarineWakeCandidates } from "../app/game/SubmarineWake.ts";
-import { FULL_FLEET, SURVIVAL_STAGES, aiSkillFor, enemyFleetFor, huntBreadthFor, missionFor, playerFleetFor, stagesFor, survivingFleet, usesTacticsRules } from "../app/game/Campaign.ts";
+import { FULL_FLEET, MISSION_STAGES, SURVIVAL_STAGES, aiSkillFor, enemyFleetFor, friendlyStarts, huntBreadthFor, missionFor, missionRuleFor, playerFleetFor, stagesFor, survivingFleet, usesTacticsRules } from "../app/game/Campaign.ts";
+import { applyScenarioHits, deployScenarioFleet, evaluateMission, isMissionSonarOrigin } from "../app/game/MissionRules.ts";
 import { commandAssessment, formatElapsed, formatLocal, formatZulu } from "../app/game/AfterAction.ts";
 import { OperationRecorder, formatOperationDuration } from "../app/game/OperationRecord.ts";
 import { MUSIC_INTERVAL_MS, pulseIntervalForLosses } from "../app/game/AudioManager.ts";
@@ -43,6 +44,300 @@ test("survival is a distinct four-operation end-game route", () => {
   assert.equal(missionFor("survival", SURVIVAL_STAGES[2]).title, "SEA BAT");
   assert.deepEqual(SURVIVAL_STAGES.map((_, index) => huntBreadthFor("survival", index)), [8, 5, 1, 3]);
   assert.equal(huntBreadthFor("tactics", 3), 1);
+});
+
+test("mission mode exposes exactly four authored and isolated definitions", () => {
+  assert.equal(stagesFor("mission"), MISSION_STAGES);
+  assert.equal(MISSION_STAGES.length, 4);
+  assert.deepEqual(MISSION_STAGES.map((mission) => mission.id), [1, 2, 3, 4]);
+  assert.deepEqual(MISSION_STAGES.map((mission) => mission.title), [
+    "NARROW GATE", "SILENT WATCH", "LAST FLIGHT", "BROKEN SPEAR",
+  ]);
+  assert.deepEqual(MISSION_STAGES.map((mission) => mission.allowedWeapons), [
+    ["fire", "sparrow", "mk45"],
+    ["radar"],
+    ["fire", "phantom"],
+    ["harpoon"],
+  ]);
+  assert.deepEqual(MISSION_STAGES.map((mission) => mission.fixedSeed), [
+    0x4d0101, 0x4d0202, 0x4d0303, 0x4d0404,
+  ]);
+  assert.deepEqual(MISSION_STAGES.map((mission) => mission.objective.maxFriendlyActions), [3, 2, 2, 3]);
+  assert.deepEqual(MISSION_STAGES.map((mission) => friendlyStarts("mission", mission)), [true, false, false, true]);
+  assert.deepEqual(MISSION_STAGES.map((_, index) => huntBreadthFor("mission", index)), [3, 4, 2, 1]);
+  assert.equal(usesTacticsRules("mission"), true);
+  assert.equal(aiSkillFor("mission", MISSION_STAGES[3].id, MISSION_STAGES[3].aiSkill), 1.819);
+  assert.deepEqual(playerFleetFor("mission", MISSION_STAGES[0], FULL_FLEET), ["cruiser", "destroyer"]);
+  assert.deepEqual(enemyFleetFor("mission", MISSION_STAGES[0]), ["battleship", "destroyer", "escort", "submarine"]);
+  assert.equal(missionRuleFor("casual", MISSION_STAGES[0]), null);
+  assert.equal(missionRuleFor("tactics", MISSION_STAGES[0]), null);
+  assert.equal(missionRuleFor("survival", MISSION_STAGES[0]), null);
+  assert.equal(friendlyStarts("casual", STAGES[0]), true);
+  assert.equal(friendlyStarts("tactics", STAGES[0]), false);
+  assert.equal(friendlyStarts("survival", SURVIVAL_STAGES[0]), false);
+});
+
+test("all mission placements, initial hits, intelligence, and wakes are fixed and legal", () => {
+  const expectedInitialHits = [
+    ["C-4"],
+    [],
+    ["D-4"],
+    ["C-3", "C-5"],
+  ];
+  const display = ({ x, y }: { x: number; y: number }) => `${String.fromCharCode(65 + y)}-${x + 1}`;
+
+  for (const [index, mission] of MISSION_STAGES.entries()) {
+    const friendly = new Board();
+    const hostile = new Board();
+    deployScenarioFleet(friendly, mission.playerPlacements);
+    deployScenarioFleet(hostile, mission.enemyPlacements);
+
+    for (const [board, fleet] of [[friendly, mission.playerFleet], [hostile, mission.enemyFleet]] as const) {
+      assert.equal(board.allPlaced(fleet), true, `${mission.title}: fleet incomplete`);
+      const occupied = board.ships.flatMap((ship) => ship.cells.map((cell) => `${cell.x},${cell.y}`));
+      assert.equal(new Set(occupied).size, occupied.length, `${mission.title}: placement overlap`);
+      assert.ok(board.ships.every((ship) => ship.cells.every((cell) =>
+        cell.x >= 0 && cell.y >= 0 && cell.x < GRID_SIZE && cell.y < GRID_SIZE)), `${mission.title}: out of bounds`);
+    }
+
+    applyScenarioHits(friendly, mission.playerInitialHits);
+    applyScenarioHits(hostile, mission.enemyInitialHits);
+    assert.deepEqual((mission.enemyInitialHits ?? []).map(display), expectedInitialHits[index]);
+    for (const coord of mission.playerInitialHits ?? []) {
+      assert.equal(friendly.shots[coord.y][coord.x], "hit", `${mission.title}: missing friendly initial hit`);
+    }
+    for (const coord of mission.enemyInitialHits ?? []) {
+      assert.equal(hostile.shots[coord.y][coord.x], "hit", `${mission.title}: missing hostile initial hit`);
+    }
+    for (const intel of mission.initialIntel ?? []) {
+      assert.equal(hostile.attack(intel.coord).kind.toLowerCase(), intel.mark,
+        `${mission.title}: ${display(intel.coord)} intel mismatch`);
+    }
+    for (const wake of mission.initialEnemyWakes ?? []) {
+      assert.ok(wake.x >= 0 && wake.y >= 0 && wake.x < GRID_SIZE && wake.y < GRID_SIZE);
+      assert.equal(hostile.shipAt(wake), undefined, `${mission.title}: wake overlaps a ship`);
+    }
+  }
+});
+
+test("NARROW GATE has a deterministic two-order MK-45 and submarine solution", () => {
+  const mission = MISSION_STAGES[0];
+  const hostile = new Board();
+  deployScenarioFleet(hostile, mission.enemyPlacements);
+  applyScenarioHits(hostile, mission.enemyInitialHits);
+
+  assert.equal(hostile.attack({ x: 2, y: 2 }).kind, "HIT"); // C-3
+  assert.equal(hostile.attack({ x: 4, y: 2 }).kind, "SUNK"); // C-5
+  assert.equal(hostile.ships.find((ship) => ship.id === "destroyer")?.sunk, true);
+  assert.equal(hostile.attack({ x: 5, y: 5 }).kind, "SUNK"); // F-6
+
+  const outcome = evaluateMission(mission, {
+    friendlyActions: 2,
+    enemySunk: hostile.ships.filter((ship) => ship.sunk).map((ship) => ship.id),
+    friendlyAlive: [...mission.playerFleet],
+    sonarReports: [],
+  });
+  assert.equal(outcome?.result, "victory");
+});
+
+test("SILENT WATCH returns the authored ALPHA contact and BRAVO clear report", () => {
+  const mission = MISSION_STAGES[1];
+  assert.equal(mission.objective.kind, "sonar-reports");
+  if (mission.objective.kind !== "sonar-reports") return;
+  const hostile = new Board();
+  deployScenarioFleet(hostile, mission.enemyPlacements);
+
+  const [alpha, bravo] = mission.objective.reports;
+  assert.equal(isMissionSonarOrigin(mission, alpha.origin), true);
+  assert.equal(isMissionSonarOrigin(mission, bravo.origin), true);
+  assert.equal(isMissionSonarOrigin(mission, { x: 1, y: 1 }), false);
+  assert.equal(isMissionSonarOrigin(MISSION_STAGES[0], { x: 1, y: 1 }), true);
+  assert.deepEqual(radarCells(alpha.origin), [
+    { x: 2, y: 2 }, { x: 3, y: 2 }, { x: 2, y: 3 }, { x: 3, y: 3 },
+  ]);
+  assert.equal(hostile.radar(alpha.origin), true);
+  assert.equal(hostile.radar(bravo.origin), false);
+  assert.equal(evaluateMission(mission, {
+    friendlyActions: 2,
+    enemySunk: [],
+    friendlyAlive: [...mission.playerFleet],
+    sonarReports: [
+      { origin: { ...alpha.origin }, contact: true },
+      { origin: { ...bravo.origin }, contact: false },
+    ],
+  })?.result, "victory");
+
+  assert.equal(evaluateMission(mission, {
+    friendlyActions: 2,
+    enemySunk: [],
+    friendlyAlive: [...mission.playerFleet],
+    sonarReports: [
+      { origin: { ...alpha.origin }, contact: true },
+      { origin: { ...alpha.origin }, contact: true },
+    ],
+  })?.result, "defeat");
+  assert.equal(evaluateMission(mission, {
+    friendlyActions: 2,
+    enemySunk: [],
+    friendlyAlive: [...mission.playerFleet],
+    sonarReports: [
+      { origin: { ...alpha.origin }, contact: false },
+      { origin: { ...bravo.origin }, contact: false },
+    ],
+  })?.result, "defeat");
+});
+
+test("LAST FLIGHT keeps its escort link and is solvable in at most two Phantom sorties", () => {
+  const mission = MISSION_STAGES[2];
+  const friendly = new Board();
+  deployScenarioFleet(friendly, mission.playerPlacements);
+  applyScenarioHits(friendly, mission.playerInitialHits);
+  assert.equal(hasEscortLink(friendly), true);
+  assert.equal(new Arsenal().maxUses("phantom", friendly), 2);
+
+  const direct = new Board();
+  deployScenarioFleet(direct, mission.enemyPlacements);
+  applyScenarioHits(direct, mission.enemyInitialHits);
+  for (const coord of [{ x: 1, y: 3 }, { x: 2, y: 3 }, { x: 4, y: 3 }, { x: 5, y: 3 }]) direct.attack(coord);
+  assert.equal(direct.ships.find((ship) => ship.id === "battleship")?.sunk, true);
+
+  const alternate = new Board();
+  deployScenarioFleet(alternate, mission.enemyPlacements);
+  applyScenarioHits(alternate, mission.enemyInitialHits);
+  const verticalHypothesis = [{ x: 3, y: 1 }, { x: 3, y: 2 }, { x: 3, y: 4 }, { x: 3, y: 5 }];
+  assert.equal(verticalHypothesis.some((coord) => {
+    const kind = alternate.attack(coord).kind;
+    return kind === "HIT" || kind === "SUNK";
+  }), false);
+  for (const coord of [{ x: 1, y: 3 }, { x: 2, y: 3 }, { x: 4, y: 3 }, { x: 5, y: 3 }]) alternate.attack(coord);
+  assert.equal(alternate.ships.find((ship) => ship.id === "battleship")?.sunk, true);
+});
+
+test("BROKEN SPEAR requires its fire-control link and three canonical HARPOON centers", () => {
+  const mission = MISSION_STAGES[3];
+  const friendly = new Board();
+  deployScenarioFleet(friendly, mission.playerPlacements);
+  applyScenarioHits(friendly, mission.playerInitialHits);
+  assert.equal(hasFireControlLink(friendly), true);
+  assert.equal(new Arsenal().maxUses("harpoon", friendly), 3);
+
+  const hostile = new Board();
+  deployScenarioFleet(hostile, mission.enemyPlacements);
+  applyScenarioHits(hostile, mission.enemyInitialHits);
+  for (const intel of mission.initialIntel ?? []) hostile.attack(intel.coord);
+  for (const center of [{ x: 4, y: 1 }, { x: 3, y: 2 }, { x: 4, y: 2 }]) {
+    for (const coord of harpoonCells(center)) hostile.attack(coord);
+  }
+  assert.equal(hostile.ships.find((ship) => ship.id === "carrier")?.sunk, true);
+  assert.equal(evaluateMission(mission, {
+    friendlyActions: 3,
+    enemySunk: ["carrier"],
+    friendlyAlive: [...mission.playerFleet],
+    sonarReports: [],
+  })?.result, "victory");
+});
+
+test("mission evaluator gives completed objectives priority, then rejects protected-ship loss", () => {
+  const narrowGate = MISSION_STAGES[0];
+  assert.equal(evaluateMission(narrowGate, {
+    friendlyActions: 3,
+    enemySunk: ["destroyer", "submarine"],
+    friendlyAlive: [...narrowGate.playerFleet],
+    sonarReports: [],
+  })?.result, "victory");
+
+  const lastFlight = MISSION_STAGES[2];
+  const protectedLoss = evaluateMission(lastFlight, {
+    friendlyActions: 1,
+    enemySunk: [],
+    friendlyAlive: ["escort"],
+    sonarReports: [],
+  });
+  assert.equal(protectedLoss?.result, "defeat");
+  assert.match(protectedLoss?.report ?? "", /^FLIGHT CONTROL LOST/);
+
+  const simultaneousTargetAndProtectedLoss = evaluateMission(lastFlight, {
+    friendlyActions: 2,
+    enemySunk: ["battleship"],
+    friendlyAlive: ["escort"],
+    sonarReports: [],
+  });
+  assert.equal(simultaneousTargetAndProtectedLoss?.result, "victory");
+  assert.match(simultaneousTargetAndProtectedLoss?.report ?? "", /^TARGET NEUTRALIZED/);
+
+  const silentWatch = MISSION_STAGES[1];
+  assert.equal(silentWatch.objective.kind, "sonar-reports");
+  if (silentWatch.objective.kind === "sonar-reports") {
+    const [alpha, bravo] = silentWatch.objective.reports;
+    const completedAfterProtectedLoss = evaluateMission(silentWatch, {
+      friendlyActions: 2,
+      enemySunk: [],
+      friendlyAlive: ["escort"],
+      sonarReports: [
+        { origin: { ...alpha.origin }, contact: alpha.contact },
+        { origin: { ...bravo.origin }, contact: bravo.contact },
+      ],
+    });
+    assert.equal(completedAfterProtectedLoss?.result, "victory");
+    assert.match(completedAfterProtectedLoss?.report ?? "", /^ACOUSTIC PICTURE ESTABLISHED/);
+  }
+});
+
+test("mission retry inputs remain immutable after deployment and combat probes", () => {
+  const canonical = structuredClone(MISSION_STAGES);
+  for (const mission of MISSION_STAGES) {
+    const friendly = new Board();
+    const hostile = new Board();
+    deployScenarioFleet(friendly, mission.playerPlacements);
+    deployScenarioFleet(hostile, mission.enemyPlacements);
+    applyScenarioHits(friendly, mission.playerInitialHits);
+    applyScenarioHits(hostile, mission.enemyInitialHits);
+    hostile.attack({ x: 7, y: 7 });
+
+    const playerCopy = playerFleetFor("mission", mission, FULL_FLEET);
+    const enemyCopy = enemyFleetFor("mission", mission);
+    playerCopy.reverse();
+    enemyCopy.reverse();
+  }
+  assert.deepEqual(MISSION_STAGES, canonical);
+});
+
+test("mission retry reconstructs identical boards, intelligence, supplies, and first enemy order", () => {
+  const reconstruct = (missionIndex: number) => {
+    const mission = MISSION_STAGES[missionIndex];
+    const friendly = new Board();
+    const hostile = new Board();
+    deployScenarioFleet(friendly, mission.playerPlacements);
+    deployScenarioFleet(hostile, mission.enemyPlacements);
+    applyScenarioHits(friendly, mission.playerInitialHits);
+    applyScenarioHits(hostile, mission.enemyInitialHits);
+    for (const intel of mission.initialIntel ?? []) hostile.shots[intel.coord.y][intel.coord.x] = intel.mark;
+    const arsenal = new Arsenal();
+    const enemyAI = new EnemyAI(
+      new SeededRandom(mission.fixedSeed ^ 0x51f15e),
+      mission.playerFleet,
+      aiSkillFor("mission", mission.id, mission.aiSkill),
+      "tactics",
+      huntBreadthFor("mission", missionIndex),
+    );
+    return {
+      friendlyShips: friendly.ships.map((ship) => ({ id: ship.id, cells: ship.cells, hits: [...ship.hits] })),
+      hostileShips: hostile.ships.map((ship) => ({ id: ship.id, cells: ship.cells, hits: [...ship.hits] })),
+      hostileShots: hostile.shots,
+      wakes: (mission.initialEnemyWakes ?? []).map((coord) => ({ ...coord })),
+      allowedUses: mission.allowedWeapons.filter((weapon) => weapon !== "fire").map((weapon) => ({
+        weapon,
+        available: arsenal.canUse(weapon, friendly),
+        uses: arsenal.availableUses(weapon, friendly),
+      })),
+      firstEnemyOrder: enemyAI.decide(hostile),
+    };
+  };
+
+  for (const [index, mission] of MISSION_STAGES.entries()) {
+    assert.deepEqual(reconstruct(index), reconstruct(index), mission.title);
+    assert.ok(reconstruct(index).allowedUses.every((entry) => entry.available && entry.uses > 0), `${mission.title}: unavailable permitted weapon`);
+  }
 });
 
 test("after-action timestamps use minute-precision Zulu and local time", () => {
@@ -112,7 +407,7 @@ test("survival assessment records limited results without blaming an outmatched 
 test("survival starts with every ship and permanently removes sunk ships", () => {
   assert.equal(FULL_FLEET.length, 6);
   assert.equal(FULL_FLEET.includes("silentSubmarine"), false);
-  assert.deepEqual(playerFleetFor("survival", STAGES[0].fleet, FULL_FLEET), FULL_FLEET);
+  assert.deepEqual(playerFleetFor("survival", STAGES[0], FULL_FLEET), FULL_FLEET);
   const remaining = survivingFleet(FULL_FLEET, ["battleship", "submarine"]);
   assert.equal(remaining.includes("battleship"), false);
   assert.equal(remaining.includes("submarine"), false);
