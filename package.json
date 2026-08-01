@@ -11,14 +11,15 @@
     "build:pages": "vite build --config vite.pages.config.ts",
     "preview:pages": "vite preview --config vite.pages.config.ts",
     "start": "vinext start",
-    "test": "npm run build && node --experimental-strip-types --test tests/game-rules.test.ts tests/rendered-html.test.mjs",
+    "test": "npm run build && node --experimental-strip-types --test tests/game-rules.test.ts tests/mission-records.test.ts tests/mission-simulation.test.ts tests/rendered-html.test.mjs",
+    "measure:missions": "node --experimental-strip-types scripts/measure-missions.ts",
     "measure:survival": "node --experimental-strip-types scripts/measure-survival.ts",
-    "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
+    "lint": "eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern gh-pages-dist",
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",
-    "next": "16.2.6",
+    "next": "16.2.12",
     "react": "19.2.6",
     "react-dom": "19.2.6"
   },

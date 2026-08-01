@@ -4,8 +4,8 @@ import { GRID_SIZE, SHIPS, STAGES } from "../app/game/constants.ts";
 import { Arsenal, Board, SeededRandom, criticalCoordFor, harpoonCells, hasEscortLink, hasFireControlLink, radarCells, straddleCells } from "../app/game/engine.ts";
 import { EnemyAI } from "../app/game/EnemyAI.ts";
 import { nextSubmarineWake, submarineWakeCandidates } from "../app/game/SubmarineWake.ts";
-import { FULL_FLEET, MISSION_STAGES, SURVIVAL_STAGES, aiSkillFor, enemyFleetFor, friendlyStarts, huntBreadthFor, missionFor, missionRuleFor, playerFleetFor, stagesFor, survivingFleet, usesTacticsRules } from "../app/game/Campaign.ts";
-import { applyScenarioHits, deployScenarioFleet, evaluateMission, isMissionSonarOrigin } from "../app/game/MissionRules.ts";
+import { ARCHIVE_MISSIONS, FULL_FLEET, MISSION_LIBRARY, MISSION_STAGES, SURVIVAL_STAGES, aiSkillFor, enemyFleetFor, friendlyStarts, huntBreadthFor, missionFor, missionLibraryFor, missionRuleFor, playerFleetFor, stagesFor, survivingFleet, usesTacticsRules } from "../app/game/Campaign.ts";
+import { applyScenarioHits, deployScenarioFleet, evaluateMission, isMissionSonarOrigin, validateMissionLibrary } from "../app/game/MissionRules.ts";
 import { commandAssessment, formatElapsed, formatLocal, formatZulu } from "../app/game/AfterAction.ts";
 import { OperationRecorder, formatOperationDuration } from "../app/game/OperationRecord.ts";
 import { MUSIC_INTERVAL_MS, pulseIntervalForLosses } from "../app/game/AudioManager.ts";
@@ -46,47 +46,51 @@ test("survival is a distinct four-operation end-game route", () => {
   assert.equal(huntBreadthFor("tactics", 3), 1);
 });
 
-test("mission mode exposes exactly four authored and isolated definitions", () => {
-  assert.equal(stagesFor("mission"), MISSION_STAGES);
-  assert.equal(MISSION_STAGES.length, 4);
-  assert.deepEqual(MISSION_STAGES.map((mission) => mission.id), [1, 2, 3, 4]);
-  assert.deepEqual(MISSION_STAGES.map((mission) => mission.title), [
+test("mission mode exposes twelve tactical and four archive operations as isolated free choices", () => {
+  assert.equal(stagesFor("mission"), MISSION_LIBRARY);
+  assert.equal(MISSION_STAGES.length, 12);
+  assert.equal(ARCHIVE_MISSIONS.length, 4);
+  assert.equal(MISSION_LIBRARY.length, 16);
+  assert.equal(missionLibraryFor("standard").length, 12);
+  assert.equal(missionLibraryFor("archive").length, 4);
+  assert.deepEqual(MISSION_LIBRARY.map((mission) => mission.difficulty), [1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 5, 5, 2, 3, 4, 4]);
+  assert.deepEqual(MISSION_LIBRARY.map((mission) => mission.id), [5, 2, 6, 1, 7, 8, 9, 3, 10, 11, 4, 12, 13, 14, 15, 16]);
+  const originalFour = [1, 2, 3, 4].map((id) => MISSION_STAGES.find((mission) => mission.id === id)!);
+  assert.deepEqual(originalFour.map((mission) => mission.title), [
     "NARROW GATE", "SILENT WATCH", "LAST FLIGHT", "BROKEN SPEAR",
   ]);
-  assert.deepEqual(MISSION_STAGES.map((mission) => mission.allowedWeapons), [
+  assert.deepEqual(originalFour.map((mission) => mission.allowedWeapons), [
     ["fire", "sparrow", "mk45"],
     ["radar"],
     ["fire", "phantom"],
     ["harpoon"],
   ]);
-  assert.deepEqual(MISSION_STAGES.map((mission) => mission.fixedSeed), [
+  assert.deepEqual(originalFour.map((mission) => mission.fixedSeed), [
     0x4d0101, 0x4d0202, 0x4d0303, 0x4d0404,
   ]);
-  assert.deepEqual(MISSION_STAGES.map((mission) => mission.objective.maxFriendlyActions), [3, 2, 2, 3]);
-  assert.deepEqual(MISSION_STAGES.map((mission) => friendlyStarts("mission", mission)), [true, false, false, true]);
-  assert.deepEqual(MISSION_STAGES.map((_, index) => huntBreadthFor("mission", index)), [3, 4, 2, 1]);
+  assert.deepEqual(originalFour.map((mission) => mission.objective.maxFriendlyActions), [3, 2, 2, 3]);
+  assert.deepEqual(originalFour.map((mission) => friendlyStarts("mission", mission)), [true, false, false, true]);
+  assert.deepEqual(MISSION_LIBRARY.map((_, index) => huntBreadthFor("mission", index)), MISSION_LIBRARY.map((mission) => mission.huntBreadth));
   assert.equal(usesTacticsRules("mission"), true);
-  assert.equal(aiSkillFor("mission", MISSION_STAGES[3].id, MISSION_STAGES[3].aiSkill), 1.819);
-  assert.deepEqual(playerFleetFor("mission", MISSION_STAGES[0], FULL_FLEET), ["cruiser", "destroyer"]);
-  assert.deepEqual(enemyFleetFor("mission", MISSION_STAGES[0]), ["battleship", "destroyer", "escort", "submarine"]);
-  assert.equal(missionRuleFor("casual", MISSION_STAGES[0]), null);
-  assert.equal(missionRuleFor("tactics", MISSION_STAGES[0]), null);
-  assert.equal(missionRuleFor("survival", MISSION_STAGES[0]), null);
+  assert.equal(aiSkillFor("mission", originalFour[3].id, originalFour[3].aiSkill), 1.819);
+  assert.deepEqual(playerFleetFor("mission", originalFour[0], FULL_FLEET), ["cruiser", "destroyer"]);
+  assert.deepEqual(enemyFleetFor("mission", originalFour[0]), ["battleship", "destroyer", "escort", "submarine"]);
+  assert.equal(missionRuleFor("casual", originalFour[0]), null);
+  assert.equal(missionRuleFor("tactics", originalFour[0]), null);
+  assert.equal(missionRuleFor("survival", originalFour[0]), null);
+  assert.deepEqual(validateMissionLibrary(MISSION_LIBRARY), []);
   assert.equal(friendlyStarts("casual", STAGES[0]), true);
   assert.equal(friendlyStarts("tactics", STAGES[0]), false);
   assert.equal(friendlyStarts("survival", SURVIVAL_STAGES[0]), false);
 });
 
 test("all mission placements, initial hits, intelligence, and wakes are fixed and legal", () => {
-  const expectedInitialHits = [
-    ["C-4"],
-    [],
-    ["D-4"],
-    ["C-3", "C-5"],
-  ];
+  const originalExpectedInitialHits = new Map<number, string[]>([
+    [1, ["C-4"]], [2, []], [3, ["D-4"]], [4, ["C-3", "C-5"]],
+  ]);
   const display = ({ x, y }: { x: number; y: number }) => `${String.fromCharCode(65 + y)}-${x + 1}`;
 
-  for (const [index, mission] of MISSION_STAGES.entries()) {
+  for (const mission of MISSION_LIBRARY) {
     const friendly = new Board();
     const hostile = new Board();
     deployScenarioFleet(friendly, mission.playerPlacements);
@@ -102,7 +106,9 @@ test("all mission placements, initial hits, intelligence, and wakes are fixed an
 
     applyScenarioHits(friendly, mission.playerInitialHits);
     applyScenarioHits(hostile, mission.enemyInitialHits);
-    assert.deepEqual((mission.enemyInitialHits ?? []).map(display), expectedInitialHits[index]);
+    if (originalExpectedInitialHits.has(mission.id)) {
+      assert.deepEqual((mission.enemyInitialHits ?? []).map(display), originalExpectedInitialHits.get(mission.id));
+    }
     for (const coord of mission.playerInitialHits ?? []) {
       assert.equal(friendly.shots[coord.y][coord.x], "hit", `${mission.title}: missing friendly initial hit`);
     }

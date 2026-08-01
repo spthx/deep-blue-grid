@@ -1,8 +1,10 @@
-# MISSION MODE / FOUR SPECIAL MISSIONS
+# MISSION MODE / CORE FOUR SPECIAL MISSIONS
 
-This document is the implementation contract for the Web and Unity editions of
-DEEP BLUE GRID. It defines the fourth game mode, `MISSION`, as four authored,
-self-contained tactical situations.
+This document is the detailed implementation contract for the original four
+authored situations in the Web and Unity editions of DEEP BLUE GRID. The full
+fourth game mode, `MISSION`, contains sixteen independently selectable missions;
+the additional twelve and the library-wide contract are defined in
+`MISSION_LIBRARY_SPEC.md`.
 
 CASUAL and TACTICS retain their existing six-sector campaign. SURVIVAL retains
 its separate four-operation route and persistent-loss rules. MISSION does not
@@ -356,7 +358,7 @@ The route nouns are deliberately distinct:
 | --- | --- | --- |
 | CASUAL / TACTICS | SECTOR | 海域 |
 | SURVIVAL | OPERATION | 作戦 |
-| MISSION | MISSION | 特別任務 |
+| MISSION | MISSION | 限定任務 |
 
 Use `FIRE CONTROL / 射撃指揮` for the player's combat phase. Do not label a
 normal player turn merely `COMMAND`. Use `ORDERS REMAINING / 指令残数` for
@@ -508,7 +510,8 @@ The fixed AI seeds must additionally satisfy these survival invariants:
 
 ## Validation checklist
 
-- Exactly four MISSION definitions with IDs 1–4 and fixed seeds.
+- Exactly four core MISSION definitions with IDs 1–4 and fixed seeds; the full
+  sixteen-definition library is validated separately by `validateMissionLibrary`.
 - Every authored footprint is in bounds and non-overlapping on its own board.
 - Every initial HIT lies on the declared ship and produces the declared
   identification state.

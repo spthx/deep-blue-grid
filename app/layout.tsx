@@ -1,6 +1,16 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import "./globals.css";
+
+// Keep the tactical display inside notched iPhone and Android safe areas without
+// disabling browser zoom. Unity should mirror this contract with Screen.safeArea.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#06131d",
+  colorScheme: "dark",
+};
 
 export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
@@ -20,6 +30,9 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ja">
+      {/* vinext currently omits viewportFit from Next's Viewport serialization,
+          so keep an explicit equivalent for this alternate server entry. */}
+      <head><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" /></head>
       <body>{children}</body>
     </html>
   );

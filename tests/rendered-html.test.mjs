@@ -15,6 +15,7 @@ test("server renders the finished game shell", async () => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
   const html = await response.text();
   assert.match(html, /<title>DEEP BLUE GRID/);
+  assert.match(html, /viewport-fit=cover/);
   assert.match(html, /DEEP/);
   assert.match(html, /FLEET DEPLOYMENT/);
   assert.match(html, /SCENARIO ID/);
@@ -42,14 +43,46 @@ test("mobile command deck stays four columns by two rows", async () => {
 test("responsive regimes cover compact portrait, phone landscape, tablet landscape, and full-HD", async () => {
   const source = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
   const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+  const layout = await readFile(new URL("../app/layout.tsx", import.meta.url), "utf8");
+  assert.match(source, /const COMPACT_LAYOUT_MEDIA =/);
   assert.match(source, /max-width: 1099px\) and \(orientation: portrait\), \(max-width: 959px\) and \(max-height: 600px\)/);
+  assert.match(source, /window\.matchMedia\(COMPACT_LAYOUT_MEDIA\)/);
   assert.match(css, /min-width:960px\) and \(orientation:landscape\)/);
   assert.match(css, /min-width:1100px/);
+  assert.match(css, /min-width:480px\) and \(max-width:959px\) and \(max-height:600px\)/);
   assert.doesNotMatch(css, /min-width:1100px\) and \(max-height:1050px\)/);
   assert.match(css, /calc\(100dvh - 330px\)/);
   assert.match(css, /\.phase-placement \.canvas-wrap[\s\S]*?calc\(100dvh - 425px\)/);
   assert.match(css, /\.ops-lower\.compact-command-bottom,[\s\S]*?\.legend\.compact-command-bottom \{ display:none; \}/);
   assert.match(css, /\.mobile-field-switch button \{[\s\S]*?min-height:44px/);
+  assert.match(css, /max-width:360px\) and \(max-height:650px\)[\s\S]*?\.ship-card small \{ display:none; \}/);
+  assert.match(css, /\.desktop-command-rail \.rail-command-deck \{ grid-template-columns:repeat\(2,minmax\(0,1fr\)\); \}/);
+  assert.match(layout, /export const viewport: Viewport/);
+  assert.match(layout, /viewportFit: "cover"/);
+  assert.doesNotMatch(layout, /maximumScale|userScalable/);
+});
+
+test("compact controls preserve full accessible weapon names and readable platform typography", async () => {
+  const source = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
+  const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+  assert.match(source, /compactLabel: "GUN"/);
+  assert.match(source, /compactLabel: "SONAR"/);
+  assert.equal((source.match(/className="weapon-label-full"/g) ?? []).length, 2);
+  assert.equal((source.match(/className="weapon-label-compact"/g) ?? []).length, 2);
+  assert.equal((source.match(/aria-label=\{`\$\{index \+ 1\} \/ \$\{WEAPON_META\[id\]\.label\}/g) ?? []).length, 2);
+  assert.match(css, /--font-tactical: ui-monospace/);
+  assert.match(css, /"Noto Sans JP"/);
+  assert.match(css, /font-variant-numeric: tabular-nums/);
+  assert.match(css, /@media \(prefers-contrast:more\)/);
+  assert.match(css, /@media \(forced-colors:active\)/);
+});
+
+test("modal focus is trapped and restored without disabling browser zoom", async () => {
+  const source = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
+  assert.match(source, /const focusableSelector = "button:not\(:disabled\)/);
+  assert.match(source, /event\.key !== "Tab"/);
+  assert.match(source, /previousFocus\?\.focus\(\{ preventScroll: true \}\)/);
+  assert.match(source, /missionLibraryOpen && !logOpen/);
 });
 
 test("unavailable weapons cannot become the selected command", async () => {
@@ -258,19 +291,28 @@ test("CIC terminology uses one canonical vocabulary across alerts, reports, and 
   assert.doesNotMatch(game, /VITAL COMPARTMENT|NO TRACK|REPORT LOGGED|FULL OPERATION LOG|FIRE ACCURACY/);
 });
 
-test("mission mode exposes a fixed brief, order budget, and thumb-reachable command surface", async () => {
+test("mission mode exposes a free-select library, archive review, records, and thumb-reachable command surface", async () => {
   const game = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
   const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
   assert.match(game, /SITUATION \/ 状況/);
   assert.match(game, /OBJECTIVE \/ 任務目標/);
   assert.match(game, /CONSTRAINTS \/ 制約/);
   assert.match(game, /ORDERS REMAINING/);
-  assert.match(game, /COMMENCE MISSION/);
+  assert.match(game, /COMMENCE ENGAGEMENT/);
   assert.match(game, /RETRY MISSION/);
-  assert.match(game, /className="mission-brief"/);
+  assert.match(game, /mission-brief/);
   assert.match(game, /className="mission-orders"/);
   assert.match(game, /className="placement-tools compact-placement-bottom"/);
+  assert.match(game, /MISSION INDEX/);
+  assert.match(game, /TACTICAL OPERATIONS/);
+  assert.match(game, /ARCHIVE OPERATIONS/);
+  assert.match(game, /ヒントは作戦日誌のみ/);
+  assert.match(game, /ARCHIVE LOG/);
+  assert.match(game, /LOCAL MISSION RECORD/);
+  assert.match(game, /disabled=\{phase === "placement" && !missionRule\}/);
   assert.match(css, /\.mission-brief/);
+  assert.match(css, /\.mission-card-grid/);
+  assert.match(css, /\.archive-log/);
   assert.match(css, /@media \(max-width:760px\)[\s\S]*?\.mission-brief/);
   assert.equal((game.match(/if \(!missionRule && enemy\.current\.allSunk\(\)\)/g) ?? []).length, 2);
 });

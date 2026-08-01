@@ -226,7 +226,7 @@ export function hasEscortLink(board: Board) { return hasEscortLinkTo(board, "car
 export function hasFireControlLink(board: Board) { return hasEscortLinkTo(board, "battleship"); }
 
 export class Arsenal {
-  uses = { ...WEAPON_MAX };
+  uses: Record<keyof typeof WEAPON_MAX, number> = { ...WEAPON_MAX };
   reset() { this.uses = { ...WEAPON_MAX }; }
   maxUses(id: keyof typeof WEAPON_MAX, board: Board) {
     if (id === "phantom") return hasEscortLink(board) ? WEAPON_MAX.phantom : 1;
