@@ -1,0 +1,3 @@
+docs/unity-handoff/*.json text eol=lf
+docs/unity-handoff/SHA256SUMS.txt text eol=lf
+docs/unity-reference/*.png binary

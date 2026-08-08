@@ -61,6 +61,12 @@ GitHub Pages用の静的ビルドは `npm run build:pages` で生成できます
 - 搭載艦が撃沈されると、その特殊兵装は残数があっても使用不能
 - 艦カードの `BB // HULL 5/5` は艦種略号と残存船体区画を分けた表示であり、実在艦の艦番号ではない
 
+## Unity / Android版への引き継ぎ
+
+- 入口は [`docs/UNITY_HANDOFF_INDEX.md`](docs/UNITY_HANDOFF_INDEX.md)。UI、Safe Area、フォント、音、22任務、6教程、Webとの一致条件を参照できます。
+- `npm run export:unity` で [`docs/unity-handoff/unity-content-v1.json`](docs/unity-handoff/unity-content-v1.json) を現行TypeScript正本から再生成します。Unity Inspectorへの手入力による二重管理は行いません。
+- [`docs/unity-reference/`](docs/unity-reference/) にスマートフォン縦持ちとデスクトップ横画面、配置、戦闘、着弾、音紋、受動聴音の比較画像を収録しています。
+
 ## 素材の出所
 
 - 盤面、艦影、波、命中表示などのゲーム画面は、このプロジェクト用のCanvas 2D / CSSコードで描画しています。既存ゲームの画像、スクリーンショット、スプライトは収録していません。

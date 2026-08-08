@@ -1,0 +1,4737 @@
+{
+  "schema": "deep-blue-grid.unity-content",
+  "schemaVersion": 1,
+  "sourceRef": "unity-handoff-2026-08-08",
+  "coordinateContract": {
+    "gridSize": 8,
+    "cellLabels": "ABCDEFGH",
+    "origin": "top-left",
+    "displayExample": {
+      "label": "A-1",
+      "coord": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    "orientations": [
+      "east",
+      "south",
+      "west",
+      "north"
+    ],
+    "rotationOrder": [
+      "east",
+      "south",
+      "west",
+      "north"
+    ]
+  },
+  "echo": {
+    "mode": "orthogonal",
+    "directions": [
+      {
+        "x": 0,
+        "y": -1
+      },
+      {
+        "x": 0,
+        "y": 1
+      },
+      {
+        "x": -1,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": 0
+      }
+    ]
+  },
+  "fleets": {
+    "standard": [
+      "carrier",
+      "battleship",
+      "cruiser",
+      "destroyer",
+      "escort",
+      "submarine"
+    ],
+    "full": [
+      "carrier",
+      "battleship",
+      "cruiser",
+      "destroyer",
+      "escort",
+      "submarine"
+    ]
+  },
+  "shipDefinitions": [
+    {
+      "id": "carrier",
+      "name": "空母",
+      "code": "CV",
+      "size": 8,
+      "width": 4,
+      "height": 2,
+      "weapon": "F-4 PHANTOM",
+      "critical": {
+        "x": 2,
+        "y": 0
+      }
+    },
+    {
+      "id": "battleship",
+      "name": "戦艦",
+      "code": "BB",
+      "size": 5,
+      "width": 5,
+      "height": 1,
+      "weapon": "HARPOON",
+      "critical": {
+        "x": 2,
+        "y": 0
+      }
+    },
+    {
+      "id": "cruiser",
+      "name": "巡洋艦",
+      "code": "CA",
+      "size": 4,
+      "width": 4,
+      "height": 1,
+      "weapon": "8-INCH STRADDLE",
+      "critical": {
+        "x": 2,
+        "y": 0
+      }
+    },
+    {
+      "id": "destroyer",
+      "name": "駆逐艦",
+      "code": "DD",
+      "size": 3,
+      "width": 3,
+      "height": 1,
+      "weapon": "MK-45 II",
+      "critical": {
+        "x": 1,
+        "y": 0
+      }
+    },
+    {
+      "id": "escort",
+      "name": "護衛艦",
+      "code": "DE-01",
+      "size": 2,
+      "width": 2,
+      "height": 1,
+      "weapon": "NONE",
+      "critical": {
+        "x": 1,
+        "y": 0
+      }
+    },
+    {
+      "id": "escortBravo",
+      "name": "護衛艦",
+      "code": "DE-02",
+      "size": 2,
+      "width": 2,
+      "height": 1,
+      "weapon": "NONE",
+      "critical": {
+        "x": 1,
+        "y": 0
+      }
+    },
+    {
+      "id": "submarine",
+      "name": "潜水艦",
+      "code": "SS",
+      "size": 1,
+      "width": 1,
+      "height": 1,
+      "weapon": "PASSIVE SONAR",
+      "critical": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "silentSubmarine",
+      "name": "特殊潜航艦",
+      "code": "SSX-01",
+      "size": 2,
+      "width": 1,
+      "height": 1,
+      "weapon": "NONE",
+      "critical": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "leviathan",
+      "name": "戦略潜航艦",
+      "code": "SSX-02",
+      "size": 2,
+      "width": 1,
+      "height": 1,
+      "weapon": "NONE",
+      "critical": {
+        "x": 0,
+        "y": 0
+      }
+    }
+  ],
+  "weapons": {
+    "maximumUses": {
+      "phantom": 2,
+      "harpoon": 3,
+      "sparrow": 1,
+      "mk45": 1,
+      "radar": 2
+    },
+    "harpoonPattern": [
+      {
+        "x": -1,
+        "y": -1
+      },
+      {
+        "x": 1,
+        "y": -1
+      },
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": -1,
+        "y": 1
+      },
+      {
+        "x": 1,
+        "y": 1
+      }
+    ]
+  },
+  "contentCounts": {
+    "casualStages": 6,
+    "tacticsStages": 6,
+    "survivalStages": 4,
+    "missions": {
+      "total": 22,
+      "standard": 12,
+      "archive": 4,
+      "extreme": 6
+    },
+    "trainingStages": 6
+  },
+  "campaignStages": [
+    {
+      "id": 1,
+      "title": "FIRST CONTACT",
+      "subtitle": "初期艦隊で索敵の基本を掴め",
+      "fleet": [
+        "battleship",
+        "destroyer",
+        "submarine"
+      ],
+      "aiSkill": 0.82
+    },
+    {
+      "id": 2,
+      "title": "ESCORT LINE",
+      "subtitle": "護衛艦を加えた近海防衛線",
+      "fleet": [
+        "battleship",
+        "destroyer",
+        "escort",
+        "submarine"
+      ],
+      "aiSkill": 0.92
+    },
+    {
+      "id": 3,
+      "title": "RANGING FIRE",
+      "subtitle": "巡洋艦の夾叉斉射で射界を制御せよ",
+      "fleet": [
+        "battleship",
+        "cruiser",
+        "destroyer",
+        "escort",
+        "submarine"
+      ],
+      "aiSkill": 1
+    },
+    {
+      "id": 4,
+      "title": "CROSS FIRE",
+      "subtitle": "複数兵装を温存し敵中枢を狙え",
+      "fleet": [
+        "battleship",
+        "cruiser",
+        "destroyer",
+        "escort",
+        "submarine"
+      ],
+      "aiSkill": 1.05
+    },
+    {
+      "id": 5,
+      "title": "CARRIER SCREEN",
+      "subtitle": "全6艦種による総力海戦",
+      "fleet": [
+        "carrier",
+        "battleship",
+        "cruiser",
+        "destroyer",
+        "escort",
+        "submarine"
+      ],
+      "aiSkill": 1.1
+    },
+    {
+      "id": 6,
+      "title": "DEEP BLUE GRID",
+      "subtitle": "最終海域。敵全艦を撃沈せよ",
+      "fleet": [
+        "carrier",
+        "battleship",
+        "cruiser",
+        "destroyer",
+        "escort",
+        "submarine"
+      ],
+      "aiSkill": 1.16
+    }
+  ],
+  "survivalStages": [
+    {
+      "id": 1,
+      "title": "DOUBLE SCREEN",
+      "subtitle": "二重護衛網を突破し、主力艦への攻撃路を確保せよ",
+      "fleet": [
+        "carrier",
+        "battleship",
+        "escort",
+        "escortBravo"
+      ],
+      "aiSkill": 0.9
+    },
+    {
+      "id": 3,
+      "title": "RANGING FIRE",
+      "subtitle": "巡洋艦の夾叉斉射で射界を制御せよ",
+      "fleet": [
+        "battleship",
+        "cruiser",
+        "destroyer",
+        "escort",
+        "submarine"
+      ],
+      "aiSkill": 1
+    },
+    {
+      "id": 5,
+      "title": "SEA BAT",
+      "subtitle": "無音潜航を繰り返す特殊潜航艦を再捕捉せよ",
+      "fleet": [
+        "silentSubmarine"
+      ],
+      "aiSkill": 1.07
+    },
+    {
+      "id": 6,
+      "title": "DEEP BLUE GRID",
+      "subtitle": "最終海域。護衛を欠く敵主力艦隊を撃破せよ",
+      "fleet": [
+        "carrier",
+        "battleship",
+        "cruiser",
+        "submarine"
+      ],
+      "aiSkill": 1.05
+    }
+  ],
+  "missions": [
+    {
+      "id": 5,
+      "sortOrder": 10,
+      "difficulty": 1,
+      "category": "standard",
+      "title": "ECHO CROSS",
+      "subtitle": "三つの反響記録が交わる一点を射抜け",
+      "directive": "4方向ECHOの共通隣接区画を特定し、1行動で敵潜水艦を撃沈せよ。",
+      "condition": "SS撃沈 / FIREのみ / 1行動 / 自軍先制",
+      "fleet": [
+        "submarine"
+      ],
+      "enemyFleet": [
+        "submarine"
+      ],
+      "playerFleet": [
+        "escort"
+      ],
+      "enemyFirst": false,
+      "allowedWeapons": [
+        "fire"
+      ],
+      "objective": {
+        "kind": "destroy-targets",
+        "targets": [
+          "submarine"
+        ],
+        "maxFriendlyActions": 1
+      },
+      "playerPlacements": [
+        {
+          "id": "escort",
+          "start": {
+            "x": 0,
+            "y": 7
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyPlacements": [
+        {
+          "id": "submarine",
+          "start": {
+            "x": 3,
+            "y": 4
+          },
+          "orientation": "east"
+        }
+      ],
+      "initialIntel": [
+        {
+          "coord": {
+            "x": 3,
+            "y": 3
+          },
+          "mark": "echo"
+        },
+        {
+          "coord": {
+            "x": 2,
+            "y": 4
+          },
+          "mark": "echo"
+        },
+        {
+          "coord": {
+            "x": 3,
+            "y": 5
+          },
+          "mark": "echo"
+        }
+      ],
+      "enemyDisclosure": {
+        "known": [],
+        "unknownCount": 1,
+        "summary": "D-4・E-3・F-4の3区画でECHOを記録。敵艦種と直接位置は未識別。"
+      },
+      "fixedSeed": 5047557,
+      "aiSkill": 1.1,
+      "huntBreadth": 4,
+      "completion": {
+        "success": "CONTACT RESOLVED：三つの反響交点で敵潜水艦の戦闘能力喪失を確認。",
+        "deadline": "FIRING SOLUTION LOST：初動射撃を外し、敵潜水艦は接触範囲外へ離脱。"
+      }
+    },
+    {
+      "id": 2,
+      "sortOrder": 20,
+      "difficulty": 2,
+      "category": "standard",
+      "title": "SILENT WATCH",
+      "subtitle": "発砲せず、二つの指定海面から相反する聴音報告を得よ",
+      "directive": "ALPHAでCONTACT、BRAVOでNO CONTACTを記録し、2行動で離脱せよ。",
+      "condition": "指定聴音2件 / 射撃禁止 / 潜水艦生存 / 2行動",
+      "fleet": [
+        "battleship",
+        "cruiser",
+        "destroyer",
+        "escort",
+        "submarine"
+      ],
+      "enemyFleet": [
+        "battleship",
+        "cruiser",
+        "destroyer",
+        "escort",
+        "submarine"
+      ],
+      "playerFleet": [
+        "escort",
+        "submarine"
+      ],
+      "enemyFirst": true,
+      "allowedWeapons": [
+        "radar"
+      ],
+      "objective": {
+        "kind": "sonar-reports",
+        "maxFriendlyActions": 2,
+        "protectedShip": "submarine",
+        "reports": [
+          {
+            "origin": {
+              "x": 2,
+              "y": 2
+            },
+            "contact": true,
+            "code": "ALPHA / C-3"
+          },
+          {
+            "origin": {
+              "x": 0,
+              "y": 5
+            },
+            "contact": false,
+            "code": "BRAVO / F-1"
+          }
+        ]
+      },
+      "playerPlacements": [
+        {
+          "id": "escort",
+          "start": {
+            "x": 0,
+            "y": 0
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "submarine",
+          "start": {
+            "x": 7,
+            "y": 7
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyPlacements": [
+        {
+          "id": "battleship",
+          "start": {
+            "x": 0,
+            "y": 7
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "cruiser",
+          "start": {
+            "x": 2,
+            "y": 3
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "destroyer",
+          "start": {
+            "x": 5,
+            "y": 0
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "escort",
+          "start": {
+            "x": 4,
+            "y": 5
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "submarine",
+          "start": {
+            "x": 2,
+            "y": 1
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyDisclosure": {
+        "known": [],
+        "unknownCount": 5,
+        "candidateCells": [
+          {
+            "code": "ALPHA / C-3",
+            "coord": {
+              "x": 2,
+              "y": 2
+            }
+          },
+          {
+            "code": "BRAVO / F-1",
+            "coord": {
+              "x": 0,
+              "y": 5
+            }
+          }
+        ],
+        "summary": "敵艦種と配置は非公開。指定された二つの2×2聴音区画だけを公開。"
+      },
+      "fixedSeed": 5046786,
+      "aiSkill": 1.7,
+      "huntBreadth": 4,
+      "completion": {
+        "success": "ACOUSTIC PICTURE ESTABLISHED：敵影1件、反応なし1件を記録。観測資料を送信し離脱する。",
+        "deadline": "SONAR REPORT INCOMPLETE：聴音回数を消費。所要の二種報告を確立できず。",
+        "protected": {
+          "submarine": "LISTENING POST LOST：聴音艦との連絡途絶。任務継続不能。"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "sortOrder": 30,
+      "difficulty": 2,
+      "category": "standard",
+      "title": "RANGING FAN",
+      "subtitle": "既知弾着から散布界の正方位を導け",
+      "directive": "CAの艦姿勢を限定し、8-INCH STRADDLE 1射で残存区画を破壊せよ。",
+      "condition": "CA撃沈 / STRADDLEのみ / 1行動 / 自軍先制",
+      "fleet": [
+        "cruiser"
+      ],
+      "enemyFleet": [
+        "cruiser"
+      ],
+      "playerFleet": [
+        "cruiser"
+      ],
+      "enemyFirst": false,
+      "allowedWeapons": [
+        "sparrow"
+      ],
+      "objective": {
+        "kind": "destroy-targets",
+        "targets": [
+          "cruiser"
+        ],
+        "maxFriendlyActions": 1
+      },
+      "playerPlacements": [
+        {
+          "id": "cruiser",
+          "start": {
+            "x": 0,
+            "y": 7
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyPlacements": [
+        {
+          "id": "cruiser",
+          "start": {
+            "x": 1,
+            "y": 4
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyInitialHits": [
+        {
+          "x": 3,
+          "y": 4
+        },
+        {
+          "x": 4,
+          "y": 4
+        }
+      ],
+      "initialIntel": [
+        {
+          "coord": {
+            "x": 5,
+            "y": 4
+          },
+          "mark": "echo"
+        }
+      ],
+      "initiallyIdentified": [
+        "cruiser"
+      ],
+      "enemyDisclosure": {
+        "known": [
+          "cruiser"
+        ],
+        "unknownCount": 0,
+        "summary": "CA重要区画E-4とE-5の命中、E-6の既知空所を公開。"
+      },
+      "fixedSeed": 5047814,
+      "aiSkill": 1.2,
+      "huntBreadth": 4,
+      "completion": {
+        "success": "RANGING COMPLETE：正方位の夾叉射撃により敵巡洋艦の戦闘能力喪失を確認。",
+        "deadline": "RANGING ERROR：散布界が残存区画を捉えず、敵艦の離脱を許す。"
+      }
+    },
+    {
+      "id": 1,
+      "sortOrder": 40,
+      "difficulty": 3,
+      "category": "standard",
+      "title": "NARROW GATE",
+      "subtitle": "狭水道へ進入した小型艦だけを三手で切り離せ",
+      "directive": "既知損傷と音紋を利用し、敵駆逐艦・潜水艦を3行動以内に撃沈せよ。",
+      "condition": "DD・SS撃沈 / 3行動以内 / 敵主力艦の残存可",
+      "fleet": [
+        "battleship",
+        "destroyer",
+        "escort",
+        "submarine"
+      ],
+      "enemyFleet": [
+        "battleship",
+        "destroyer",
+        "escort",
+        "submarine"
+      ],
+      "playerFleet": [
+        "cruiser",
+        "destroyer"
+      ],
+      "enemyFirst": false,
+      "allowedWeapons": [
+        "fire",
+        "sparrow",
+        "mk45"
+      ],
+      "objective": {
+        "kind": "destroy-targets",
+        "targets": [
+          "destroyer",
+          "submarine"
+        ],
+        "maxFriendlyActions": 3
+      },
+      "playerPlacements": [
+        {
+          "id": "cruiser",
+          "start": {
+            "x": 1,
+            "y": 6
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "destroyer",
+          "start": {
+            "x": 5,
+            "y": 7
+          },
+          "orientation": "west"
+        }
+      ],
+      "enemyPlacements": [
+        {
+          "id": "battleship",
+          "start": {
+            "x": 0,
+            "y": 0
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "destroyer",
+          "start": {
+            "x": 2,
+            "y": 2
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "escort",
+          "start": {
+            "x": 0,
+            "y": 7
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "submarine",
+          "start": {
+            "x": 5,
+            "y": 5
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyInitialHits": [
+        {
+          "x": 3,
+          "y": 2
+        }
+      ],
+      "initialIntel": [
+        {
+          "coord": {
+            "x": 5,
+            "y": 3
+          },
+          "mark": "miss"
+        }
+      ],
+      "initialEnemyWakes": [
+        {
+          "x": 4,
+          "y": 4
+        },
+        {
+          "x": 6,
+          "y": 4
+        }
+      ],
+      "initiallyIdentified": [
+        "destroyer"
+      ],
+      "enemyDisclosure": {
+        "known": [
+          "destroyer"
+        ],
+        "unknownCount": 3,
+        "summary": "DDの既知損傷と二つの音紋を公開。BB・DE・SSの艦影は未識別。"
+      },
+      "fixedSeed": 5046529,
+      "aiSkill": 1.56,
+      "huntBreadth": 3,
+      "completion": {
+        "success": "INTERCEPTION COMPLETE：通過対象2隻の戦闘能力喪失を確認。残存敵主力との交戦を打ち切る。",
+        "deadline": "INTERCEPTION WINDOW CLOSED：阻止限界時刻を超過。対象艦の海域離脱を確認。"
+      }
+    },
+    {
+      "id": 7,
+      "sortOrder": 50,
+      "difficulty": 3,
+      "category": "standard",
+      "title": "CROSSING SHOT",
+      "subtitle": "一つの交差弾道で二つの残存区画を捕捉せよ",
+      "directive": "HARPOONのX字弾道を重ね、1回の射撃で敵DD・DEを同時に撃沈せよ。",
+      "condition": "DD・DE撃沈 / HARPOONのみ / 1行動 / 自軍先制",
+      "fleet": [
+        "destroyer",
+        "escort"
+      ],
+      "enemyFleet": [
+        "destroyer",
+        "escort"
+      ],
+      "playerFleet": [
+        "battleship"
+      ],
+      "enemyFirst": false,
+      "allowedWeapons": [
+        "harpoon"
+      ],
+      "objective": {
+        "kind": "destroy-targets",
+        "targets": [
+          "destroyer",
+          "escort"
+        ],
+        "maxFriendlyActions": 1
+      },
+      "playerPlacements": [
+        {
+          "id": "battleship",
+          "start": {
+            "x": 0,
+            "y": 7
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyPlacements": [
+        {
+          "id": "destroyer",
+          "start": {
+            "x": 0,
+            "y": 2
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "escort",
+          "start": {
+            "x": 4,
+            "y": 4
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyInitialHits": [
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": 1,
+          "y": 2
+        },
+        {
+          "x": 5,
+          "y": 4
+        }
+      ],
+      "initialIntel": [
+        {
+          "coord": {
+            "x": 6,
+            "y": 4
+          },
+          "mark": "echo"
+        },
+        {
+          "coord": {
+            "x": 5,
+            "y": 3
+          },
+          "mark": "echo"
+        },
+        {
+          "coord": {
+            "x": 5,
+            "y": 5
+          },
+          "mark": "echo"
+        }
+      ],
+      "initiallyIdentified": [
+        "destroyer",
+        "escort"
+      ],
+      "enemyDisclosure": {
+        "known": [
+          "destroyer",
+          "escort"
+        ],
+        "unknownCount": 0,
+        "summary": "DD残存C-3、DE残存E-5を既存命中と既知空所から限定。"
+      },
+      "fixedSeed": 5048071,
+      "aiSkill": 1.35,
+      "huntBreadth": 3,
+      "completion": {
+        "success": "CROSSING SOLUTION：単一射撃で通過対象2隻の戦闘能力喪失を確認。",
+        "deadline": "SALVO DISPERSED：交差点を外し、対象艦の同時無力化に失敗。"
+      }
+    },
+    {
+      "id": 8,
+      "sortOrder": 60,
+      "difficulty": 3,
+      "category": "standard",
+      "title": "DIVIDED BATTERY",
+      "subtitle": "残存区画に合わせ、二種の砲撃を配分せよ",
+      "directive": "STRADDLEとMK-45 IIを適切な対象へ割り当て、2行動で敵CA・DDを撃沈せよ。",
+      "condition": "CA・DD撃沈 / 2行動 / 自軍CA・DD生存 / 自軍先制",
+      "fleet": [
+        "cruiser",
+        "destroyer"
+      ],
+      "enemyFleet": [
+        "cruiser",
+        "destroyer"
+      ],
+      "playerFleet": [
+        "cruiser",
+        "destroyer"
+      ],
+      "enemyFirst": false,
+      "allowedWeapons": [
+        "sparrow",
+        "mk45"
+      ],
+      "objective": {
+        "kind": "destroy-targets",
+        "targets": [
+          "cruiser",
+          "destroyer"
+        ],
+        "maxFriendlyActions": 2,
+        "protectedShips": [
+          "cruiser",
+          "destroyer"
+        ]
+      },
+      "playerPlacements": [
+        {
+          "id": "cruiser",
+          "start": {
+            "x": 0,
+            "y": 7
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "destroyer",
+          "start": {
+            "x": 5,
+            "y": 5
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyPlacements": [
+        {
+          "id": "cruiser",
+          "start": {
+            "x": 1,
+            "y": 1
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "destroyer",
+          "start": {
+            "x": 4,
+            "y": 6
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyInitialHits": [
+        {
+          "x": 4,
+          "y": 1
+        },
+        {
+          "x": 5,
+          "y": 6
+        }
+      ],
+      "initialIntel": [
+        {
+          "coord": {
+            "x": 5,
+            "y": 1
+          },
+          "mark": "echo"
+        },
+        {
+          "coord": {
+            "x": 5,
+            "y": 5
+          },
+          "mark": "echo"
+        },
+        {
+          "coord": {
+            "x": 5,
+            "y": 7
+          },
+          "mark": "echo"
+        }
+      ],
+      "initiallyIdentified": [
+        "cruiser",
+        "destroyer"
+      ],
+      "enemyDisclosure": {
+        "known": [
+          "cruiser",
+          "destroyer"
+        ],
+        "unknownCount": 0,
+        "summary": "CA残存3区画とDD残存2区画を射撃諸元と既知空所から公開。"
+      },
+      "fixedSeed": 5048328,
+      "aiSkill": 1.55,
+      "huntBreadth": 3,
+      "completion": {
+        "success": "BATTERY ASSIGNMENT COMPLETE：両砲系の配分を適正化し、指定2隻を無力化。",
+        "deadline": "FIRE PLAN EXHAUSTED：兵装配分が適合せず、一方の敵艦が残存。",
+        "protected": {
+          "cruiser": "RANGING BATTERY LOST：巡洋艦の戦闘能力喪失。夾叉射撃実施不能。",
+          "destroyer": "PRECISION BATTERY LOST：駆逐艦の戦闘能力喪失。連続射撃実施不能。"
+        }
+      }
+    },
+    {
+      "id": 9,
+      "sortOrder": 70,
+      "difficulty": 3,
+      "category": "standard",
+      "title": "COMMAND SECTION",
+      "subtitle": "残存艦の一弾で敵指揮区画を特定せよ",
+      "directive": "事前解析が示すD-4を攻撃し、敵艦種を識別せよ。撃沈は不要。",
+      "condition": "CA識別 / FIREのみ / 1行動 / 自軍DD生存 / 敵先制",
+      "fleet": [
+        "cruiser"
+      ],
+      "enemyFleet": [
+        "cruiser"
+      ],
+      "playerFleet": [
+        "destroyer"
+      ],
+      "enemyFirst": true,
+      "allowedWeapons": [
+        "fire"
+      ],
+      "objective": {
+        "kind": "identify-targets",
+        "targets": [
+          "cruiser"
+        ],
+        "maxFriendlyActions": 1,
+        "protectedShips": [
+          "destroyer"
+        ]
+      },
+      "playerPlacements": [
+        {
+          "id": "destroyer",
+          "start": {
+            "x": 1,
+            "y": 7
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyPlacements": [
+        {
+          "id": "cruiser",
+          "start": {
+            "x": 1,
+            "y": 3
+          },
+          "orientation": "east"
+        }
+      ],
+      "playerInitialHits": [
+        {
+          "x": 1,
+          "y": 7
+        },
+        {
+          "x": 3,
+          "y": 7
+        }
+      ],
+      "enemyDisclosure": {
+        "known": [],
+        "unknownCount": 1,
+        "candidateCells": [
+          {
+            "code": "ESTIMATED CIC / D-4",
+            "coord": {
+              "x": 3,
+              "y": 3
+            }
+          }
+        ],
+        "summary": "4区画級水上艦の水平航路と指揮反応D-4のみ公開。艦種は未識別。"
+      },
+      "fixedSeed": 5048585,
+      "aiSkill": 1.64,
+      "huntBreadth": 2,
+      "completion": {
+        "success": "IDENTIFICATION COMPLETE：重要区画命中により敵巡洋艦を識別。資料回収後、離脱する。",
+        "deadline": "IDENTIFICATION FAILED：指揮区画を捕捉できず、敵影は未識別のまま離脱。",
+        "protected": {
+          "destroyer": "OBSERVATION SHIP LOST：識別任務担当艦の戦闘能力喪失。"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "sortOrder": 80,
+      "difficulty": 4,
+      "category": "standard",
+      "title": "LAST FLIGHT",
+      "subtitle": "損傷空母の最終攻撃隊を二度だけ発進させよ",
+      "directive": "識別済み重要区画から戦艦の二つの配置仮説を切り分け、2行動で撃沈せよ。",
+      "condition": "BB撃沈 / 空母生存 / F-4 2回以内 / 護衛リンク固定",
+      "fleet": [
+        "battleship",
+        "cruiser",
+        "destroyer",
+        "submarine"
+      ],
+      "enemyFleet": [
+        "battleship",
+        "cruiser",
+        "destroyer",
+        "submarine"
+      ],
+      "playerFleet": [
+        "carrier",
+        "escort"
+      ],
+      "enemyFirst": true,
+      "allowedWeapons": [
+        "fire",
+        "phantom"
+      ],
+      "objective": {
+        "kind": "destroy-targets",
+        "targets": [
+          "battleship"
+        ],
+        "maxFriendlyActions": 2,
+        "protectedShips": [
+          "carrier"
+        ]
+      },
+      "playerPlacements": [
+        {
+          "id": "carrier",
+          "start": {
+            "x": 1,
+            "y": 5
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "escort",
+          "start": {
+            "x": 1,
+            "y": 4
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyPlacements": [
+        {
+          "id": "battleship",
+          "start": {
+            "x": 1,
+            "y": 3
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "cruiser",
+          "start": {
+            "x": 0,
+            "y": 0
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "destroyer",
+          "start": {
+            "x": 4,
+            "y": 7
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "submarine",
+          "start": {
+            "x": 7,
+            "y": 1
+          },
+          "orientation": "east"
+        }
+      ],
+      "playerInitialHits": [
+        {
+          "x": 1,
+          "y": 6
+        },
+        {
+          "x": 4,
+          "y": 6
+        }
+      ],
+      "enemyInitialHits": [
+        {
+          "x": 3,
+          "y": 3
+        }
+      ],
+      "initiallyIdentified": [
+        "battleship"
+      ],
+      "enemyDisclosure": {
+        "known": [
+          "battleship"
+        ],
+        "unknownCount": 3,
+        "summary": "BBの重要区画D-4と既存命中を公開。水平・垂直の二仮説以外は未公開。"
+      },
+      "requiredLink": "carrier",
+      "fixedSeed": 5047043,
+      "aiSkill": 1.785,
+      "huntBreadth": 2,
+      "completion": {
+        "success": "TARGET NEUTRALIZED：敵戦艦の戦闘能力喪失を確認。航空隊収容へ移行。",
+        "deadline": "SORTIE WINDOW CLOSED：攻撃可能時間を超過。敵主力は射程外へ離脱。",
+        "protected": {
+          "carrier": "FLIGHT CONTROL LOST：航空運用母艦の戦闘能力喪失。任務中止。"
+        }
+      }
+    },
+    {
+      "id": 10,
+      "sortOrder": 90,
+      "difficulty": 4,
+      "category": "standard",
+      "title": "SHADOW DIVIDE",
+      "subtitle": "聴音で二候補を分断し、残る一点を攻撃せよ",
+      "directive": "ALPHAでNO CONTACTを確認し、残るBRAVOの敵潜水艦を2行動で撃沈せよ。",
+      "condition": "ALPHA NO CONTACT→SS撃沈 / 2行動 / 自軍SS生存",
+      "fleet": [
+        "submarine"
+      ],
+      "enemyFleet": [
+        "submarine"
+      ],
+      "playerFleet": [
+        "escort",
+        "submarine"
+      ],
+      "enemyFirst": false,
+      "allowedWeapons": [
+        "radar",
+        "fire"
+      ],
+      "objective": {
+        "kind": "scan-and-destroy",
+        "targets": [
+          "submarine"
+        ],
+        "maxFriendlyActions": 2,
+        "protectedShips": [
+          "submarine"
+        ],
+        "reports": [
+          {
+            "origin": {
+              "x": 1,
+              "y": 1
+            },
+            "contact": false,
+            "code": "ALPHA / B-2"
+          }
+        ]
+      },
+      "playerPlacements": [
+        {
+          "id": "escort",
+          "start": {
+            "x": 0,
+            "y": 0
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "submarine",
+          "start": {
+            "x": 7,
+            "y": 7
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyPlacements": [
+        {
+          "id": "submarine",
+          "start": {
+            "x": 5,
+            "y": 5
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyDisclosure": {
+        "known": [],
+        "unknownCount": 1,
+        "candidateCells": [
+          {
+            "code": "ALPHA / C-3",
+            "coord": {
+              "x": 2,
+              "y": 2
+            }
+          },
+          {
+            "code": "BRAVO / F-6",
+            "coord": {
+              "x": 5,
+              "y": 5
+            }
+          }
+        ],
+        "summary": "単一潜水艦の候補位置はC-3またはF-6。ALPHA聴音区画はB-2起点。"
+      },
+      "fixedSeed": 5048842,
+      "aiSkill": 1.7,
+      "huntBreadth": 2,
+      "completion": {
+        "success": "SHADOW RESOLVED：聴音で候補を分断し、残存接触の戦闘能力喪失を確認。",
+        "deadline": "TRACK DIVISION FAILED：聴音と攻撃の手順を完了できず、敵潜水艦を喪失。",
+        "protected": {
+          "submarine": "LISTENING UNIT LOST：自軍潜水艦との連絡途絶。聴音追跡を中止。"
+        }
+      }
+    },
+    {
+      "id": 11,
+      "sortOrder": 100,
+      "difficulty": 4,
+      "category": "standard",
+      "title": "CUT THE SCREEN",
+      "subtitle": "敵護衛連接を先に断ち、次発航空攻撃を封じよ",
+      "directive": "損傷BBを守り、敵DEとCVを3行動で撃沈せよ。",
+      "condition": "DE→CV撃沈 / 3行動 / 自軍BB生存 / 敵先制",
+      "fleet": [
+        "carrier",
+        "escort"
+      ],
+      "enemyFleet": [
+        "carrier",
+        "escort"
+      ],
+      "playerFleet": [
+        "battleship"
+      ],
+      "enemyFirst": true,
+      "allowedWeapons": [
+        "fire",
+        "harpoon"
+      ],
+      "objective": {
+        "kind": "destroy-targets",
+        "targets": [
+          "escort",
+          "carrier"
+        ],
+        "maxFriendlyActions": 3,
+        "protectedShips": [
+          "battleship"
+        ],
+        "requiredDestructionOrder": [
+          "escort",
+          "carrier"
+        ]
+      },
+      "playerPlacements": [
+        {
+          "id": "battleship",
+          "start": {
+            "x": 0,
+            "y": 6
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyPlacements": [
+        {
+          "id": "carrier",
+          "start": {
+            "x": 2,
+            "y": 3
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "escort",
+          "start": {
+            "x": 3,
+            "y": 2
+          },
+          "orientation": "east"
+        }
+      ],
+      "playerInitialHits": [
+        {
+          "x": 0,
+          "y": 6
+        },
+        {
+          "x": 4,
+          "y": 6
+        }
+      ],
+      "enemyInitialHits": [
+        {
+          "x": 3,
+          "y": 3
+        },
+        {
+          "x": 5,
+          "y": 3
+        },
+        {
+          "x": 2,
+          "y": 4
+        },
+        {
+          "x": 4,
+          "y": 4
+        },
+        {
+          "x": 3,
+          "y": 2
+        }
+      ],
+      "initiallyIdentified": [
+        "carrier",
+        "escort"
+      ],
+      "enemyDisclosure": {
+        "known": [
+          "carrier",
+          "escort"
+        ],
+        "unknownCount": 0,
+        "summary": "CV・DEの全射撃諸元、既命中5区画、護衛連接ACTIVEを公開。"
+      },
+      "fixedSeed": 5049099,
+      "aiSkill": 1.78,
+      "huntBreadth": 2,
+      "completion": {
+        "success": "SCREEN COLLAPSED：護衛連接を断った後、敵空母の戦闘能力喪失を確認。",
+        "deadline": "AIR THREAT RETAINED：敵護衛連接と航空運用能力を所定時間内に無力化できず。",
+        "protected": {
+          "battleship": "CAPITAL UNIT LOST：自軍戦艦の戦闘能力喪失。護衛網突破を中止。"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "sortOrder": 110,
+      "difficulty": 5,
+      "category": "standard",
+      "title": "BROKEN SPEAR",
+      "subtitle": "主砲を失った残存二艦で、敵航空中枢だけを三斉射で破砕せよ",
+      "directive": "射撃管制リンクを維持し、HARPOON 3斉射以内に敵空母を撃沈せよ。",
+      "condition": "CV撃沈 / HARPOONのみ / 3行動 / BB・DE生存 / 自軍先制",
+      "fleet": [
+        "carrier",
+        "battleship",
+        "cruiser",
+        "destroyer",
+        "escort",
+        "submarine"
+      ],
+      "enemyFleet": [
+        "carrier",
+        "battleship",
+        "cruiser",
+        "destroyer",
+        "escort",
+        "submarine"
+      ],
+      "playerFleet": [
+        "battleship",
+        "escort"
+      ],
+      "enemyFirst": false,
+      "allowedWeapons": [
+        "harpoon"
+      ],
+      "objective": {
+        "kind": "destroy-targets",
+        "targets": [
+          "carrier"
+        ],
+        "maxFriendlyActions": 3,
+        "protectedShips": [
+          "battleship",
+          "escort"
+        ]
+      },
+      "playerPlacements": [
+        {
+          "id": "battleship",
+          "start": {
+            "x": 0,
+            "y": 6
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "escort",
+          "start": {
+            "x": 0,
+            "y": 5
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyPlacements": [
+        {
+          "id": "carrier",
+          "start": {
+            "x": 2,
+            "y": 2
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "battleship",
+          "start": {
+            "x": 0,
+            "y": 7
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "cruiser",
+          "start": {
+            "x": 0,
+            "y": 5
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "destroyer",
+          "start": {
+            "x": 5,
+            "y": 0
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "escort",
+          "start": {
+            "x": 6,
+            "y": 6
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "submarine",
+          "start": {
+            "x": 0,
+            "y": 0
+          },
+          "orientation": "east"
+        }
+      ],
+      "playerInitialHits": [
+        {
+          "x": 0,
+          "y": 6
+        }
+      ],
+      "enemyInitialHits": [
+        {
+          "x": 2,
+          "y": 2
+        },
+        {
+          "x": 4,
+          "y": 2
+        }
+      ],
+      "initialIntel": [
+        {
+          "coord": {
+            "x": 3,
+            "y": 0
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 3,
+            "y": 1
+          },
+          "mark": "echo"
+        },
+        {
+          "coord": {
+            "x": 4,
+            "y": 4
+          },
+          "mark": "echo"
+        }
+      ],
+      "initiallyIdentified": [
+        "carrier"
+      ],
+      "enemyDisclosure": {
+        "known": [
+          "carrier"
+        ],
+        "unknownCount": 5,
+        "summary": "CVの重要区画・既命中2区画・既知空所3区画を公開。その他の敵影は非目標。"
+      },
+      "requiredLink": "battleship",
+      "fixedSeed": 5047300,
+      "aiSkill": 1.819,
+      "huntBreadth": 1,
+      "completion": {
+        "success": "CARRIER STRIKE COMPLETE：敵空母の戦闘能力喪失を確認。残存部隊は離脱針路へ移行。",
+        "deadline": "STRIKE WINDOW CLOSED：攻撃限界時刻を超過。敵空母の離脱を許す。",
+        "protected": {
+          "battleship": "LAUNCH PLATFORM LOST：戦艦の戦闘能力喪失。誘導弾射撃不能。",
+          "escort": "FIRE CONTROL LINK LOST：射撃管制連接喪失。第3射実施不能、任務中止。"
+        }
+      }
+    },
+    {
+      "id": 12,
+      "sortOrder": 120,
+      "difficulty": 5,
+      "category": "standard",
+      "title": "DUAL LINK",
+      "subtitle": "一隻の護衛艦で二つの火力連接を維持せよ",
+      "directive": "CV・BB両連接を維持し、PHANTOM 2出撃とHARPOON 3回で5行動以内に指定4隻を撃沈せよ。",
+      "condition": "BB・CA・DD・DE撃沈 / 5行動 / CV・BB・DE生存 / 両連接ACTIVE",
+      "fleet": [
+        "battleship",
+        "cruiser",
+        "destroyer",
+        "escort"
+      ],
+      "enemyFleet": [
+        "battleship",
+        "cruiser",
+        "destroyer",
+        "escort"
+      ],
+      "playerFleet": [
+        "carrier",
+        "battleship",
+        "escort"
+      ],
+      "enemyFirst": false,
+      "allowedWeapons": [
+        "phantom",
+        "harpoon"
+      ],
+      "objective": {
+        "kind": "destroy-targets",
+        "targets": [
+          "battleship",
+          "cruiser",
+          "destroyer",
+          "escort"
+        ],
+        "maxFriendlyActions": 5,
+        "protectedShips": [
+          "carrier",
+          "battleship",
+          "escort"
+        ]
+      },
+      "playerPlacements": [
+        {
+          "id": "carrier",
+          "start": {
+            "x": 1,
+            "y": 3
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "battleship",
+          "start": {
+            "x": 0,
+            "y": 6
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "escort",
+          "start": {
+            "x": 2,
+            "y": 5
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyPlacements": [
+        {
+          "id": "battleship",
+          "start": {
+            "x": 0,
+            "y": 0
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "cruiser",
+          "start": {
+            "x": 0,
+            "y": 3
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "destroyer",
+          "start": {
+            "x": 5,
+            "y": 7
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "escort",
+          "start": {
+            "x": 6,
+            "y": 5
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyInitialHits": [
+        {
+          "x": 7,
+          "y": 5
+        }
+      ],
+      "initiallyIdentified": [
+        "battleship",
+        "cruiser",
+        "destroyer",
+        "escort"
+      ],
+      "enemyDisclosure": {
+        "known": [
+          "battleship",
+          "cruiser",
+          "destroyer",
+          "escort"
+        ],
+        "unknownCount": 0,
+        "summary": "指定4隻の全射撃諸元とDE F-8命中を公開。課題は索敵ではなく連接火力の配分。"
+      },
+      "requiredLinks": [
+        "carrier",
+        "battleship"
+      ],
+      "fixedSeed": 5049356,
+      "aiSkill": 1.82,
+      "huntBreadth": 1,
+      "completion": {
+        "success": "DUAL LINK STRIKE COMPLETE：二系統の支援連接を維持し、指定4隻の戦闘能力喪失を確認。",
+        "deadline": "FIRE PLAN INCOMPLETE：配分された5行動内に指定火力計画を完了できず。",
+        "protected": {
+          "carrier": "AIR LINK LOST：空母の戦闘能力喪失。航空打撃計画を中止。",
+          "battleship": "MISSILE LINK LOST：戦艦の戦闘能力喪失。誘導弾射撃計画を中止。",
+          "escort": "DUAL CONTROL LOST：護衛艦の戦闘能力喪失。両連接の維持不能。"
+        }
+      }
+    },
+    {
+      "id": 13,
+      "sortOrder": 10,
+      "difficulty": 2,
+      "category": "archive",
+      "title": "TRACK RECONSTRUCTION",
+      "subtitle": "命中順序と空所記録から艦姿勢を復元せよ",
+      "directive": "日誌からCA-04 ORPHEUSの残存区画を導き、MK-45 II 1回で撃沈せよ。",
+      "condition": "ORPHEUS撃沈 / MK-45 IIのみ / 1行動 / UNKNOWN 2隻は非目標",
+      "fleet": [
+        "battleship",
+        "cruiser",
+        "submarine"
+      ],
+      "enemyFleet": [
+        "battleship",
+        "cruiser",
+        "submarine"
+      ],
+      "playerFleet": [
+        "destroyer"
+      ],
+      "enemyFirst": false,
+      "allowedWeapons": [
+        "mk45"
+      ],
+      "objective": {
+        "kind": "destroy-targets",
+        "targets": [
+          "cruiser"
+        ],
+        "maxFriendlyActions": 1
+      },
+      "playerPlacements": [
+        {
+          "id": "destroyer",
+          "start": {
+            "x": 0,
+            "y": 6
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyPlacements": [
+        {
+          "id": "battleship",
+          "start": {
+            "x": 0,
+            "y": 0
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "cruiser",
+          "start": {
+            "x": 1,
+            "y": 3
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "submarine",
+          "start": {
+            "x": 7,
+            "y": 7
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyInitialHits": [
+        {
+          "x": 3,
+          "y": 3
+        },
+        {
+          "x": 4,
+          "y": 3
+        }
+      ],
+      "initialIntel": [
+        {
+          "coord": {
+            "x": 5,
+            "y": 3
+          },
+          "mark": "echo"
+        }
+      ],
+      "initiallyIdentified": [
+        "cruiser"
+      ],
+      "enemyDisclosure": {
+        "known": [
+          "cruiser"
+        ],
+        "unknownCount": 2,
+        "callsigns": {
+          "cruiser": "CA-04 ORPHEUS"
+        },
+        "summary": "ORPHEUSの重要区画D-4、同一艦D-5の命中、D-6の既知空所を日誌から復元。"
+      },
+      "archiveLog": [
+        {
+          "time": "1840Z",
+          "text": "ORDER OF BATTLE：CA-04 “ORPHEUS” CONFIRMED / UNKNOWN CONTACTS 2"
+        },
+        {
+          "time": "1841Z",
+          "text": "D-4 IMPORTANT SECTION HIT：ORPHEUS",
+          "tone": "critical"
+        },
+        {
+          "time": "1842Z",
+          "text": "D-5 HIT：SAME HULL"
+        },
+        {
+          "time": "1844Z",
+          "text": "D-6 ECHO：NO HULL SECTION"
+        },
+        {
+          "time": "1845Z",
+          "text": "FIRE CONTROL TRANSFERRED TO BLUE"
+        }
+      ],
+      "fixedSeed": 5049613,
+      "aiSkill": 1.35,
+      "huntBreadth": 3,
+      "completion": {
+        "success": "TRACK RECONSTRUCTED：航跡復元によりORPHEUSの残存区画を捕捉。",
+        "deadline": "TRACK MISREAD：艦姿勢の復元を誤り、ORPHEUSの離脱を許す。"
+      }
+    },
+    {
+      "id": 14,
+      "sortOrder": 20,
+      "difficulty": 3,
+      "category": "archive",
+      "title": "MAGAZINE ACCOUNT",
+      "subtitle": "支援連接喪失後の実残弾数を算定せよ",
+      "directive": "日誌からHARPOON残弾を算定し、残る1回でCV-08 ARGUSを撃沈せよ。",
+      "condition": "ARGUS撃沈 / HARPOON実残1 / BB生存 / 自軍先制",
+      "fleet": [
+        "carrier",
+        "submarine"
+      ],
+      "enemyFleet": [
+        "carrier",
+        "submarine"
+      ],
+      "playerFleet": [
+        "battleship"
+      ],
+      "enemyFirst": false,
+      "allowedWeapons": [
+        "harpoon"
+      ],
+      "objective": {
+        "kind": "destroy-targets",
+        "targets": [
+          "carrier"
+        ],
+        "maxFriendlyActions": 1,
+        "protectedShips": [
+          "battleship"
+        ]
+      },
+      "playerPlacements": [
+        {
+          "id": "battleship",
+          "start": {
+            "x": 0,
+            "y": 6
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyPlacements": [
+        {
+          "id": "carrier",
+          "start": {
+            "x": 2,
+            "y": 2
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "submarine",
+          "start": {
+            "x": 7,
+            "y": 7
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyInitialHits": [
+        {
+          "x": 2,
+          "y": 2
+        },
+        {
+          "x": 4,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 3
+        },
+        {
+          "x": 3,
+          "y": 3
+        },
+        {
+          "x": 4,
+          "y": 3
+        },
+        {
+          "x": 5,
+          "y": 3
+        }
+      ],
+      "initiallyIdentified": [
+        "carrier"
+      ],
+      "initialArsenal": {
+        "harpoon": 2
+      },
+      "enemyDisclosure": {
+        "known": [
+          "carrier"
+        ],
+        "unknownCount": 1,
+        "callsigns": {
+          "carrier": "CV-08 ARGUS"
+        },
+        "summary": "ARGUSはC-4・C-6のみ未破壊。UNKNOWN 1隻は非目標。"
+      },
+      "archiveLog": [
+        {
+          "time": "2011Z",
+          "text": "DE-01：FIRE CONTROL LINK ACTIVE / HARPOON AUTHORIZATION 3"
+        },
+        {
+          "time": "2013Z",
+          "text": "HARPOON SALVO 1：EXPENDED"
+        },
+        {
+          "time": "2015Z",
+          "text": "DE-01：COMBAT CAPABILITY LOST",
+          "tone": "critical"
+        },
+        {
+          "time": "2016Z",
+          "text": "FIRE CONTROL LINK LOST：LOCAL AUTHORIZATION 2",
+          "tone": "warning"
+        },
+        {
+          "time": "2018Z",
+          "text": "CV-08 “ARGUS”：C-4 / C-6 UNBROKEN, OTHER SECTIONS HIT"
+        }
+      ],
+      "fixedSeed": 5049870,
+      "aiSkill": 1.55,
+      "huntBreadth": 2,
+      "completion": {
+        "success": "MAGAZINE SOLUTION COMPLETE：最終許可弾を2区画へ同時指向し、ARGUSを無力化。",
+        "deadline": "MAGAZINE EMPTY：実残弾の算定を誤り、ARGUSの戦闘能力が残存。",
+        "protected": {
+          "battleship": "LAUNCH PLATFORM LOST：誘導弾発射艦の戦闘能力喪失。"
+        }
+      }
+    },
+    {
+      "id": 15,
+      "sortOrder": 30,
+      "difficulty": 4,
+      "category": "archive",
+      "title": "RELIEF OF WATCH",
+      "subtitle": "当直交代記録から次の射撃権と最優先脅威を読め",
+      "directive": "射撃指揮移管後の最初の1行動でDD-03を撃沈し、損傷空母を保全せよ。",
+      "condition": "DD撃沈 / FIREのみ / 1行動 / CV生存 / 日誌上は自軍手番",
+      "fleet": [
+        "destroyer",
+        "submarine"
+      ],
+      "enemyFleet": [
+        "destroyer",
+        "submarine"
+      ],
+      "playerFleet": [
+        "carrier"
+      ],
+      "enemyFirst": false,
+      "allowedWeapons": [
+        "fire"
+      ],
+      "objective": {
+        "kind": "destroy-targets",
+        "targets": [
+          "destroyer"
+        ],
+        "maxFriendlyActions": 1,
+        "protectedShips": [
+          "carrier"
+        ]
+      },
+      "playerPlacements": [
+        {
+          "id": "carrier",
+          "start": {
+            "x": 0,
+            "y": 0
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyPlacements": [
+        {
+          "id": "destroyer",
+          "start": {
+            "x": 5,
+            "y": 6
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "submarine",
+          "start": {
+            "x": 0,
+            "y": 7
+          },
+          "orientation": "east"
+        }
+      ],
+      "playerInitialHits": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 2,
+          "y": 1
+        }
+      ],
+      "enemyInitialHits": [
+        {
+          "x": 5,
+          "y": 6
+        },
+        {
+          "x": 6,
+          "y": 6
+        }
+      ],
+      "initiallyIdentified": [
+        "destroyer"
+      ],
+      "enemyDisclosure": {
+        "known": [
+          "destroyer"
+        ],
+        "unknownCount": 1,
+        "callsigns": {
+          "destroyer": "DD-03"
+        },
+        "summary": "DD-03はG-8のみ未破壊。UNKNOWN 1隻は非目標。"
+      },
+      "archiveLog": [
+        {
+          "time": "0310Z",
+          "text": "HOSTILE FIRE COMPLETE"
+        },
+        {
+          "time": "0311Z",
+          "text": "OWN CV：DAMAGE 7/8 / FLIGHT CONTROL REMAINS",
+          "tone": "critical"
+        },
+        {
+          "time": "0312Z",
+          "text": "WATCH RELIEF COMPLETE：FIRE CONTROL PASSED TO BLUE"
+        },
+        {
+          "time": "0313Z",
+          "text": "HOSTILE DD-03：G-6 / G-7 HIT, G-8 UNBROKEN"
+        },
+        {
+          "time": "0314Z",
+          "text": "DD-03 FIRE SOLUTION RETAINED ON OWN CV",
+          "tone": "warning"
+        }
+      ],
+      "fixedSeed": 5050127,
+      "aiSkill": 1.72,
+      "huntBreadth": 1,
+      "completion": {
+        "success": "WATCH RELIEF COMPLETE：射撃指揮移管直後にDD-03を無力化。損傷空母の保全を確認。",
+        "deadline": "HOSTILE WINDOW OPEN：最優先脅威の処理が間に合わず、敵射撃窓へ移行。",
+        "protected": {
+          "carrier": "FLIGHT CONTROL LOST：損傷空母の戦闘能力喪失。"
+        }
+      }
+    },
+    {
+      "id": 16,
+      "sortOrder": 40,
+      "difficulty": 4,
+      "category": "archive",
+      "title": "NAMED HULL",
+      "subtitle": "目視艦名と両端弾着から指定艦の残存範囲を読め",
+      "directive": "五区画艦VIGILANTの残存3区画に夾叉射撃を重ね、1行動で撃沈せよ。",
+      "condition": "VIGILANT撃沈 / STRADDLEのみ / 1行動 / UNKNOWNは非目標",
+      "fleet": [
+        "battleship",
+        "cruiser"
+      ],
+      "enemyFleet": [
+        "battleship",
+        "cruiser"
+      ],
+      "playerFleet": [
+        "cruiser"
+      ],
+      "enemyFirst": false,
+      "allowedWeapons": [
+        "sparrow"
+      ],
+      "objective": {
+        "kind": "destroy-targets",
+        "targets": [
+          "battleship"
+        ],
+        "maxFriendlyActions": 1
+      },
+      "playerPlacements": [
+        {
+          "id": "cruiser",
+          "start": {
+            "x": 0,
+            "y": 7
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyPlacements": [
+        {
+          "id": "battleship",
+          "start": {
+            "x": 5,
+            "y": 1
+          },
+          "orientation": "south"
+        },
+        {
+          "id": "cruiser",
+          "start": {
+            "x": 0,
+            "y": 0
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyInitialHits": [
+        {
+          "x": 5,
+          "y": 1
+        },
+        {
+          "x": 5,
+          "y": 5
+        }
+      ],
+      "initiallyIdentified": [
+        "battleship"
+      ],
+      "enemyDisclosure": {
+        "known": [
+          "battleship"
+        ],
+        "unknownCount": 1,
+        "callsigns": {
+          "battleship": "BB-05 VIGILANT"
+        },
+        "summary": "VIGILANTはB-6からF-6へ南進。両端B-6/F-6は命中済み。"
+      },
+      "archiveLog": [
+        {
+          "time": "2210Z",
+          "text": "VISUAL ID：“VIGILANT” / FIVE-SECTION HULL / COURSE SOUTH"
+        },
+        {
+          "time": "2212Z",
+          "text": "B-6 HIT：VIGILANT BOW SECTION"
+        },
+        {
+          "time": "2213Z",
+          "text": "F-6 HIT：VIGILANT STERN SECTION"
+        },
+        {
+          "time": "2215Z",
+          "text": "A-2 CONTACT：IDENTITY UNKNOWN / NON-OBJECTIVE"
+        },
+        {
+          "time": "2216Z",
+          "text": "8-INCH BATTERY：ONE RANGING SALVO READY"
+        }
+      ],
+      "fixedSeed": 5050384,
+      "aiSkill": 1.75,
+      "huntBreadth": 1,
+      "completion": {
+        "success": "NAMED TARGET NEUTRALIZED：艦名・航路・両端損傷を照合し、VIGILANTを無力化。",
+        "deadline": "TARGET CORRELATION FAILED：艦名と弾着記録の照合を誤り、指定艦が残存。"
+      }
+    },
+    {
+      "id": 17,
+      "sortOrder": 10,
+      "difficulty": 6,
+      "category": "extreme",
+      "title": "FALSE WAKE",
+      "subtitle": "二つの聴音報告を照合し、損傷艦と潜航艦を一斉射で処理せよ。",
+      "directive": "指定海面ALPHA・BRAVOを順に聴音。報告確定後、MK-45 IIの二目標射撃で残存二艦を同時に無力化せよ。",
+      "condition": "指定SONAR 2回 / DD・SS撃沈 / MK-45 II 1回 / 3行動",
+      "fleet": [
+        "battleship",
+        "destroyer",
+        "submarine"
+      ],
+      "playerFleet": [
+        "battleship",
+        "destroyer",
+        "submarine"
+      ],
+      "enemyFleet": [
+        "destroyer",
+        "submarine"
+      ],
+      "enemyFirst": false,
+      "allowedWeapons": [
+        "radar",
+        "mk45"
+      ],
+      "objective": {
+        "kind": "scan-and-destroy",
+        "targets": [
+          "destroyer",
+          "submarine"
+        ],
+        "maxFriendlyActions": 3,
+        "reports": [
+          {
+            "origin": {
+              "x": 2,
+              "y": 2
+            },
+            "contact": true,
+            "code": "ALPHA / C-3:D-4"
+          },
+          {
+            "origin": {
+              "x": 4,
+              "y": 4
+            },
+            "contact": false,
+            "code": "BRAVO / E-5:F-6"
+          }
+        ],
+        "orderedReports": true,
+        "requiredWeaponSequence": [
+          "radar",
+          "radar",
+          "mk45"
+        ]
+      },
+      "playerPlacements": [
+        {
+          "id": "battleship",
+          "start": {
+            "x": 0,
+            "y": 7
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "destroyer",
+          "start": {
+            "x": 0,
+            "y": 5
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "submarine",
+          "start": {
+            "x": 7,
+            "y": 0
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyPlacements": [
+        {
+          "id": "destroyer",
+          "start": {
+            "x": 1,
+            "y": 3
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "submarine",
+          "start": {
+            "x": 6,
+            "y": 6
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyInitialHits": [
+        {
+          "x": 1,
+          "y": 3
+        },
+        {
+          "x": 2,
+          "y": 3
+        }
+      ],
+      "enemyDisclosure": {
+        "known": [
+          "destroyer"
+        ],
+        "unknownCount": 1,
+        "callsigns": {
+          "destroyer": "DD-03 GREYHOUND"
+        },
+        "candidateCells": [
+          {
+            "code": "LAST DD SECTION",
+            "coord": {
+              "x": 3,
+              "y": 3
+            }
+          },
+          {
+            "code": "WAKE TERMINUS",
+            "coord": {
+              "x": 6,
+              "y": 6
+            }
+          }
+        ],
+        "summary": "GREYHOUNDは2/3区画損傷。未識別音源一つ。聴音結果を確定し、射撃解を一つに絞れ。"
+      },
+      "initialArsenal": {
+        "radar": 2,
+        "mk45": 1
+      },
+      "fixedSeed": 7214849,
+      "aiSkill": 1.92,
+      "huntBreadth": 2,
+      "completion": {
+        "success": "CONTACT CORRELATION COMPLETE：二つの聴音報告を射撃解へ統合し、残存接触を一斉に減殺。",
+        "deadline": "CONTACT CORRELATION FAILED：聴音窓を消費。残存接触の同時処理に失敗。"
+      }
+    },
+    {
+      "id": 18,
+      "sortOrder": 20,
+      "difficulty": 6,
+      "category": "extreme",
+      "title": "SEVERED LINK",
+      "subtitle": "一隻の護衛艦が支える二重連接を維持し、敵防空網から主力艦を順次切り離せ。",
+      "directive": "DE、CV、BBの順に撃沈。護衛艦による航空護衛連接・射撃管制連接を失わず、増加した全出撃・全射を使い切れ。",
+      "condition": "DE→CV→BB / 自軍CV・BB・DE生存 / F-4 2回・HARPOON 3回 / 5行動",
+      "fleet": [
+        "carrier",
+        "battleship",
+        "escort",
+        "submarine"
+      ],
+      "playerFleet": [
+        "carrier",
+        "battleship",
+        "escort"
+      ],
+      "enemyFleet": [
+        "carrier",
+        "battleship",
+        "escort",
+        "submarine"
+      ],
+      "enemyFirst": false,
+      "allowedWeapons": [
+        "phantom",
+        "harpoon"
+      ],
+      "objective": {
+        "kind": "destroy-targets",
+        "targets": [
+          "escort",
+          "carrier",
+          "battleship"
+        ],
+        "requiredDestructionOrder": [
+          "escort",
+          "carrier",
+          "battleship"
+        ],
+        "protectedShips": [
+          "carrier",
+          "battleship",
+          "escort"
+        ],
+        "maxFriendlyActions": 5,
+        "requiredWeaponUses": {
+          "phantom": 2,
+          "harpoon": 3
+        }
+      },
+      "playerPlacements": [
+        {
+          "id": "carrier",
+          "start": {
+            "x": 0,
+            "y": 0
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "escort",
+          "start": {
+            "x": 2,
+            "y": 2
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "battleship",
+          "start": {
+            "x": 0,
+            "y": 3
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyPlacements": [
+        {
+          "id": "escort",
+          "start": {
+            "x": 0,
+            "y": 0
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "carrier",
+          "start": {
+            "x": 2,
+            "y": 2
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "battleship",
+          "start": {
+            "x": 1,
+            "y": 6
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "submarine",
+          "start": {
+            "x": 7,
+            "y": 7
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyInitialHits": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 2
+        },
+        {
+          "x": 3,
+          "y": 2
+        },
+        {
+          "x": 4,
+          "y": 2
+        },
+        {
+          "x": 5,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 6
+        },
+        {
+          "x": 4,
+          "y": 6
+        }
+      ],
+      "initiallyIdentified": [
+        "escort",
+        "carrier",
+        "battleship"
+      ],
+      "enemyDisclosure": {
+        "known": [
+          "escort",
+          "carrier",
+          "battleship"
+        ],
+        "unknownCount": 1,
+        "callsigns": {
+          "escort": "DE-01 GATE",
+          "carrier": "CV-08 CITADEL",
+          "battleship": "BB-05 IRONCLAD"
+        },
+        "summary": "GATE、CITADEL、IRONCLADを識別済み。SSは非目標。撃沈順序と二重連接の維持を優先せよ。"
+      },
+      "requiredLinks": [
+        "carrier",
+        "battleship"
+      ],
+      "fixedSeed": 7215105,
+      "aiSkill": 1.98,
+      "huntBreadth": 2,
+      "completion": {
+        "success": "SCREEN COLLAPSE CONFIRMED：護衛、航空母艦、戦艦の順に交戦能力を減殺。二重連接を全期間維持。",
+        "deadline": "LINK WINDOW LOST：指定順序または二重連接を維持できず、火力計画を中止。",
+        "protected": {
+          "carrier": "AIR GROUP LOST：航空母艦の戦闘能力喪失。航空打撃計画を中止。",
+          "battleship": "FIRE CONTROL LOST：戦艦の戦闘能力喪失。対水上打撃計画を中止。",
+          "escort": "ESCORT LINK SEVERED：護衛艦喪失。増加出撃・増加射の実施不能。"
+        }
+      }
+    },
+    {
+      "id": 19,
+      "sortOrder": 30,
+      "difficulty": 6,
+      "category": "extreme",
+      "title": "CROSS BEARING",
+      "subtitle": "二つの損傷船影を異なる射法で同時追跡し、二行動で交戦を終結せよ。",
+      "directive": "縦進するCAへ夾叉射撃、横進するDDへHARPOON。既存損傷と方位を照合し、CA、DDの順に撃沈せよ。",
+      "condition": "CA→DD / STRADDLE 1回・HARPOON 1回 / 2行動",
+      "fleet": [
+        "battleship",
+        "cruiser",
+        "submarine"
+      ],
+      "playerFleet": [
+        "battleship",
+        "cruiser"
+      ],
+      "enemyFleet": [
+        "cruiser",
+        "destroyer",
+        "submarine"
+      ],
+      "enemyFirst": false,
+      "allowedWeapons": [
+        "sparrow",
+        "harpoon"
+      ],
+      "objective": {
+        "kind": "destroy-targets",
+        "targets": [
+          "cruiser",
+          "destroyer"
+        ],
+        "requiredDestructionOrder": [
+          "cruiser",
+          "destroyer"
+        ],
+        "maxFriendlyActions": 2,
+        "requiredWeaponSequence": [
+          "sparrow",
+          "harpoon"
+        ]
+      },
+      "playerPlacements": [
+        {
+          "id": "battleship",
+          "start": {
+            "x": 0,
+            "y": 7
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "cruiser",
+          "start": {
+            "x": 4,
+            "y": 5
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyPlacements": [
+        {
+          "id": "cruiser",
+          "start": {
+            "x": 1,
+            "y": 1
+          },
+          "orientation": "south"
+        },
+        {
+          "id": "destroyer",
+          "start": {
+            "x": 4,
+            "y": 6
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "submarine",
+          "start": {
+            "x": 7,
+            "y": 0
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyInitialHits": [
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 1,
+          "y": 4
+        },
+        {
+          "x": 5,
+          "y": 6
+        }
+      ],
+      "initiallyIdentified": [
+        "cruiser",
+        "destroyer"
+      ],
+      "enemyDisclosure": {
+        "known": [
+          "cruiser",
+          "destroyer"
+        ],
+        "unknownCount": 1,
+        "callsigns": {
+          "cruiser": "CA-04 MERIDIAN",
+          "destroyer": "DD-03 TRANSIT"
+        },
+        "summary": "MERIDIANはB-2からE-2へ南進、両端損傷。TRANSITはG-5からG-7へ東進、中央区画損傷。"
+      },
+      "fixedSeed": 7215363,
+      "aiSkill": 2.02,
+      "huntBreadth": 1,
+      "completion": {
+        "success": "CROSS BEARING CLOSED：二船影へ異なる射法を割り当て、指定順序で交戦能力を減殺。",
+        "deadline": "FIRE PLAN EXPIRED：二つの射撃解を行動窓内に処理できず。"
+      }
+    },
+    {
+      "id": 20,
+      "sortOrder": 40,
+      "difficulty": 6,
+      "category": "extreme",
+      "title": "COMMAND SECTIONS",
+      "subtitle": "損傷船影から三つの重要区画を割り出し、撃沈ではなく識別を完了せよ。",
+      "directive": "公開された船影と重要区画規定を照合。CV、BB、SSの指揮区画へ通常砲撃を一射ずつ実施し、三目標を識別せよ。",
+      "condition": "CV・BB・SS識別 / 通常砲撃のみ / 3行動",
+      "fleet": [
+        "battleship",
+        "destroyer"
+      ],
+      "playerFleet": [
+        "battleship",
+        "destroyer"
+      ],
+      "enemyFleet": [
+        "carrier",
+        "battleship",
+        "cruiser",
+        "destroyer",
+        "submarine"
+      ],
+      "enemyFirst": false,
+      "allowedWeapons": [
+        "fire"
+      ],
+      "objective": {
+        "kind": "identify-targets",
+        "targets": [
+          "carrier",
+          "battleship",
+          "submarine"
+        ],
+        "maxFriendlyActions": 3,
+        "requiredWeaponSequence": [
+          "fire",
+          "fire",
+          "fire"
+        ]
+      },
+      "playerPlacements": [
+        {
+          "id": "battleship",
+          "start": {
+            "x": 0,
+            "y": 7
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "destroyer",
+          "start": {
+            "x": 5,
+            "y": 6
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyPlacements": [
+        {
+          "id": "carrier",
+          "start": {
+            "x": 0,
+            "y": 0
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "battleship",
+          "start": {
+            "x": 0,
+            "y": 3
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "cruiser",
+          "start": {
+            "x": 4,
+            "y": 5
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "destroyer",
+          "start": {
+            "x": 0,
+            "y": 6
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "submarine",
+          "start": {
+            "x": 7,
+            "y": 7
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyInitialHits": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 2,
+          "y": 1
+        },
+        {
+          "x": 3,
+          "y": 1
+        },
+        {
+          "x": 0,
+          "y": 3
+        },
+        {
+          "x": 1,
+          "y": 3
+        },
+        {
+          "x": 3,
+          "y": 3
+        },
+        {
+          "x": 4,
+          "y": 3
+        }
+      ],
+      "enemyDisclosure": {
+        "known": [
+          "carrier",
+          "battleship",
+          "submarine"
+        ],
+        "unknownCount": 2,
+        "candidateCells": [
+          {
+            "code": "AIR CONTROL",
+            "coord": {
+              "x": 2,
+              "y": 0
+            }
+          },
+          {
+            "code": "MAIN DIRECTOR",
+            "coord": {
+              "x": 2,
+              "y": 3
+            }
+          },
+          {
+            "code": "CONNING TOWER",
+            "coord": {
+              "x": 7,
+              "y": 7
+            }
+          }
+        ],
+        "summary": "二つの大形船影と単独音源を確認。未被弾区画に残る指揮機能を識別射撃で確定せよ。"
+      },
+      "fixedSeed": 7217156,
+      "aiSkill": 2.06,
+      "huntBreadth": 1,
+      "completion": {
+        "success": "COMMAND SECTIONS FIXED：三重要区画への命中により、全指定目標の艦種を確定。",
+        "deadline": "IDENTIFICATION WINDOW CLOSED：三目標の識別完了前に射撃窓を消費。"
+      }
+    },
+    {
+      "id": 21,
+      "sortOrder": 50,
+      "difficulty": 6,
+      "category": "extreme",
+      "title": "OPERATION MOBY-DICK",
+      "subtitle": "追跡網を破って静粛移動する戦略潜航艦LEVIATHANを二度の有効接触で拘束せよ。",
+      "directive": "四方反響の交点D-4へ初弾。緊急潜航後は公開された四つの離脱区画をF-4一波で同時制圧せよ。",
+      "condition": "SSX-02 LEVIATHAN撃沈 / CV・DE生存 / 2行動",
+      "fleet": [
+        "leviathan"
+      ],
+      "playerFleet": [
+        "carrier",
+        "escort"
+      ],
+      "enemyFleet": [
+        "leviathan"
+      ],
+      "enemyFirst": true,
+      "allowedWeapons": [
+        "fire",
+        "phantom"
+      ],
+      "objective": {
+        "kind": "destroy-targets",
+        "targets": [
+          "leviathan"
+        ],
+        "protectedShips": [
+          "carrier",
+          "escort"
+        ],
+        "maxFriendlyActions": 2,
+        "requiredWeaponSequence": [
+          "fire",
+          "phantom"
+        ]
+      },
+      "playerPlacements": [
+        {
+          "id": "carrier",
+          "start": {
+            "x": 0,
+            "y": 0
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "escort",
+          "start": {
+            "x": 1,
+            "y": 2
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyPlacements": [
+        {
+          "id": "leviathan",
+          "start": {
+            "x": 3,
+            "y": 3
+          },
+          "orientation": "east"
+        }
+      ],
+      "initialIntel": [
+        {
+          "coord": {
+            "x": 0,
+            "y": 0
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 1,
+            "y": 0
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 2,
+            "y": 0
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 3,
+            "y": 0
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 4,
+            "y": 0
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 5,
+            "y": 0
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 6,
+            "y": 0
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 7,
+            "y": 0
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 0,
+            "y": 1
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 2,
+            "y": 1
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 3,
+            "y": 1
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 4,
+            "y": 1
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 5,
+            "y": 1
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 7,
+            "y": 1
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 0,
+            "y": 2
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 1,
+            "y": 2
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 2,
+            "y": 2
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 3,
+            "y": 2
+          },
+          "mark": "echo"
+        },
+        {
+          "coord": {
+            "x": 4,
+            "y": 2
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 5,
+            "y": 2
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 6,
+            "y": 2
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 7,
+            "y": 2
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 0,
+            "y": 3
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 1,
+            "y": 3
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 2,
+            "y": 3
+          },
+          "mark": "echo"
+        },
+        {
+          "coord": {
+            "x": 4,
+            "y": 3
+          },
+          "mark": "echo"
+        },
+        {
+          "coord": {
+            "x": 5,
+            "y": 3
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 6,
+            "y": 3
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 7,
+            "y": 3
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 0,
+            "y": 4
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 1,
+            "y": 4
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 2,
+            "y": 4
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 3,
+            "y": 4
+          },
+          "mark": "echo"
+        },
+        {
+          "coord": {
+            "x": 4,
+            "y": 4
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 5,
+            "y": 4
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 6,
+            "y": 4
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 7,
+            "y": 4
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 0,
+            "y": 5
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 1,
+            "y": 5
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 2,
+            "y": 5
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 3,
+            "y": 5
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 4,
+            "y": 5
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 5,
+            "y": 5
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 6,
+            "y": 5
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 7,
+            "y": 5
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 0,
+            "y": 6
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 2,
+            "y": 6
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 3,
+            "y": 6
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 4,
+            "y": 6
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 5,
+            "y": 6
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 7,
+            "y": 6
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 0,
+            "y": 7
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 1,
+            "y": 7
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 2,
+            "y": 7
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 3,
+            "y": 7
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 4,
+            "y": 7
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 5,
+            "y": 7
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 6,
+            "y": 7
+          },
+          "mark": "miss"
+        },
+        {
+          "coord": {
+            "x": 7,
+            "y": 7
+          },
+          "mark": "miss"
+        }
+      ],
+      "enemyDisclosure": {
+        "known": [
+          "leviathan"
+        ],
+        "unknownCount": 0,
+        "callsigns": {
+          "leviathan": "SSX-02 LEVIATHAN"
+        },
+        "candidateCells": [
+          {
+            "code": "EGRESS ALPHA / B-2",
+            "coord": {
+              "x": 1,
+              "y": 1
+            }
+          },
+          {
+            "code": "EGRESS BRAVO / B-7",
+            "coord": {
+              "x": 6,
+              "y": 1
+            }
+          },
+          {
+            "code": "EGRESS CHARLIE / G-2",
+            "coord": {
+              "x": 1,
+              "y": 6
+            }
+          },
+          {
+            "code": "EGRESS DELTA / G-7",
+            "coord": {
+              "x": 6,
+              "y": 6
+            }
+          }
+        ],
+        "summary": "接触呼称LEVIATHAN。D-4に反響方位が収束。初回命中後の静粛離脱先は四区画まで限定済み。"
+      },
+      "requiredLink": "carrier",
+      "fixedSeed": 7217413,
+      "aiSkill": 2.12,
+      "huntBreadth": 1,
+      "completion": {
+        "success": "LEVIATHAN CONTAINED：初回接触後の静粛離脱を予測し、航空制圧線内で二度目の有効接触を取得。",
+        "deadline": "LEVIATHAN LOST：静粛離脱後の四候補区画を同一波で拘束できず、接触を喪失。",
+        "protected": {
+          "carrier": "AIR SEARCH ABORTED：航空母艦喪失。離脱海面の同時制圧不能。",
+          "escort": "ESCORT SCREEN LOST：護衛連接喪失。第二次出撃の確保不能。"
+        }
+      }
+    },
+    {
+      "id": 22,
+      "sortOrder": 60,
+      "difficulty": 6,
+      "category": "extreme",
+      "title": "NO SECOND SALVO",
+      "subtitle": "残存各一射を五つの損傷目標へ割り当て、再射なしで全接触を処理せよ。",
+      "directive": "F-4、HARPOON、STRADDLE、MK-45 IIは各一回のみ。五目標の残存区画を四つの射法へ割り当てよ。",
+      "condition": "敵5艦撃沈 / 特殊兵装各1回のみ / 4行動",
+      "fleet": [
+        "carrier",
+        "battleship",
+        "cruiser",
+        "destroyer",
+        "escort"
+      ],
+      "playerFleet": [
+        "carrier",
+        "battleship",
+        "cruiser",
+        "destroyer"
+      ],
+      "enemyFleet": [
+        "carrier",
+        "battleship",
+        "cruiser",
+        "destroyer",
+        "escort"
+      ],
+      "enemyFirst": false,
+      "allowedWeapons": [
+        "phantom",
+        "harpoon",
+        "sparrow",
+        "mk45"
+      ],
+      "objective": {
+        "kind": "destroy-targets",
+        "targets": [
+          "carrier",
+          "battleship",
+          "cruiser",
+          "destroyer",
+          "escort"
+        ],
+        "maxFriendlyActions": 4,
+        "requiredWeaponUses": {
+          "phantom": 1,
+          "harpoon": 1,
+          "sparrow": 1,
+          "mk45": 1
+        }
+      },
+      "playerPlacements": [
+        {
+          "id": "carrier",
+          "start": {
+            "x": 0,
+            "y": 0
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "battleship",
+          "start": {
+            "x": 0,
+            "y": 3
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "cruiser",
+          "start": {
+            "x": 4,
+            "y": 5
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "destroyer",
+          "start": {
+            "x": 5,
+            "y": 7
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyPlacements": [
+        {
+          "id": "carrier",
+          "start": {
+            "x": 0,
+            "y": 0
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "escort",
+          "start": {
+            "x": 6,
+            "y": 1
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "battleship",
+          "start": {
+            "x": 0,
+            "y": 3
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "cruiser",
+          "start": {
+            "x": 4,
+            "y": 5
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "destroyer",
+          "start": {
+            "x": 5,
+            "y": 7
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyInitialHits": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 2,
+          "y": 1
+        },
+        {
+          "x": 3,
+          "y": 1
+        },
+        {
+          "x": 7,
+          "y": 1
+        },
+        {
+          "x": 0,
+          "y": 3
+        },
+        {
+          "x": 1,
+          "y": 3
+        },
+        {
+          "x": 2,
+          "y": 3
+        },
+        {
+          "x": 3,
+          "y": 3
+        },
+        {
+          "x": 5,
+          "y": 5
+        },
+        {
+          "x": 6,
+          "y": 5
+        },
+        {
+          "x": 7,
+          "y": 5
+        },
+        {
+          "x": 5,
+          "y": 7
+        },
+        {
+          "x": 6,
+          "y": 7
+        }
+      ],
+      "initiallyIdentified": [
+        "carrier",
+        "battleship",
+        "cruiser",
+        "destroyer",
+        "escort"
+      ],
+      "enemyDisclosure": {
+        "known": [
+          "carrier",
+          "battleship",
+          "cruiser",
+          "destroyer",
+          "escort"
+        ],
+        "unknownCount": 0,
+        "callsigns": {
+          "carrier": "CV-08 ASCENDANT",
+          "battleship": "BB-05 RESOLUTE",
+          "cruiser": "CA-04 LANCER",
+          "destroyer": "DD-03 SWIFT",
+          "escort": "DE-01 WARD"
+        },
+        "summary": "全目標を識別済み。各艦は一残存区画。F-4だけが離隔した二目標を一行動で処理できる。"
+      },
+      "initialArsenal": {
+        "phantom": 2,
+        "harpoon": 2,
+        "sparrow": 1,
+        "mk45": 1
+      },
+      "fixedSeed": 7217670,
+      "aiSkill": 2.18,
+      "huntBreadth": 1,
+      "completion": {
+        "success": "FIRE DISTRIBUTION COMPLETE：四射法を重複なく配分し、五つの残存接触を再射なしで減殺。",
+        "deadline": "MAGAZINE PLAN FAILED：残存弾庫の配分を誤り、未処理接触を残置。"
+      }
+    }
+  ],
+  "trainingStages": [
+    {
+      "id": 101,
+      "sortOrder": 10,
+      "difficulty": 1,
+      "category": "training",
+      "title": "TACTICAL PLOT",
+      "subtitle": "戦術図の座標を読み、単発射撃を実行する。",
+      "directive": "表示された目標区画へFIREを実行せよ。",
+      "condition": "FIREのみ / 1行動 / 敵行動なし",
+      "fleet": [
+        "submarine"
+      ],
+      "playerFleet": [
+        "destroyer"
+      ],
+      "enemyFleet": [
+        "submarine"
+      ],
+      "enemyFirst": false,
+      "allowedWeapons": [
+        "fire"
+      ],
+      "objective": {
+        "kind": "destroy-targets",
+        "targets": [
+          "submarine"
+        ],
+        "maxFriendlyActions": 1
+      },
+      "playerPlacements": [
+        {
+          "id": "destroyer",
+          "start": {
+            "x": 0,
+            "y": 7
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyPlacements": [
+        {
+          "id": "submarine",
+          "start": {
+            "x": 3,
+            "y": 3
+          },
+          "orientation": "east"
+        }
+      ],
+      "initiallyIdentified": [
+        "submarine"
+      ],
+      "enemyDisclosure": {
+        "known": [
+          "submarine"
+        ],
+        "unknownCount": 0,
+        "summary": "SSをD-4に表示。"
+      },
+      "fixedSeed": 5505281,
+      "aiSkill": 0,
+      "huntBreadth": 1,
+      "training": {
+        "lesson": 1,
+        "plainBrief": "盤面は上からA～H、左から1～8です。D-4を選んで単発射撃してください。",
+        "doctrine": "TACTICAL PLOT / FIRE ORDER",
+        "suppressEnemyActions": true,
+        "steps": [
+          {
+            "title": "FIRE CONTROL",
+            "instruction": "D-4を選び、FIREを実行します。",
+            "doctrine": "SELECT D-4 / AUTHORIZE FIRE",
+            "expected": {
+              "weapon": "fire",
+              "target": {
+                "x": 3,
+                "y": 3
+              }
+            },
+            "highlight": [
+              {
+                "x": 3,
+                "y": 3
+              }
+            ]
+          }
+        ],
+        "debrief": [
+          "座標D-4を正しく指定しました。",
+          "単発射撃の基本操作を確認しました。"
+        ]
+      },
+      "completion": {
+        "success": "TRAINING COMPLETE：戦術図から射撃座標を正しく指定した。",
+        "deadline": "TRAINING RESET：指定されたD-4へFIREを実行せよ。"
+      }
+    },
+    {
+      "id": 102,
+      "sortOrder": 20,
+      "difficulty": 1,
+      "category": "training",
+      "title": "ACOUSTIC BEARING",
+      "subtitle": "四方反響を重ね、斜め方向を除外して接触位置を確定する。",
+      "directive": "C-4とD-3のECHOが共有するD-4へFIREを実行せよ。",
+      "condition": "4-DIRECTION ECHO / FIREのみ / 1行動 / 敵行動なし",
+      "fleet": [
+        "submarine"
+      ],
+      "playerFleet": [
+        "destroyer"
+      ],
+      "enemyFleet": [
+        "submarine"
+      ],
+      "enemyFirst": false,
+      "allowedWeapons": [
+        "fire"
+      ],
+      "objective": {
+        "kind": "destroy-targets",
+        "targets": [
+          "submarine"
+        ],
+        "maxFriendlyActions": 1
+      },
+      "playerPlacements": [
+        {
+          "id": "destroyer",
+          "start": {
+            "x": 0,
+            "y": 7
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyPlacements": [
+        {
+          "id": "submarine",
+          "start": {
+            "x": 3,
+            "y": 3
+          },
+          "orientation": "east"
+        }
+      ],
+      "initialIntel": [
+        {
+          "coord": {
+            "x": 3,
+            "y": 2
+          },
+          "mark": "echo"
+        },
+        {
+          "coord": {
+            "x": 2,
+            "y": 3
+          },
+          "mark": "echo"
+        },
+        {
+          "coord": {
+            "x": 2,
+            "y": 2
+          },
+          "mark": "miss"
+        }
+      ],
+      "enemyDisclosure": {
+        "known": [],
+        "unknownCount": 1,
+        "candidateCells": [
+          {
+            "code": "ECHO FIX / D-4",
+            "coord": {
+              "x": 3,
+              "y": 3
+            }
+          }
+        ],
+        "summary": "C-4とD-3に四方反響。斜めのC-3はMISS。反響は着弾点の上下左右だけを示す。"
+      },
+      "fixedSeed": 5505538,
+      "aiSkill": 0,
+      "huntBreadth": 1,
+      "training": {
+        "lesson": 2,
+        "plainBrief": "ECHOは、着弾点の上下左右4方向のどこかに生存区画がある合図です。斜め方向は含みません。C-4とD-3の反響が重なるD-4を狙ってください。",
+        "doctrine": "ACOUSTIC BEARING / ORTHOGONAL ECHO",
+        "suppressEnemyActions": true,
+        "steps": [
+          {
+            "title": "ECHO FIX",
+            "instruction": "二つの四方反響が共有するD-4を選び、FIREを実行します。",
+            "doctrine": "CROSS BEARINGS / FIX D-4 / AUTHORIZE FIRE",
+            "expected": {
+              "weapon": "fire",
+              "target": {
+                "x": 3,
+                "y": 3
+              }
+            },
+            "highlight": [
+              {
+                "x": 3,
+                "y": 2
+              },
+              {
+                "x": 2,
+                "y": 3
+              },
+              {
+                "x": 3,
+                "y": 3
+              }
+            ]
+          }
+        ],
+        "debrief": [
+          "二つの四方反響からD-4を確定しました。",
+          "ECHOは上下左右のみを示し、斜め方向を含みません。"
+        ]
+      },
+      "completion": {
+        "success": "TRAINING COMPLETE：四方反響を重ね、接触位置を確定した。",
+        "deadline": "TRAINING RESET：C-4とD-3の四方反響からD-4を求めよ。"
+      }
+    },
+    {
+      "id": 103,
+      "sortOrder": 30,
+      "difficulty": 2,
+      "category": "training",
+      "title": "CROSS FIX",
+      "subtitle": "四方反響と既存損傷から船影を復元し、夾叉射撃の射撃扇を合わせる。",
+      "directive": "E-5を基準に北向きのSTRADDLEを実行せよ。",
+      "condition": "8-INCH STRADDLEのみ / 1行動 / 敵行動なし",
+      "fleet": [
+        "cruiser"
+      ],
+      "playerFleet": [
+        "cruiser"
+      ],
+      "enemyFleet": [
+        "cruiser"
+      ],
+      "enemyFirst": false,
+      "allowedWeapons": [
+        "sparrow"
+      ],
+      "objective": {
+        "kind": "destroy-targets",
+        "targets": [
+          "cruiser"
+        ],
+        "maxFriendlyActions": 1
+      },
+      "playerPlacements": [
+        {
+          "id": "cruiser",
+          "start": {
+            "x": 0,
+            "y": 7
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyPlacements": [
+        {
+          "id": "cruiser",
+          "start": {
+            "x": 2,
+            "y": 3
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyInitialHits": [
+        {
+          "x": 2,
+          "y": 3
+        },
+        {
+          "x": 3,
+          "y": 3
+        },
+        {
+          "x": 4,
+          "y": 3
+        }
+      ],
+      "initialIntel": [
+        {
+          "coord": {
+            "x": 5,
+            "y": 4
+          },
+          "mark": "echo"
+        },
+        {
+          "coord": {
+            "x": 6,
+            "y": 3
+          },
+          "mark": "echo"
+        },
+        {
+          "coord": {
+            "x": 6,
+            "y": 4
+          },
+          "mark": "miss"
+        }
+      ],
+      "initiallyIdentified": [
+        "cruiser"
+      ],
+      "enemyDisclosure": {
+        "known": [
+          "cruiser"
+        ],
+        "unknownCount": 0,
+        "summary": "CAの残存区画D-6を表示。"
+      },
+      "fixedSeed": 5505795,
+      "aiSkill": 0,
+      "huntBreadth": 1,
+      "training": {
+        "lesson": 3,
+        "plainBrief": "D-6の下と右側にある反響、斜めのMISS、既存損傷を重ねると横向きの船影を復元できます。E-5を基準に射撃扇を北へ向けてください。",
+        "doctrine": "CROSS FIX / HULL PICTURE / STRADDLE SOLUTION",
+        "suppressEnemyActions": true,
+        "steps": [
+          {
+            "title": "RANGING ORDER",
+            "instruction": "E-5を選び、射撃方向を北にして8-INCH STRADDLEを実行します。",
+            "doctrine": "ANCHOR E-5 / FAN NORTH",
+            "expected": {
+              "weapon": "sparrow",
+              "anchor": {
+                "x": 4,
+                "y": 4
+              },
+              "orientation": "north"
+            },
+            "highlight": [
+              {
+                "x": 4,
+                "y": 4
+              },
+              {
+                "x": 3,
+                "y": 3
+              },
+              {
+                "x": 4,
+                "y": 3
+              },
+              {
+                "x": 5,
+                "y": 3
+              }
+            ]
+          }
+        ],
+        "debrief": [
+          "四方反響から船影の残存方向を復元しました。",
+          "基準区画と方位でSTRADDLEを指定する手順を確認しました。"
+        ]
+      },
+      "completion": {
+        "success": "TRAINING COMPLETE：交差情報から射撃扇を確定した。",
+        "deadline": "TRAINING RESET：E-5基準、北向きのSTRADDLEを実行せよ。"
+      }
+    },
+    {
+      "id": 104,
+      "sortOrder": 40,
+      "difficulty": 2,
+      "category": "training",
+      "title": "ESCORT SUPPORT",
+      "subtitle": "護衛リンクによる追加出撃を使い、二つの水上目標へ航空攻撃を継続する。",
+      "directive": "C列のBB残存4区画、続いてE列のCA全4区画へF-4 PHANTOMを二回発進させよ。",
+      "condition": "F-4 PHANTOM 2回 / ESCORT SUPPORT ACTIVE / 敵行動なし",
+      "fleet": [
+        "battleship",
+        "cruiser"
+      ],
+      "playerFleet": [
+        "carrier",
+        "escort"
+      ],
+      "enemyFleet": [
+        "battleship",
+        "cruiser"
+      ],
+      "enemyFirst": false,
+      "allowedWeapons": [
+        "phantom"
+      ],
+      "objective": {
+        "kind": "destroy-targets",
+        "targets": [
+          "battleship",
+          "cruiser"
+        ],
+        "maxFriendlyActions": 2,
+        "protectedShips": [
+          "carrier",
+          "escort"
+        ]
+      },
+      "playerPlacements": [
+        {
+          "id": "carrier",
+          "start": {
+            "x": 1,
+            "y": 5
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "escort",
+          "start": {
+            "x": 1,
+            "y": 4
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyPlacements": [
+        {
+          "id": "battleship",
+          "start": {
+            "x": 1,
+            "y": 2
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "cruiser",
+          "start": {
+            "x": 1,
+            "y": 4
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyInitialHits": [
+        {
+          "x": 1,
+          "y": 2
+        }
+      ],
+      "initiallyIdentified": [
+        "battleship",
+        "cruiser"
+      ],
+      "enemyDisclosure": {
+        "known": [
+          "battleship",
+          "cruiser"
+        ],
+        "unknownCount": 0,
+        "summary": "BBの残存4区画C-3～C-6と、CAの4区画E-2～E-5を表示。"
+      },
+      "requiredLink": "carrier",
+      "fixedSeed": 5506052,
+      "aiSkill": 0,
+      "huntBreadth": 1,
+      "training": {
+        "lesson": 4,
+        "plainBrief": "空母に護衛艦の全区画が上下左右で隣接するとESCORT SUPPORTが成立し、F-4を通常の1回に加えてもう1回出撃できます。二波を順に割り当ててください。",
+        "doctrine": "ESCORT SUPPORT / LINK ACTIVE",
+        "suppressEnemyActions": true,
+        "steps": [
+          {
+            "title": "FIRST SORTIE",
+            "instruction": "C-3、C-4、C-5、C-6を選び、第一波を発進させます。選択順は自由です。",
+            "doctrine": "BB REMNANT / FOUR TARGETS / LAUNCH F-4",
+            "expected": {
+              "weapon": "phantom",
+              "targets": [
+                {
+                  "x": 2,
+                  "y": 2
+                },
+                {
+                  "x": 3,
+                  "y": 2
+                },
+                {
+                  "x": 4,
+                  "y": 2
+                },
+                {
+                  "x": 5,
+                  "y": 2
+                }
+              ]
+            },
+            "highlight": [
+              {
+                "x": 2,
+                "y": 2
+              },
+              {
+                "x": 3,
+                "y": 2
+              },
+              {
+                "x": 4,
+                "y": 2
+              },
+              {
+                "x": 5,
+                "y": 2
+              }
+            ]
+          },
+          {
+            "title": "ESCORT-SUPPORTED SORTIE",
+            "instruction": "追加出撃枠でE-2、E-3、E-4、E-5へ第二波を発進させます。",
+            "doctrine": "LINK ACTIVE / SECOND SORTIE / LAUNCH F-4",
+            "expected": {
+              "weapon": "phantom",
+              "targets": [
+                {
+                  "x": 1,
+                  "y": 4
+                },
+                {
+                  "x": 2,
+                  "y": 4
+                },
+                {
+                  "x": 3,
+                  "y": 4
+                },
+                {
+                  "x": 4,
+                  "y": 4
+                }
+              ]
+            },
+            "highlight": [
+              {
+                "x": 1,
+                "y": 4
+              },
+              {
+                "x": 2,
+                "y": 4
+              },
+              {
+                "x": 3,
+                "y": 4
+              },
+              {
+                "x": 4,
+                "y": 4
+              }
+            ]
+          }
+        ],
+        "debrief": [
+          "二波の航空攻撃を継続しました。",
+          "護衛リンク成立中はF-4出撃回数が1回増加します。空母または護衛艦の喪失、隣接解除で追加枠を失います。"
+        ]
+      },
+      "completion": {
+        "success": "TRAINING COMPLETE：ESCORT SUPPORT下で二波の航空攻撃を完了した。",
+        "deadline": "TRAINING RESET：護衛連接を確認し、指定二目標へF-4を二回実行せよ。",
+        "protected": {
+          "carrier": "FLIGHT CONTROL LOST：空母を維持して訓練を再開せよ。",
+          "escort": "ESCORT SUPPORT LOST：護衛リンクを維持して訓練を再開せよ。"
+        }
+      }
+    },
+    {
+      "id": 105,
+      "sortOrder": 50,
+      "difficulty": 3,
+      "category": "training",
+      "title": "FIRE CONTROL LINK",
+      "subtitle": "戦艦の交差弾道と護衛艦による追加発射を、一つの射撃計画で確認する。",
+      "directive": "C-2、C-4、C-6を中心にHARPOONを三回発射し、BB残存3区画を処理せよ。",
+      "condition": "HARPOON 3回 / FIRE CONTROL LINK ACTIVE / 敵行動なし",
+      "fleet": [
+        "battleship"
+      ],
+      "playerFleet": [
+        "battleship",
+        "escort"
+      ],
+      "enemyFleet": [
+        "battleship"
+      ],
+      "enemyFirst": false,
+      "allowedWeapons": [
+        "harpoon"
+      ],
+      "objective": {
+        "kind": "destroy-targets",
+        "targets": [
+          "battleship"
+        ],
+        "maxFriendlyActions": 3,
+        "protectedShips": [
+          "battleship",
+          "escort"
+        ]
+      },
+      "playerPlacements": [
+        {
+          "id": "battleship",
+          "start": {
+            "x": 0,
+            "y": 6
+          },
+          "orientation": "east"
+        },
+        {
+          "id": "escort",
+          "start": {
+            "x": 0,
+            "y": 5
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyPlacements": [
+        {
+          "id": "battleship",
+          "start": {
+            "x": 1,
+            "y": 2
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyInitialHits": [
+        {
+          "x": 2,
+          "y": 2
+        },
+        {
+          "x": 4,
+          "y": 2
+        }
+      ],
+      "initiallyIdentified": [
+        "battleship"
+      ],
+      "enemyDisclosure": {
+        "known": [
+          "battleship"
+        ],
+        "unknownCount": 0,
+        "summary": "BBはC-2～C-6を東西に占位。C-3、C-5損傷、残存3区画。"
+      },
+      "requiredLink": "battleship",
+      "fixedSeed": 5506309,
+      "aiSkill": 0,
+      "huntBreadth": 1,
+      "training": {
+        "lesson": 5,
+        "plainBrief": "HARPOONは中心と斜め4方向のX字5区画を攻撃します。この横向きのBBには中心弾だけが届くため3射必要です。戦艦と護衛艦の全区画が隣接しているので、通常2回に追加の1回が認可されています。",
+        "doctrine": "FIRE CONTROL LINK / HARPOON SOLUTION",
+        "suppressEnemyActions": true,
+        "steps": [
+          {
+            "title": "MISSILE ORDER 1",
+            "instruction": "C-2を中心にHARPOONを発射します。",
+            "doctrine": "CENTER C-2 / RELEASE ONE",
+            "expected": {
+              "weapon": "harpoon",
+              "center": {
+                "x": 1,
+                "y": 2
+              }
+            },
+            "highlight": [
+              {
+                "x": 1,
+                "y": 2
+              }
+            ]
+          },
+          {
+            "title": "MISSILE ORDER 2",
+            "instruction": "C-4を中心にHARPOONを発射します。",
+            "doctrine": "CENTER C-4 / RELEASE TWO",
+            "expected": {
+              "weapon": "harpoon",
+              "center": {
+                "x": 3,
+                "y": 2
+              }
+            },
+            "highlight": [
+              {
+                "x": 3,
+                "y": 2
+              }
+            ]
+          },
+          {
+            "title": "LINK-AUTHORIZED SALVO",
+            "instruction": "護衛連接による追加発射枠を使い、C-6を中心に第三射を発射します。",
+            "doctrine": "FIRE CONTROL LINK / CENTER C-6 / RELEASE THREE",
+            "expected": {
+              "weapon": "harpoon",
+              "center": {
+                "x": 5,
+                "y": 2
+              }
+            },
+            "highlight": [
+              {
+                "x": 5,
+                "y": 2
+              }
+            ]
+          }
+        ],
+        "debrief": [
+          "戦艦のX字射界と中心弾を確認しました。",
+          "護衛リンク成立中はHARPOON発射回数が1回増加します。戦艦または護衛艦の喪失、隣接解除で追加枠を失います。"
+        ]
+      },
+      "completion": {
+        "success": "TRAINING COMPLETE：FIRE CONTROL LINK下で三射の交差射撃を完了した。",
+        "deadline": "TRAINING RESET：残存3区画へHARPOONを三回配分せよ。",
+        "protected": {
+          "battleship": "LAUNCH PLATFORM LOST：戦艦を維持して訓練を再開せよ。",
+          "escort": "FIRE CONTROL LINK LOST：護衛リンクを維持して訓練を再開せよ。"
+        }
+      }
+    },
+    {
+      "id": 106,
+      "sortOrder": 60,
+      "difficulty": 3,
+      "category": "training",
+      "title": "SILENT TRACE",
+      "subtitle": "潜水艦の行動後音紋と2×2受動聴音を照合し、単独接触を確定する。",
+      "directive": "E-5でCONTACT、G-7でNO CONTACTを報告後、F-6へFIREを実行せよ。",
+      "condition": "PASSIVE SONAR 2回→FIRE / 潜水艦特性 / 敵行動なし",
+      "fleet": [
+        "submarine"
+      ],
+      "playerFleet": [
+        "submarine"
+      ],
+      "enemyFleet": [
+        "submarine"
+      ],
+      "enemyFirst": false,
+      "allowedWeapons": [
+        "radar",
+        "fire"
+      ],
+      "objective": {
+        "kind": "scan-and-destroy",
+        "targets": [
+          "submarine"
+        ],
+        "maxFriendlyActions": 3,
+        "protectedShips": [
+          "submarine"
+        ],
+        "reports": [
+          {
+            "origin": {
+              "x": 4,
+              "y": 4
+            },
+            "contact": true,
+            "code": "ALPHA / E-5"
+          },
+          {
+            "origin": {
+              "x": 6,
+              "y": 6
+            },
+            "contact": false,
+            "code": "BRAVO / G-7"
+          }
+        ]
+      },
+      "playerPlacements": [
+        {
+          "id": "submarine",
+          "start": {
+            "x": 0,
+            "y": 7
+          },
+          "orientation": "east"
+        }
+      ],
+      "enemyPlacements": [
+        {
+          "id": "submarine",
+          "start": {
+            "x": 5,
+            "y": 5
+          },
+          "orientation": "east"
+        }
+      ],
+      "initialEnemyWakes": [
+        {
+          "x": 4,
+          "y": 4
+        },
+        {
+          "x": 6,
+          "y": 4
+        }
+      ],
+      "enemyDisclosure": {
+        "known": [],
+        "unknownCount": 1,
+        "candidateCells": [
+          {
+            "code": "ALPHA / E-5",
+            "coord": {
+              "x": 4,
+              "y": 4
+            }
+          },
+          {
+            "code": "BRAVO / G-7",
+            "coord": {
+              "x": 6,
+              "y": 6
+            }
+          }
+        ],
+        "summary": "単独潜航接触。直前二行動の音紋を表示。敵味方とも、潜水艦だけになった後は潜水艦が行動するたび周辺の未表示区画へ音紋を一つ残す。"
+      },
+      "fixedSeed": 5506566,
+      "aiSkill": 0,
+      "huntBreadth": 1,
+      "training": {
+        "lesson": 6,
+        "plainBrief": "潜水艦だけが残ると、その潜水艦が行動した後に周囲8区画の未表示地点へ音紋が一つ出ます。音紋は艦そのものではなく周辺の手掛かりです。2×2のPASSIVE SONARで候補海面を絞り、最後に射撃します。敵味方とも条件は同じです。",
+        "doctrine": "SILENT TRACE / PASSIVE CLASSIFICATION",
+        "suppressEnemyActions": true,
+        "steps": [
+          {
+            "title": "LISTENING REPORT ALPHA",
+            "instruction": "E-5を左上にしてPASSIVE SONARを実行し、CONTACTを確認します。",
+            "doctrine": "ALPHA E-5 / LISTEN AND REPORT",
+            "expected": {
+              "weapon": "radar",
+              "origin": {
+                "x": 4,
+                "y": 4
+              }
+            },
+            "highlight": [
+              {
+                "x": 4,
+                "y": 4
+              },
+              {
+                "x": 5,
+                "y": 4
+              },
+              {
+                "x": 4,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 5
+              }
+            ]
+          },
+          {
+            "title": "LISTENING REPORT BRAVO",
+            "instruction": "G-7を左上にしてPASSIVE SONARを実行し、NO CONTACTを確認します。",
+            "doctrine": "BRAVO G-7 / NEGATIVE CONTACT",
+            "expected": {
+              "weapon": "radar",
+              "origin": {
+                "x": 6,
+                "y": 6
+              }
+            },
+            "highlight": [
+              {
+                "x": 6,
+                "y": 6
+              },
+              {
+                "x": 7,
+                "y": 6
+              },
+              {
+                "x": 6,
+                "y": 7
+              },
+              {
+                "x": 7,
+                "y": 7
+              }
+            ]
+          },
+          {
+            "title": "CONTACT CLOSE",
+            "instruction": "二つの報告と音紋を照合し、F-6へFIREを実行します。",
+            "doctrine": "FIX F-6 / AUTHORIZE FIRE",
+            "expected": {
+              "weapon": "fire",
+              "target": {
+                "x": 5,
+                "y": 5
+              }
+            },
+            "highlight": [
+              {
+                "x": 5,
+                "y": 5
+              }
+            ]
+          }
+        ],
+        "debrief": [
+          "音紋を艦位置そのものと誤認せず、受動聴音で候補を絞りました。",
+          "潜水艦のみになった後の行動後音紋と、PASSIVE SONARの2×2判定を確認しました。"
+        ]
+      },
+      "completion": {
+        "success": "TRAINING COMPLETE：音紋・CONTACT・NO CONTACTを照合し、潜航接触を確定した。",
+        "deadline": "TRAINING RESET：ALPHA、BRAVOを聴音後、F-6へ射撃せよ。",
+        "protected": {
+          "submarine": "LISTENING POST LOST：自軍潜水艦を維持して訓練を再開せよ。"
+        }
+      }
+    }
+  ],
+  "persistence": {
+    "missionRecords": {
+      "storageKey": "deep-blue-grid.mission-records",
+      "version": 1
+    },
+    "trainingProgress": {
+      "storageKey": "deep-blue-grid.training-progress",
+      "version": 1,
+      "lessons": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    }
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "schema": "deep-blue-grid.unity-handoff",
+  "schemaVersion": 1,
+  "sourceRepository": "https://github.com/spthx/deep-blue-grid",
+  "sourceBranch": "master",
+  "sourceRef": "unity-handoff-2026-08-08",
+  "publicReferenceUrl": "https://spthx.github.io/deep-blue-grid/",
+  "primaryContent": "unity-content-v1.json",
+  "checksums": "SHA256SUMS.txt",
+  "generator": "../../scripts/export-unity-content.ts",
+  "documentation": [
+    "../UNITY_HANDOFF_INDEX.md",
+    "../UNITY_IMPLEMENTATION_MAP.md",
+    "../UNITY_UI_HANDOFF.md",
+    "../RESPONSIVE_UI_SPEC.md",
+    "../RESPONSIVE_UI_QA.md",
+    "../TEXT_STYLE_AUDIT.md",
+    "../MISSION_LIBRARY_SPEC.md",
+    "../MISSION_MODE_SPEC.md",
+    "../TRAINING_MODE_SPEC.md",
+    "../SURVIVAL_4_OPERATION_SPEC.md",
+    "../MISSION_CLEARABILITY_REPORT.md"
+  ],
+  "visualReferences": [
+    "../unity-reference/01-phone-mode-select-402x874.png",
+    "../unity-reference/02-phone-mission-index-402x874.png",
+    "../unity-reference/03-phone-training-index-402x874.png",
+    "../unity-reference/04-phone-training-brief-402x874.png",
+    "../unity-reference/05-phone-battle-command-402x874.png",
+    "../unity-reference/06-desktop-battle-command-1366x768.png",
+    "../unity-reference/07-desktop-impact-1366x768.png",
+    "../unity-reference/08-desktop-sonar-wake-1366x768.png",
+    "../unity-reference/09-desktop-sonar-contact-1366x768.png",
+    "../unity-reference/10-phone-fleet-placement-402x874.png"
+  ],
+  "staticGameArt": [],
+  "socialArtwork": [
+    {
+      "path": "../../public/og.png",
+      "useInGame": false
+    }
+  ],
+  "runtimeGeneratedPresentation": {
+    "visualSource": [
+      "../../app/game/Renderer.ts",
+      "../../app/globals.css"
+    ],
+    "audioSource": "../../app/game/AudioManager.ts",
+    "externalAudioFiles": []
+  },
+  "fonts": {
+    "binariesIncluded": false,
+    "acquireAtUnityIntegration": [
+      "BIZ UDPGothic Regular/Bold",
+      "IBM Plex Mono Medium/SemiBold",
+      "Noto Sans JP fallback"
+    ],
+    "licenseContract": "../UNITY_UI_HANDOFF.md"
+  },
+  "validation": [
+    "npm run export:unity",
+    "npm test",
+    "npm run build:pages",
+    "npm run measure:missions -- 100"
+  ]
+}
