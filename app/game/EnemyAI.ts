@@ -33,10 +33,15 @@ export class EnemyAI {
 
   decide(ownBoard: Board): AIDecision {
     if (this.profile === "silent") {
-      if (ownBoard.alive("silentSubmarine")) {
+      const silentActor: ShipId | null = ownBoard.alive("leviathan")
+        ? "leviathan"
+        : ownBoard.alive("silentSubmarine")
+          ? "silentSubmarine"
+          : null;
+      if (silentActor) {
         this.silentCycle += 1;
-        if (this.silentCycle % 2 === 0) return { weapon: "silentMove", targets: [], state: "HUNT", actor: "silentSubmarine" };
-        return { weapon: "fire", targets: [this.chooseShot()], state: this.state, actor: "silentSubmarine" };
+        if (this.silentCycle % 2 === 0) return { weapon: "silentMove", targets: [], state: "HUNT", actor: silentActor };
+        return { weapon: "fire", targets: [this.chooseShot()], state: this.state, actor: silentActor };
       }
     }
     const unknown = this.unknownCells();

@@ -3,9 +3,9 @@ import test from "node:test";
 
 import { verifyCanonicalMissions } from "../scripts/measure-missions.ts";
 
-test("all sixteen missions have a legal deterministic victory route", () => {
+test("all twenty-two missions have a legal deterministic victory route", () => {
   const results = verifyCanonicalMissions();
-  assert.equal(results.length, 16);
+  assert.equal(results.length, 22);
   for (const { mission, route, simulation } of results) {
     assert.equal(simulation.illegalAction, undefined, `${mission.title}: ${simulation.illegalAction}`);
     assert.equal(simulation.outcome?.result, "victory", `${mission.title}: ${simulation.outcome?.report ?? "no outcome"}`);

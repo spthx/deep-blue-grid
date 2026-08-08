@@ -1,6 +1,7 @@
 import { SHIPS, WEAPON_MAX, type Coord, type ShipId, type WeaponId } from "./constants.ts";
 import { type MissionPlacement, type MissionStageDefinition } from "./Campaign.ts";
 import { Arsenal, Board, hasEscortLink, hasFireControlLink, inBounds, keyOf, sameCoord } from "./engine.ts";
+import { validateTrainingStage } from "./TrainingRules.ts";
 
 export type MissionOutcome =
   | { result: "victory"; report: string }
@@ -9,6 +10,7 @@ export type MissionOutcome =
 
 export type MissionState = {
   friendlyActions: number;
+  usedWeapons?: WeaponId[];
   enemySunk: ShipId[];
   enemySunkOrder?: ShipId[];
   enemyIdentified?: ShipId[];
@@ -24,9 +26,33 @@ export function isMissionSonarOrigin(rule: MissionStageDefinition | null | undef
 function reportsComplete(
   required: Array<{ origin: Coord; contact: boolean }>,
   actual: Array<{ origin: Coord; contact: boolean }>,
+  ordered = false,
 ) {
+  if (ordered) {
+    return required.length === actual.length && required.every((expected, index) => {
+      const report = actual[index];
+      return Boolean(report) && sameCoord(expected.origin, report.origin) && expected.contact === report.contact;
+    });
+  }
   return required.every((expected) =>
     actual.some((report) => sameCoord(expected.origin, report.origin) && expected.contact === report.contact));
+}
+
+function weaponRequirementsComplete(rule: MissionStageDefinition, state: MissionState) {
+  const used = state.usedWeapons ?? [];
+  const sequence = rule.objective.requiredWeaponSequence;
+  if (sequence && (sequence.length !== used.length || sequence.some((weapon, index) => used[index] !== weapon))) {
+    return false;
+  }
+  const requiredUses = rule.objective.requiredWeaponUses;
+  if (requiredUses) {
+    const expectedTotal = Object.values(requiredUses).reduce((sum, count) => sum + (count ?? 0), 0);
+    if (used.length !== expectedTotal) return false;
+    for (const [weapon, count] of Object.entries(requiredUses) as Array<[WeaponId, number]>) {
+      if (used.filter((actual) => actual === weapon).length !== count) return false;
+    }
+  }
+  return true;
 }
 
 function protectedShipsFor(rule: MissionStageDefinition) {
@@ -36,6 +62,7 @@ function protectedShipsFor(rule: MissionStageDefinition) {
 
 export function missionObjectiveComplete(rule: MissionStageDefinition, state: MissionState) {
   const objective = rule.objective;
+  if (!weaponRequirementsComplete(rule, state)) return false;
   const sunk = new Set(state.enemySunk);
   const identified = new Set(state.enemyIdentified ?? []);
   if (objective.kind === "destroy-targets") {
@@ -48,9 +75,9 @@ export function missionObjectiveComplete(rule: MissionStageDefinition, state: Mi
   }
   if (objective.kind === "identify-targets") return objective.targets.every((id) => identified.has(id));
   if (objective.kind === "scan-and-destroy") {
-    return objective.targets.every((id) => sunk.has(id)) && reportsComplete(objective.reports, state.sonarReports);
+    return objective.targets.every((id) => sunk.has(id)) && reportsComplete(objective.reports, state.sonarReports, objective.orderedReports);
   }
-  return reportsComplete(objective.reports, state.sonarReports);
+  return reportsComplete(objective.reports, state.sonarReports, objective.orderedReports);
 }
 
 export function evaluateMission(rule: MissionStageDefinition, state: MissionState): MissionOutcome {
@@ -178,6 +205,28 @@ export function validateMissionDefinition(rule: MissionStageDefinition) {
         issues.push(`sonar origin cannot form 2x2 at ${keyOf(report.origin)}`);
       }
     }
+  } else if (objective.orderedReports) {
+    issues.push("orderedReports requires a sonar-report objective");
+  }
+  if (objective.requiredWeaponSequence && objective.requiredWeaponUses) {
+    issues.push("objective cannot require both a weapon sequence and a weapon multiset");
+  }
+  if (objective.requiredWeaponSequence) {
+    if (objective.requiredWeaponSequence.length > objective.maxFriendlyActions) {
+      issues.push("weapon sequence exceeds action limit");
+    }
+    for (const weapon of objective.requiredWeaponSequence) {
+      if (!rule.allowedWeapons.includes(weapon)) issues.push(`required weapon is not allowed: ${weapon}`);
+    }
+  }
+  if (objective.requiredWeaponUses) {
+    let total = 0;
+    for (const [weapon, count] of Object.entries(objective.requiredWeaponUses) as Array<[WeaponId, number]>) {
+      if (!Number.isInteger(count) || count < 0) issues.push(`required weapon count is invalid: ${weapon}=${count}`);
+      if (!rule.allowedWeapons.includes(weapon)) issues.push(`required weapon is not allowed: ${weapon}`);
+      total += count;
+    }
+    if (total > objective.maxFriendlyActions) issues.push("required weapon uses exceed action limit");
   }
 
   for (const id of rule.initiallyIdentified ?? []) if (!hostileIds.has(id)) issues.push(`identified ship missing: ${id}`);
@@ -194,8 +243,10 @@ export function validateMissionDefinition(rule: MissionStageDefinition) {
       if (!/^\d{4}Z$/.test(entry.time)) issues.push(`invalid archive timestamp: ${entry.time}`);
     }
   } else if (rule.archiveLog?.length) {
-    issues.push("standard mission must not carry archiveLog");
+    issues.push(`${rule.category} mission must not carry archiveLog`);
   }
+  if (rule.category === "training") issues.push(...validateTrainingStage(rule));
+  else if (rule.training) issues.push(`${rule.category} mission must not carry a training plan`);
 
   if (rule.requiredLink === "carrier" && !hasEscortLink(friendly)) issues.push("required carrier link is inactive");
   if (rule.requiredLink === "battleship" && !hasFireControlLink(friendly)) issues.push("required battleship link is inactive");

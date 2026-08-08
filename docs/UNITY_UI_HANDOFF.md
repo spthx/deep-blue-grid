@@ -27,7 +27,7 @@ Unity 版の基準は「旧作らしさの再解釈」ではなく、**現在の
 | ルール、艦、兵装、乱数 | `app/game/constants.ts`, `app/game/engine.ts` |
 | AI | `app/game/EnemyAI.ts` |
 | MISSION 定義・評価 | `app/game/Campaign.ts`, `app/game/MissionRules.ts` |
-| MISSION 全16問の契約 | `docs/MISSION_LIBRARY_SPEC.md` |
+| MISSION 全22問（戦術12・記録解析4・極限6）の契約 | `docs/MISSION_LIBRARY_SPEC.md` |
 | 用語と文体 | `docs/TEXT_STYLE_AUDIT.md` |
 | 音とテンポ | `app/game/AudioManager.ts` |
 
@@ -133,7 +133,7 @@ AppCanvas                         Screen Space - Overlay
 
 ### 4.1 フォント方針
 
-Web は現在 `--font-tactical` に `ui-monospace`、SFMono / Menlo / Consolas / Roboto Mono、日本語のNoto / Hiragino / Yu Gothic / Meiryoを順序付きで指定している。ただし、これは端末フォールバックでありAPKへ同梱できるフォント資産ではない。端末によって字形・文字幅・行高が変わるため、このCSS指定を Unity APK の基準として流用してはならない。
+Web は現在 `--font-tactical` に `ui-monospace`、SFMono-Regular、Menlo、Monaco、Consolas、Roboto Mono、Noto Sans Mono CJK JP、Noto Sans JP、Hiragino Sans、Yu Gothic UI、Meiryo、`monospace` を順序付きで指定している。ただし、これは端末フォールバックでありAPKへ同梱できるフォント資産ではない。端末によって字形・文字幅・行高が変わるため、このCSS指定を Unity APK の基準として流用してはならない。
 
 Unity 移植開始時の既定セットを次で固定する。これは「候補を列挙しただけ」ではなく、実機比較で重大な欠点が出ない限り採用する移植契約である。現時点ではフォントバイナリを取得・同梱しておらず、Web の表示も変更していない。
 
@@ -487,8 +487,8 @@ Unity側は同じSafe Area縦横比でGame Viewと実機を撮影する。ファ
 
 ### 12.2 必須状態
 
-1. モード選択（4モード）。
-2. MISSION一覧のTACTICAL / ARCHIVE各タブ。
+1. モード選択（CASUAL / TACTICS / SURVIVAL / MISSION / INITIAL TRAININGの5モード）。
+2. MISSION一覧のTACTICAL / ARCHIVE / EXTREME各タブ、およびINITIAL TRAININGへの導線。
 3. 艦隊配置の未選択、持ち上げ、valid、invalid、全艦確定。
 4. 通常砲撃の未選択、照準、発射可能。
 5. MK-45/F-4複数選択、HARPOON、STRADDLE各方向、SONAR 2×2。
@@ -513,7 +513,7 @@ Unity側は同じSafe Area縦横比でGame Viewと実機を撮影する。ファ
 - 動画比較で、発射から着弾、報告、次局面の順と保持時間が一致する。
 - Reduce Motionでも結果情報と操作待ちが消えない。
 - 同一seed・同一入力列でWebとUnityの盤面、攻撃結果、AI行動、残弾、勝敗、ログevent種別が一致する。
-- 16 MISSIONのcanonical vectorがUnity Domain testsでも全件成功する。
+- 22 MISSIONのcanonical vectorがUnity Domain testsでも全件成功する。
 
 pixel-perfect差分だけを合否にしない。フォントrasterizer差は許容する一方、要素境界は基準画像の±4論理単位、盤面中心・ボタン位置は±2%を目標とし、perceptual diffと目視を併用する。
 
@@ -534,7 +534,7 @@ pixel-perfect差分だけを合否にしない。フォントrasterizer差は許
 
 ## 14. 移植開始時の順序
 
-1. Web版をスマートフォン縦持ちで16 MISSIONを含め実際に攻略し、未解決UIをWebで先に直す。
+1. Web版をスマートフォン縦持ちで22 MISSIONと6 INITIAL TRAININGを含め実際に攻略し、未解決UIをWebで先に直す。
 2. 基準commitと全参照スクリーンショット／動画を固定する。
 3. Domain parity testsを先に移植し、UIなしで同じ入力・結果を確認する。
 4. Theme、font atlas、SafeAreaRoot、4つのLayoutProfileを作る。

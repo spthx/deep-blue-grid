@@ -25,7 +25,7 @@
 | `SECTOR` | 海域 | CASUAL / TACTICSの各1面 |
 | `SURVIVAL` | サバイバル | 累積損耗を伴う全4作戦の進行 |
 | `OPERATION` | 作戦 | SURVIVALの各1面 |
-| `SPECIAL MISSIONS` | 限定任務群 | MISSIONの全4任務 |
+| `SPECIAL MISSIONS` | 限定任務群 | MISSIONの全22任務（戦術12・記録解析4・極限6） |
 | `MISSION` | 限定任務 | 固定編成・固定状況・個別勝利条件を持つ各1面 |
 | `ENGAGEMENT` | 交戦 | 一つの海域・作戦・限定任務に対する1回の出撃。リトライで別交戦になる |
 | `FRIENDLY ACTION` | 自軍行動 | プレイヤーが兵装または聴音を1回実行する単位 |
@@ -85,7 +85,7 @@
 |---|---|
 | ブラウザタイトル、説明、OG代替文 | `app/layout.tsx` |
 | 艦名、コード、搭載兵装、通常6海域の名称・副題 | `app/game/constants.ts` の `SHIPS`, `STAGES` |
-| SURVIVAL 4作戦、MISSION 4任務、任務命令・制約・終了電文 | `app/game/Campaign.ts` の `SURVIVAL_STAGES`, `MISSION_STAGES`, `routeUnit` |
+| SURVIVAL 4作戦、MISSION 22任務、INITIAL TRAINING 6教程、任務命令・制約・終了電文 | `app/game/Campaign.ts` の `SURVIVAL_STAGES`, `MISSION_LIBRARY`, `TRAINING_STAGES`, `routeUnit` |
 | MISSIONの汎用失敗報告、開始時損傷文 | `app/game/MissionRules.ts` |
 | モード選択、上部状態、操作案内、艦カード、配置、兵装、警告、LOG、AAR、ボタン、aria-label | `app/game/DeepBlueGrid.tsx` |
 | 敗北時の事実欄と指揮所見 | `app/game/AfterAction.ts` |
@@ -131,12 +131,12 @@
 
 `tests/rendered-html.test.mjs` が以下を固定する。
 
-- 4モード名、重要区画説明、AIの情報取得条件。
-- 廃止語 `DIFFICULTY`, `NORMAL`, `HARD`, `VITAL COMPARTMENT`, `NO TRACK`, `REPORT LOGGED`, `FULL OPERATION LOG`, `FIRE ACCURACY` が実行時ソースへ戻らないこと。
+- 5モード名（INITIAL TRAININGを含む）、重要区画説明、AIの情報取得条件。
+- モード選択の旧見出し `DIFFICULTY` と旧モード名 `NORMAL` / `HARD`、ならびに `VITAL COMPARTMENT`, `NO TRACK`, `REPORT LOGGED`, `FULL OPERATION LOG`, `FIRE ACCURACY` が復活しないこと。MISSIONカードの課題評価 `DIFFICULTY n / 6` は現行の正式表記として許可する。
 - MISSIONの状況・目標・制約、指令残数、任務開始、任務リトライ。
 - 損害報告の記載操作、交戦経過記録、戦術図レビュー。
 - CONTACT / NO CONTACT、重要区画命中、支援リンク、配置回転の主要文言。
 
-`tests/game-rules.test.ts` が、表示文の前提となる4モードの編成、任務条件、指令上限、固定配置、AI強度、終了判定を固定する。
+`tests/game-rules.test.ts` が、表示文の前提となる5モードの編成、任務条件、指令上限、固定配置、AI強度、終了判定を固定する。
 
 今後、モード単位名、兵装名、重要区画名、CONTACTの意味を変更するときは、コードだけでなく本書と上記二つのテストを同時に更新する。

@@ -7,10 +7,15 @@ import {
   type Coord,
   type Orientation,
 } from "./constants.ts";
+import { EXTREME_MISSIONS } from "./ExtremeMissions.ts";
+import { TRAINING_STAGES } from "./Training.ts";
 
-export type GameMode = "casual" | "tactics" | "survival" | "mission";
+export { EXTREME_MISSIONS } from "./ExtremeMissions.ts";
+export { TRAINING_STAGES } from "./Training.ts";
 
-export type MissionObjective =
+export type GameMode = "casual" | "tactics" | "survival" | "mission" | "training";
+
+type MissionObjectiveCore =
   | {
       kind: "destroy-targets";
       targets: ShipId[];
@@ -38,10 +43,40 @@ export type MissionObjective =
       reports: Array<{ origin: Coord; contact: boolean; code: string }>;
     };
 
+export type MissionObjective = MissionObjectiveCore & {
+  /** Exact action order when doctrine requires a specific firing sequence. */
+  requiredWeaponSequence?: WeaponId[];
+  /** Exact weapon multiset when systems may be assigned in any order. */
+  requiredWeaponUses?: Partial<Record<WeaponId, number>>;
+  /** Preserve the authored report order instead of treating reports as a set. */
+  orderedReports?: boolean;
+};
+
 export type MissionPlacement = { id: ShipId; start: Coord; orientation: Orientation };
 export type MissionIntelMark = { coord: Coord; mark: "miss" | "echo" };
-export type MissionCategory = "standard" | "archive";
-export type MissionDifficulty = 1 | 2 | 3 | 4 | 5;
+export type MissionCategory = "standard" | "archive" | "extreme" | "training";
+export type MissionDifficulty = 1 | 2 | 3 | 4 | 5 | 6;
+export type MissionOrder =
+  | { weapon: "fire"; target: Coord }
+  | { weapon: "phantom" | "mk45"; targets: Coord[] }
+  | { weapon: "harpoon"; center: Coord }
+  | { weapon: "sparrow"; anchor: Coord; orientation: Orientation }
+  | { weapon: "radar"; origin: Coord };
+export type TrainingStep = {
+  title: string;
+  instruction: string;
+  doctrine: string;
+  expected: MissionOrder;
+  highlight?: Coord[];
+};
+export type TrainingPlan = {
+  lesson: number;
+  plainBrief: string;
+  doctrine: string;
+  suppressEnemyActions: true;
+  steps: TrainingStep[];
+  debrief: string[];
+};
 export type MissionArchiveEntry = {
   time: `${string}Z`;
   text: string;
@@ -76,6 +111,7 @@ export type MissionStageDefinition = StageDefinition & {
   initiallyIdentified?: ShipId[];
   enemyDisclosure: MissionEnemyDisclosure;
   archiveLog?: MissionArchiveEntry[];
+  training?: TrainingPlan;
   initialArsenal?: MissionInitialArsenal;
   fixedSeed: number;
   requiredLink?: "carrier" | "battleship";
@@ -859,18 +895,20 @@ export const ARCHIVE_MISSIONS: ReadonlyArray<MissionStageDefinition> = [
 export const MISSION_LIBRARY: ReadonlyArray<MissionStageDefinition> = [
   ...[...MISSION_STAGES].sort((a, b) => a.sortOrder - b.sortOrder),
   ...[...ARCHIVE_MISSIONS].sort((a, b) => a.sortOrder - b.sortOrder),
+  ...[...EXTREME_MISSIONS].sort((a, b) => a.sortOrder - b.sortOrder),
 ];
 
 export function missionLibraryFor(category: MissionCategory) {
+  if (category === "training") return TRAINING_STAGES;
   return MISSION_LIBRARY.filter((mission) => mission.category === category);
 }
 
 export function usesTacticsRules(mode: GameMode) {
-  return mode === "tactics" || mode === "survival" || mode === "mission";
+  return mode === "tactics" || mode === "survival" || mode === "mission" || mode === "training";
 }
 
 export function aiSkillFor(mode: GameMode, stageId: number, base: number) {
-  if (mode === "mission") return base;
+  if (mode === "mission" || mode === "training") return base;
   if (usesTacticsRules(mode) && stageId === 5) return 1.819;
   if (mode === "survival" && stageId === 6) return 1.05 * 1.7;
   return base * (usesTacticsRules(mode) ? 1.7 : 1.38);
@@ -888,21 +926,30 @@ export function missionFor(_mode: GameMode, stage: StageDefinition) {
 export function stagesFor(mode: GameMode): ReadonlyArray<StageDefinition> {
   if (mode === "survival") return SURVIVAL_STAGES;
   if (mode === "mission") return MISSION_LIBRARY;
+  if (mode === "training") return TRAINING_STAGES;
   return STAGES;
 }
 
 export function missionRuleFor(mode: GameMode, stage: StageDefinition) {
-  if (mode !== "mission") return null;
-  return MISSION_LIBRARY.find((candidate) => candidate.id === stage.id) ?? null;
+  if (mode === "mission") return MISSION_LIBRARY.find((candidate) => candidate.id === stage.id) ?? null;
+  if (mode === "training") return TRAINING_STAGES.find((candidate) => candidate.id === stage.id) ?? null;
+  return null;
 }
 
 export function isSeaBatStage(mode: GameMode, stage: StageDefinition) {
   return mode === "survival" && stage.id === 5;
 }
 
+export function isSilentStage(mode: GameMode, stage: StageDefinition) {
+  if (isSeaBatStage(mode, stage)) return true;
+  const scenario = missionRuleFor(mode, stage);
+  return scenario?.enemyFleet.some((id) => id === "silentSubmarine" || id === "leviathan") ?? false;
+}
+
 export function huntBreadthFor(mode: GameMode, operationIndex: number) {
   if (mode === "survival") return [8, 5, 1, 3][operationIndex] ?? 1;
   if (mode === "mission") return MISSION_LIBRARY[operationIndex]?.huntBreadth ?? 1;
+  if (mode === "training") return TRAINING_STAGES[operationIndex]?.huntBreadth ?? 1;
   return 1;
 }
 
@@ -912,13 +959,14 @@ export function playerFleetFor(mode: GameMode, stage: StageDefinition, survivalF
 }
 
 export function friendlyStarts(mode: GameMode, stage: StageDefinition) {
-  if (mode === "mission") return !missionRuleFor(mode, stage)?.enemyFirst;
+  if (mode === "mission" || mode === "training") return !missionRuleFor(mode, stage)?.enemyFirst;
   return mode === "casual";
 }
 
 export function routeUnit(mode: GameMode) {
   if (mode === "survival") return { english: "OPERATION", japanese: "作戦" };
   if (mode === "mission") return { english: "MISSION", japanese: "限定任務" };
+  if (mode === "training") return { english: "LESSON", japanese: "訓練" };
   return { english: "SECTOR", japanese: "海域" };
 }
 

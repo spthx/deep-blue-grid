@@ -234,7 +234,7 @@ Webの正本は `DeepBlueGrid.tsx` の `Phase` で、次の六状態を持つ。
 - **必須**: 長い兵装名は省略だけでなく、二行化、短い正式略号、詳細パネルのいずれかで識別可能にする。
 - **必須**: ボタン主文と副文の行間を分離し、上下の文字が接触しない。
 - **必須**: 文字を大きくすると枠を越える場合、枠の高さかレイアウトを変える。文字サイズをさらに落とすことで解決しない。
-- **現行**: Webは `--font-tactical` に `ui-monospace`、SFMono / Menlo / Consolas / Roboto Mono、日本語のNoto / Hiragino / Yu Gothic / Meiryoを順序付きで定義している。これはOSフォールバックであり、配布フォント資産ではない。
+- **現行**: Webは `--font-tactical` に `ui-monospace`、SFMono-Regular、Menlo、Monaco、Consolas、Roboto Mono、Noto Sans Mono CJK JP、Noto Sans JP、Hiragino Sans、Yu Gothic UI、Meiryo、`monospace` を順序付きで定義している。これはOSフォールバックであり、配布フォント資産ではない。
 - **移植契約**: Unity開始時は、本文・ボタンをBIZ UDPGothic Regular/Bold、英字コード・時刻・座標をIBM Plex Mono Medium/SemiBold、欠字時だけNoto Sans JPへフォールバックする。いずれもSIL OFL 1.1の正規配布物を取得し、ライセンス、upstream revision、SHA-256を保存する。詳細は `docs/UNITY_UI_HANDOFF.md` 4章を正本とする。
 - **推奨**: Webにも同じupstream revisionのWOFF2をself-hostする場合は、本文用と英字コード用をrole classで分ける。OSフォントやfallbackの偶然でUnityと一致したことにしない。
 - **推奨**: Unityのフォントアトラスは日本語本文をdynamicまたは必要文字集合で生成し、◆、◇、×、↻などの記号を欠落させない。操作アイコンはフォント字形ではなくSprite Asset化すると端末差が減る。
@@ -350,8 +350,8 @@ Webの正本は `DeepBlueGrid.tsx` の `Phase` で、次の六状態を持つ。
 
 ### 17.2 各ビューポートで通す状態
 
-1. モード選択4カード
-2. MISSION INDEXのTACTICAL / ARCHIVE両タブ
+1. モード選択5カード（INITIAL TRAININGを含む）
+2. MISSION INDEXのTACTICAL / ARCHIVE / EXTREME各タブ、およびINITIAL TRAININGへの導線
 3. 通常配置: 艦選択、ドラッグ、東南西北回転、復元、CLEAR、RANDOM、交戦開始
 4. MISSION固定状況: 両戦術図、日誌、制約、交戦開始
 5. 通常砲撃: 選択、取消、発射

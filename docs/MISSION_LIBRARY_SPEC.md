@@ -10,9 +10,11 @@ contract in `MISSION_MODE_SPEC.md`.
   mission-select screen.
 - `archive`: four independent log-analysis problems, displayed in a separate
   `ARCHIVE OPERATIONS / 戦闘記録解析` section.
+- `extreme`: six independent, public-information-only end-game problems,
+  displayed in `EXTREME OPERATIONS / 極限任務`.
 - Mission IDs are stable identifiers. Existing missions retain IDs 1 through
   4; display order is determined by `sortOrder`, never by ID.
-- `MISSION_LIBRARY` is the playable sixteen-mission route used by index-based
+- `MISSION_LIBRARY` is the playable twenty-two-mission route used by index-based
   launch code. `missionLibraryFor(category)` provides category-filtered views.
 - No mission is progression-locked. Completion and record state are stored per
   mission ID and never affect Campaign or Survival state.
@@ -32,13 +34,19 @@ solution. Cancel, board switching, LOG, help, and invalid selections consume
 neither an order nor a record action. A retry begins a new timer. Initial
 scenario damage and historical shots do not count as attempt statistics.
 
+EXTREME operations preserve a no-hidden-information contract across retries.
+On defeat, `POST-ENGAGEMENT REVIEW` shows the own-force damage plot, CIC log,
+and only the hostile marks, identifications, sonar reports, and plotted contacts
+already disclosed during the attempt. Unobserved fixed hostile positions remain
+withheld; completing the operation is the only way to earn its clear record.
+
 ## Definition fields
 
 | Field | Meaning |
 | --- | --- |
 | `sortOrder` | Stable category-local display order |
-| `difficulty` | Integer 1–5 used for the visible challenge rating |
-| `category` | `standard` or `archive` |
+| `difficulty` | Integer 1–6 used for the visible challenge rating |
+| `category` | `standard`, `archive`, or `extreme` |
 | `enemyDisclosure` | Known hull IDs, unknown-contact count, optional callsigns and candidate cells, plus a concise public summary |
 | `archiveLog` | Authored `HHMMZ` entries shown verbatim in archive missions |
 | `initialArsenal` | Raw special-weapon magazine counters restored on start/retry |
@@ -122,6 +130,29 @@ Archive 03 deliberately avoids an RNG-dependent promised enemy hit. Its
 one-order deadline represents the publicly logged next hostile firing window;
 an incorrect first order fails immediately and deterministically.
 
+## Extreme operations
+
+Extreme operations have no hidden-information exception: every deterministic
+victory route is derived from the brief, visible tactical plot, disclosed
+contacts, and permitted systems. They do not require completion of another
+mission and their records use the same per-mission ID contract.
+
+Authored `candidateCells` are public intelligence, not solution metadata. The
+placement brief renders every code and coordinate in `PLOTTED CONTACTS`, also
+on compact phones where the longer hostile summary may be collapsed. Required
+weapon sequences, exact weapon-use multisets, and ordered sonar reports are
+evaluated as victory conditions; merely destroying the target by a shorter or
+reversed route does not complete the operation.
+
+| ID | Mission | Rating | Tactical question |
+| ---: | --- | :---: | --- |
+| 17 | FALSE WAKE | 6 | Correlate two sonar reports, a damaged DD, and one MK-45 window. |
+| 18 | SEVERED LINK | 6 | Keep dual support links alive while enforcing an escort → carrier → battleship destruction order. |
+| 19 | CROSS BEARING | 6 | Close two damaged contacts with different weapon geometries in two orders. |
+| 20 | COMMAND SECTIONS | 6 | Identify three critical sections without sinking the targets. |
+| 21 | OPERATION MOBY-DICK | 6 | Contain and sink SSX-02 LEVIATHAN after its disclosed silent egress. |
+| 22 | NO SECOND SALVO | 6 | Allocate the last available special salvos across five damaged targets. |
+
 ## Static validation contract
 
 `validateMissionDefinition` checks:
@@ -134,11 +165,12 @@ an incorrect first order fails immediately and deterministically.
 - valid initial magazine counters;
 - objective and protected hull membership;
 - valid 2x2 sonar origins;
+- valid required-weapon sequences/multisets and ordered-report usage;
 - disclosure counts and archive timestamp format;
 - required support-link state.
 
 `validateMissionLibrary` also rejects duplicate IDs and prefixes issues with
-the mission identity. The complete sixteen-definition library must validate
+the mission identity. The complete twenty-two-definition library must validate
 with an empty issue array before build or publication.
 
 Canonical solution vectors remain outside production definitions so they

@@ -4,7 +4,7 @@ import { GRID_SIZE, SHIPS, STAGES } from "../app/game/constants.ts";
 import { Arsenal, Board, SeededRandom, criticalCoordFor, harpoonCells, hasEscortLink, hasFireControlLink, radarCells, straddleCells } from "../app/game/engine.ts";
 import { EnemyAI } from "../app/game/EnemyAI.ts";
 import { nextSubmarineWake, submarineWakeCandidates } from "../app/game/SubmarineWake.ts";
-import { ARCHIVE_MISSIONS, FULL_FLEET, MISSION_LIBRARY, MISSION_STAGES, SURVIVAL_STAGES, aiSkillFor, enemyFleetFor, friendlyStarts, huntBreadthFor, missionFor, missionLibraryFor, missionRuleFor, playerFleetFor, stagesFor, survivingFleet, usesTacticsRules } from "../app/game/Campaign.ts";
+import { ARCHIVE_MISSIONS, EXTREME_MISSIONS, FULL_FLEET, MISSION_LIBRARY, MISSION_STAGES, SURVIVAL_STAGES, TRAINING_STAGES, aiSkillFor, enemyFleetFor, friendlyStarts, huntBreadthFor, isSilentStage, missionFor, missionLibraryFor, missionRuleFor, playerFleetFor, stagesFor, survivingFleet, usesTacticsRules } from "../app/game/Campaign.ts";
 import { applyScenarioHits, deployScenarioFleet, evaluateMission, isMissionSonarOrigin, validateMissionLibrary } from "../app/game/MissionRules.ts";
 import { commandAssessment, formatElapsed, formatLocal, formatZulu } from "../app/game/AfterAction.ts";
 import { OperationRecorder, formatOperationDuration } from "../app/game/OperationRecord.ts";
@@ -46,15 +46,22 @@ test("survival is a distinct four-operation end-game route", () => {
   assert.equal(huntBreadthFor("tactics", 3), 1);
 });
 
-test("mission mode exposes twelve tactical and four archive operations as isolated free choices", () => {
+test("mission mode exposes tactical, archive, and extreme operations while training stays isolated", () => {
   assert.equal(stagesFor("mission"), MISSION_LIBRARY);
   assert.equal(MISSION_STAGES.length, 12);
   assert.equal(ARCHIVE_MISSIONS.length, 4);
-  assert.equal(MISSION_LIBRARY.length, 16);
+  assert.equal(EXTREME_MISSIONS.length, 6);
+  assert.equal(TRAINING_STAGES.length, 6);
+  assert.equal(MISSION_LIBRARY.length, 22);
   assert.equal(missionLibraryFor("standard").length, 12);
   assert.equal(missionLibraryFor("archive").length, 4);
-  assert.deepEqual(MISSION_LIBRARY.map((mission) => mission.difficulty), [1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 5, 5, 2, 3, 4, 4]);
-  assert.deepEqual(MISSION_LIBRARY.map((mission) => mission.id), [5, 2, 6, 1, 7, 8, 9, 3, 10, 11, 4, 12, 13, 14, 15, 16]);
+  assert.equal(missionLibraryFor("extreme").length, 6);
+  assert.equal(missionLibraryFor("training").length, 6);
+  assert.deepEqual(MISSION_LIBRARY.map((mission) => mission.difficulty), [1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 5, 5, 2, 3, 4, 4, 6, 6, 6, 6, 6, 6]);
+  assert.deepEqual(MISSION_LIBRARY.map((mission) => mission.id), [5, 2, 6, 1, 7, 8, 9, 3, 10, 11, 4, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]);
+  assert.equal(stagesFor("training"), TRAINING_STAGES);
+  assert.equal(usesTacticsRules("training"), true);
+  assert.equal(isSilentStage("mission", EXTREME_MISSIONS.find((mission) => mission.id === 21)!), true);
   const originalFour = [1, 2, 3, 4].map((id) => MISSION_STAGES.find((mission) => mission.id === id)!);
   assert.deepEqual(originalFour.map((mission) => mission.title), [
     "NARROW GATE", "SILENT WATCH", "LAST FLIGHT", "BROKEN SPEAR",
@@ -287,6 +294,58 @@ test("mission evaluator gives completed objectives priority, then rejects protec
     assert.equal(completedAfterProtectedLoss?.result, "victory");
     assert.match(completedAfterProtectedLoss?.report ?? "", /^ACOUSTIC PICTURE ESTABLISHED/);
   }
+});
+
+test("extreme operations enforce report order and authored weapon doctrine", () => {
+  const falseWake = EXTREME_MISSIONS.find((mission) => mission.id === 17)!;
+  assert.equal(falseWake.objective.kind, "scan-and-destroy");
+  if (falseWake.objective.kind === "scan-and-destroy") {
+    const [alpha, bravo] = falseWake.objective.reports;
+    const base = {
+      friendlyActions: 3,
+      usedWeapons: ["radar", "radar", "mk45"] as const,
+      enemySunk: ["destroyer", "submarine"] as const,
+      friendlyAlive: falseWake.playerFleet,
+    };
+    assert.equal(evaluateMission(falseWake, {
+      ...base,
+      usedWeapons: [...base.usedWeapons],
+      enemySunk: [...base.enemySunk],
+      sonarReports: [
+        { origin: { ...bravo.origin }, contact: bravo.contact },
+        { origin: { ...alpha.origin }, contact: alpha.contact },
+      ],
+    })?.result, "defeat");
+    assert.equal(evaluateMission(falseWake, {
+      ...base,
+      usedWeapons: [...base.usedWeapons],
+      enemySunk: [...base.enemySunk],
+      sonarReports: [
+        { origin: { ...alpha.origin }, contact: alpha.contact },
+        { origin: { ...bravo.origin }, contact: bravo.contact },
+      ],
+    })?.result, "victory");
+  }
+
+  const mobyDick = EXTREME_MISSIONS.find((mission) => mission.id === 21)!;
+  const mobyState = {
+    friendlyActions: 2,
+    enemySunk: ["leviathan"] as const,
+    friendlyAlive: mobyDick.playerFleet,
+    sonarReports: [],
+  };
+  assert.equal(evaluateMission(mobyDick, { ...mobyState, enemySunk: [...mobyState.enemySunk], usedWeapons: ["phantom", "fire"] })?.result, "defeat");
+  assert.equal(evaluateMission(mobyDick, { ...mobyState, enemySunk: [...mobyState.enemySunk], usedWeapons: ["fire", "phantom"] })?.result, "victory");
+
+  const noSecondSalvo = EXTREME_MISSIONS.find((mission) => mission.id === 22)!;
+  const salvoState = {
+    friendlyActions: 4,
+    enemySunk: [...noSecondSalvo.enemyFleet],
+    friendlyAlive: noSecondSalvo.playerFleet,
+    sonarReports: [],
+  };
+  assert.equal(evaluateMission(noSecondSalvo, { ...salvoState, usedWeapons: ["phantom", "harpoon", "fire", "fire"] })?.result, "defeat");
+  assert.equal(evaluateMission(noSecondSalvo, { ...salvoState, usedWeapons: ["mk45", "sparrow", "phantom", "harpoon"] })?.result, "victory");
 });
 
 test("mission retry inputs remain immutable after deployment and combat probes", () => {

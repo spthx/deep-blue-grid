@@ -2,7 +2,7 @@
 
 公開版: https://spthx.github.io/deep-blue-grid/
 
-ゲームボーイ時代の海戦作戦ゲームを独自のCIC演出とルールで再構成した、1人用のブラウザ海戦ゲームです。CASUAL / TACTICSは全6海域、エンドコンテンツのSURVIVALは独立した全4作戦、MISSIONは12の戦術任務と4つの戦闘記録解析から成る全16限定任務で構成されます。8×8の戦術図で艦砲射撃・特殊兵装・受動音響探知を運用します。
+ゲームボーイ時代の海戦作戦ゲームを独自のCIC演出とルールで再構成した、1人用のブラウザ海戦ゲームです。CASUAL / TACTICSは全6海域、エンドコンテンツのSURVIVALは独立した全4作戦、MISSIONは12の戦術任務・4つの戦闘記録解析・6つの極限任務から成る全22限定任務で構成されます。別途、6本の固定教材を何度でも受講できるINITIAL TRAININGを用意しています。8×8の戦術図で艦砲射撃・特殊兵装・受動音響探知を運用します。
 
 ## 起動方法
 
@@ -44,8 +44,9 @@ GitHub Pages用の静的ビルドは `npm run build:pages` で生成できます
 - 第4作戦DEEP BLUE GRIDは護衛艦を含まない最終艦隊戦。AI強度はSEA BATより抑え、損耗した艦隊での戦略を主眼とする
 - SURVIVALで撃沈された艦と搭載兵装は以降の作戦から永久に失われる。生存艦は作戦達成時に完全修復され、兵装使用回数も全回復する
 - SURVIVALのリトライは、その作戦へ到達した時点の残存艦隊で再配置してやり直す。失敗交戦・再出撃・累積被害も最終作戦記録へ残る
-- MISSIONは固定編成・固定配置・固定AI seedで再現される全16限定任務。12の戦術問題と、日誌・残弾・既知損傷から現況を読む4つの戦闘記録解析を自由に選べる。敵全滅だけでなく、指定艦阻止、CONTACT / NO CONTACT報告、限られた兵装、射撃管制連接などを個別目標とする
+- MISSIONは固定編成・固定配置・固定AI seedで再現される全22限定任務。12の戦術問題、日誌・残弾・既知損傷から現況を読む4つの戦闘記録解析、公開情報だけで解く6つのEXTREME OPERATIONSを自由に選べる。EXTREMEには戦略潜航艦SSX-02 LEVIATHANを追う `OPERATION MOBY-DICK` を含む。敵全滅だけでなく、指定艦阻止、CONTACT / NO CONTACT報告、限られた兵装、射撃管制連接などを個別目標とする
 - MISSIONの初期損傷と既知情報は命中率へ加算せず、リトライでは同じ状況を完全復元する。任務間で艦艇損耗や兵装残数は継承しない
+- INITIAL TRAININGは6つの固定教材（通常射撃、四方反響、船影復元、護衛連接、戦艦射撃、潜水艦の音紋と受動聴音）を任意選択・再受講できる。誤った指令は行動・弾薬を消費せず、現在の指示を再表示する。進捗仕様は `docs/TRAINING_MODE_SPEC.md` を参照
 - TACTICSとSURVIVALでは敵艦種も未識別となり、各艦に1マスある重要区画へ命中すると艦種とコードを識別できる
 - 自軍の重要区画は菱形で常時表示され、敵に命中されると敵側もその艦種を識別する（追加ダメージなし）
 - 交互に1行動。全艦撃沈で勝利、自軍全滅で敗北
@@ -64,7 +65,7 @@ GitHub Pages用の静的ビルドは `npm run build:pages` で生成できます
 
 - 盤面、艦影、波、命中表示などのゲーム画面は、このプロジェクト用のCanvas 2D / CSSコードで描画しています。既存ゲームの画像、スクリーンショット、スプライトは収録していません。
 - 効果音とBGMはWeb Audio APIのオシレーターで実行時に合成しています。MP3 / WAV / OGGや既存楽曲のサンプルは収録していません。SURVIVALでは累積喪失艦が増えるほどCIC脈動音の間隔が260msから最短170msまで段階的に短くなります。
-- 現在のWeb版はSFMono / Menlo / Consolas / Roboto Monoと、Noto / Hiragino / Yu Gothic / Meiryo等の端末フォールバックを使用し、フォントファイル自体は配布していません。Unity版ではBIZ UDPGothic、IBM Plex Mono、Noto Sans JPを正式取得し、OFL・取得revision・SHA-256を記録して同梱する契約を `docs/UNITY_UI_HANDOFF.md` に定めています。
+- 現在のWeb版は単一の `--font-tactical` フォールバック列（`ui-monospace`、SFMono-Regular、Menlo、Monaco、Consolas、Roboto Mono、Noto Sans Mono CJK JP、Noto Sans JP、Hiragino Sans、Yu Gothic UI、Meiryo、`monospace`）を使用し、フォントファイル自体は配布していません。Unity版ではBIZ UDPGothic、IBM Plex Mono、Noto Sans JPを正式取得し、OFL・取得revision・SHA-256を記録して同梱する契約を `docs/UNITY_UI_HANDOFF.md` に定めています。
 - `public/og.png` は、このゲームの告知画像としてOpenAIの画像生成機能で作成したものです。既存ゲームの画像は入力・合成していません。
 - React、Next.js、Viteなどの外部ソフトウェアは、それぞれのオープンソースライセンスに従います。
 

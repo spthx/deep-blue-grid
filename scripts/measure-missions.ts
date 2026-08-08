@@ -195,7 +195,66 @@ export const CANONICAL_MISSION_ROUTES: Readonly<Record<number, Route>> = {
     evidence: ["2210Z", "2212Z", "2213Z", "2215Z", "2216Z"],
     actions: [{ weapon: "sparrow", anchor: c(4, 3), orientation: "east" }],
   },
+  17: {
+    rationale: "Two prescribed sonar reports separate the damaged destroyer section from the false wake; MK-45 closes both contacts together.",
+    evidence: ["ALPHA / C-3:D-4", "BRAVO / E-5:F-6", "LAST DD SECTION", "WAKE TERMINUS"],
+    actions: [
+      { weapon: "radar", origin: c(2, 2) },
+      { weapon: "radar", origin: c(4, 4) },
+      { weapon: "mk45", targets: [c(3, 3), c(6, 6)] },
+    ],
+  },
+  18: {
+    rationale: "The dual escort link authorizes the second air strike and third missile; fire is distributed in the mandated DE-CV-BB order.",
+    evidence: ["DUAL SUPPORT LINK", "GATE", "CITADEL", "IRONCLAD"],
+    actions: [
+      { weapon: "phantom", targets: [c(1, 0), c(2, 3), c(3, 3), c(4, 3)] },
+      { weapon: "phantom", targets: [c(5, 3), c(7, 0), c(7, 2), c(7, 4)] },
+      { weapon: "harpoon", center: c(1, 6) },
+      { weapon: "harpoon", center: c(3, 6) },
+      { weapon: "harpoon", center: c(5, 6) },
+    ],
+  },
+  19: {
+    rationale: "The north-facing fan covers the cruiser's adjacent vertical remainder; the X-pattern diagonals close both destroyer ends.",
+    evidence: ["MERIDIAN", "TRANSIT", "HULL COURSE"],
+    actions: [
+      { weapon: "sparrow", anchor: c(1, 3), orientation: "north" },
+      { weapon: "harpoon", center: c(5, 5) },
+    ],
+  },
+  20: {
+    rationale: "The only unbroken control sections in the two disclosed hulls and the isolated conning tower are the three critical cells.",
+    evidence: ["AIR CONTROL", "MAIN DIRECTOR", "CONNING TOWER"],
+    actions: [
+      { weapon: "fire", target: c(2, 0) },
+      { weapon: "fire", target: c(2, 3) },
+      { weapon: "fire", target: c(7, 7) },
+    ],
+  },
+  21: {
+    rationale: "Four-direction echoes fix the first contact at D-4; one carrier sweep covers every publicly named silent egress box.",
+    evidence: ["D-4 ECHO FIX", "EGRESS ALPHA", "EGRESS BRAVO", "EGRESS CHARLIE", "EGRESS DELTA"],
+    actions: [
+      { weapon: "fire", target: c(3, 3) },
+      { weapon: "phantom", targets: leviathanEgressForSimulation() },
+    ],
+  },
+  22: {
+    rationale: "Each surviving section is allocated to the only four available weapon systems; the air strike closes two separated hulls.",
+    evidence: ["ALL CONTACTS IDENTIFIED", "ONE AUTHORIZATION EACH", "FIRE DISTRIBUTION"],
+    actions: [
+      { weapon: "phantom", targets: [c(0, 0), c(6, 1), c(7, 0), c(7, 2)] },
+      { weapon: "harpoon", center: c(4, 3) },
+      { weapon: "sparrow", anchor: c(4, 5), orientation: "north" },
+      { weapon: "mk45", targets: [c(7, 7), c(7, 6)] },
+    ],
+  },
 };
+
+function leviathanEgressForSimulation(): Coord[] {
+  return [c(1, 1), c(6, 1), c(1, 6), c(6, 6)];
+}
 
 function copyCoord(coord: Coord) {
   return { x: coord.x, y: coord.y };
@@ -220,9 +279,11 @@ function outcomeState(
   identified: ReadonlySet<ShipId>,
   sonarReports: Array<{ origin: Coord; contact: boolean }>,
   enemySunkOrder: readonly ShipId[],
+  usedWeapons: readonly WeaponId[],
 ) {
   return evaluateMission(rule, {
     friendlyActions: actions,
+    usedWeapons: [...usedWeapons],
     enemySunk: enemy.ships.filter((ship) => ship.sunk).map((ship) => ship.id),
     enemySunkOrder: [...enemySunkOrder],
     enemyIdentified: [...identified],
@@ -265,7 +326,15 @@ function executeEnemyDecision(
   enemy: Board,
   enemyWakes: Coord[],
 ) {
-  if (decision.weapon === "silentMove") return;
+  if (decision.weapon === "silentMove") {
+    enemy.relocateShip(decision.actor ?? "silentSubmarine", scenarioRng, {
+      blocked: enemyWakes,
+      leaveLastKnown: true,
+      relaxSignalBlocksWhenTrapped: true,
+      resolveContainmentWhenTrapped: true,
+    });
+    return;
+  }
   if (decision.weapon === "radar") {
     const origin = decision.targets[0];
     commander.observeRadar(origin, player.radar(origin));
@@ -318,7 +387,7 @@ export function simulateMission(rule: MissionStageDefinition, policy: MissionPol
     new SeededRandom(rule.fixedSeed ^ 0x51f15e),
     rule.playerFleet,
     aiSkillFor("mission", rule.id, rule.aiSkill),
-    "tactics",
+    rule.enemyFleet.some((id) => id === "silentSubmarine" || id === "leviathan") ? "silent" : "tactics",
     rule.huntBreadth ?? huntBreadthFor("mission", MISSION_LIBRARY.indexOf(rule)),
   );
   const identified = new Map<ShipId, Coord>();
@@ -330,6 +399,7 @@ export function simulateMission(rule: MissionStageDefinition, policy: MissionPol
   const playerWakes: Coord[] = [];
   const enemyWakes = (rule.initialEnemyWakes ?? []).map(copyCoord);
   const enemySunkOrder: ShipId[] = [];
+  const usedWeapons: WeaponId[] = [];
   let actions = 0;
   let enemyActions = 0;
   let illegalAction: string | undefined;
@@ -339,7 +409,7 @@ export function simulateMission(rule: MissionStageDefinition, policy: MissionPol
     const decision = enemyCommander.decide(enemy);
     executeEnemyDecision(decision, enemyCommander, player, scenarioRng, enemy, enemyWakes);
     enemyActions += 1;
-    outcome = outcomeState(rule, player, enemy, actions, new Set(identified.keys()), sonarReports, enemySunkOrder);
+    outcome = outcomeState(rule, player, enemy, actions, new Set(identified.keys()), sonarReports, enemySunkOrder, usedWeapons);
     if (!outcome && player.allSunk()) {
       outcome = { result: "defeat", report: "FRIENDLY FORCE LOST" };
     }
@@ -372,6 +442,7 @@ export function simulateMission(rule: MissionStageDefinition, policy: MissionPol
         }
       }
     }
+    usedWeapons.push(action.weapon);
     actions += 1;
 
     const playerWake = nextSubmarineWake(player, playerWakes, scenarioRng);
@@ -380,12 +451,12 @@ export function simulateMission(rule: MissionStageDefinition, policy: MissionPol
       enemyCommander.observeWake(playerWake);
     }
 
-    outcome = outcomeState(rule, player, enemy, actions, new Set(identified.keys()), sonarReports, enemySunkOrder);
+    outcome = outcomeState(rule, player, enemy, actions, new Set(identified.keys()), sonarReports, enemySunkOrder, usedWeapons);
     if (!outcome) enemyTurn();
   }
 
   if (!outcome && actions >= rule.objective.maxFriendlyActions) {
-    outcome = outcomeState(rule, player, enemy, actions, new Set(identified.keys()), sonarReports, enemySunkOrder);
+    outcome = outcomeState(rule, player, enemy, actions, new Set(identified.keys()), sonarReports, enemySunkOrder, usedWeapons);
   }
 
   return {
@@ -460,6 +531,7 @@ export const INFORMED_COMPREHENSION_BY_DIFFICULTY = {
   3: 0.74,
   4: 0.58,
   5: 0.43,
+  6: 0.29,
 } as const;
 
 function publiclyUsable(view: PublicMissionView, action: MissionAction) {

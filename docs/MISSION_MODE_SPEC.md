@@ -2,8 +2,8 @@
 
 This document is the detailed implementation contract for the original four
 authored situations in the Web and Unity editions of DEEP BLUE GRID. The full
-fourth game mode, `MISSION`, contains sixteen independently selectable missions;
-the additional twelve and the library-wide contract are defined in
+fourth game mode, `MISSION`, contains twenty-two independently selectable missions:
+twelve tactical, four archive, and six extreme. The library-wide contract is defined in
 `MISSION_LIBRARY_SPEC.md`.
 
 CASUAL and TACTICS retain their existing six-sector campaign. SURVIVAL retains
@@ -26,6 +26,11 @@ or result calculations.
   the brief and represented as public state, not as an invisible AI advantage.
 - A retry is a chance to refine a solution. It must recreate the exact same
   situation rather than rerolling an easier board.
+- Because the fixed retry itself would turn a full defeat reveal into hidden
+  placement knowledge, EXTREME defeat review preserves only information that
+  was already public or observed during the attempt. It still exposes the own
+  damage plot and complete CIC log, but withholds unobserved hostile positions.
+  Standard and archive missions retain the normal post-engagement reveal.
 - The mode reuses the canonical ships, weapon patterns, support links,
   four-direction ECHO, important sections, and 2x2 PASSIVE SONAR. Scenario-only
   restrictions must never alter those rules in another mode.
@@ -510,8 +515,9 @@ The fixed AI seeds must additionally satisfy these survival invariants:
 
 ## Validation checklist
 
-- Exactly four core MISSION definitions with IDs 1–4 and fixed seeds; the full
-  sixteen-definition library is validated separately by `validateMissionLibrary`.
+- Four original core MISSION definitions with IDs 1–4 and fixed seeds; the
+  complete twenty-two-definition library (12 tactical, 4 archive, 6 extreme)
+  is validated separately by `validateMissionLibrary`.
 - Every authored footprint is in bounds and non-overlapping on its own board.
 - Every initial HIT lies on the declared ship and produces the declared
   identification state.
