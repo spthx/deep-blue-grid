@@ -168,8 +168,9 @@ test("Unity handoff checksums cover exactly the manifest targets", async () => {
     const resolved = fileURLToPath(new URL(path, manifestUrl));
     return relative(".", resolved);
   });
-  const checksumTargets = entries.map((entry) => entry.path.replaceAll("/", "\\"));
-  assert.deepEqual(checksumTargets.map((path) => path.toLowerCase()), manifestTargets.map((path: string) => path.toLowerCase()));
+  const portablePath = (path: string) => path.replaceAll("\\", "/").toLowerCase();
+  const checksumTargets = entries.map((entry) => portablePath(entry.path));
+  assert.deepEqual(checksumTargets, manifestTargets.map(portablePath));
 
   for (const entry of entries) {
     const contents = await readFile(new URL(`../${entry.path}`, import.meta.url));
