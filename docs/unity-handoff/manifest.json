@@ -11,6 +11,10 @@
     "unity-validation-v1.json"
   ],
   "checksums": "SHA256SUMS.txt",
+  "checksumCanonicalization": {
+    "textLineEndings": "LF",
+    "binary": "raw-bytes"
+  },
   "checksumTargets": [
     "unity-content-v2.json",
     "unity-validation-v1.json",

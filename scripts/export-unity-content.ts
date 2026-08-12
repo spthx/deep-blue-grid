@@ -195,6 +195,10 @@ const manifest = {
   editorValidationFixture: "unity-validation-v1.json",
   runtimeExclusions: ["unity-validation-v1.json"],
   checksums: "SHA256SUMS.txt",
+  checksumCanonicalization: {
+    textLineEndings: "LF",
+    binary: "raw-bytes",
+  },
   checksumTargets,
   generator: "../../scripts/export-unity-content.ts",
   contractSources: [
@@ -237,6 +241,10 @@ const manifest = {
 } as const;
 
 const serialize = (value: unknown) => `${JSON.stringify(value, null, 2)}\n`;
+const checksumPayload = (path: string, contents: Buffer) =>
+  /\.(?:json|md|txt)$/i.test(path)
+    ? Buffer.from(contents.toString("utf8").replace(/\r\n?/g, "\n"), "utf8")
+    : contents;
 
 await mkdir(dirname(runtimeOutputPath), { recursive: true });
 await writeFile(runtimeOutputPath, serialize(runtimePayload), "utf8");
@@ -248,7 +256,7 @@ const checksumLines: string[] = [];
 for (const relativePath of checksumTargets) {
   const absolutePath = resolve(handoffDirectory, relativePath);
   const contents = await readFile(absolutePath);
-  const checksum = createHash("sha256").update(contents).digest("hex");
+  const checksum = createHash("sha256").update(checksumPayload(relativePath, contents)).digest("hex");
   const repositoryPath = absolutePath.slice(resolve(".").length + 1).replaceAll("\\", "/");
   checksumLines.push(`${checksum}  ${repositoryPath}`);
 }
