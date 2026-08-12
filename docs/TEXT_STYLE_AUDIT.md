@@ -25,7 +25,7 @@
 | `SECTOR` | 海域 | CASUAL / TACTICSの各1面 |
 | `SURVIVAL` | サバイバル | 累積損耗を伴う全4作戦の進行 |
 | `OPERATION` | 作戦 | SURVIVALの各1面 |
-| `SPECIAL MISSIONS` | 限定任務群 | MISSIONの全22任務（戦術12・記録解析4・極限6） |
+| `SPECIAL MISSIONS` | 限定任務群 | MISSIONの全28任務（戦術16・記録解析5・極限7） |
 | `MISSION` | 限定任務 | 固定編成・固定状況・個別勝利条件を持つ各1面 |
 | `ENGAGEMENT` | 交戦 | 一つの海域・作戦・限定任務に対する1回の出撃。リトライで別交戦になる |
 | `FRIENDLY ACTION` | 自軍行動 | プレイヤーが兵装または聴音を1回実行する単位 |
@@ -73,7 +73,7 @@
 
 ### 艦・兵装表記
 
-艦名、コード、兵装名の正本は `app/game/constants.ts` の `SHIPS` と、`app/game/DeepBlueGrid.tsx` の `WEAPON_META` / `ACTION_LABEL` / `SHIP_DOSSIER`。
+艦名とコードの正本は `app/game/constants.ts` の `SHIPS`、兵装名と操作表示、艦種解説の正本は `app/game/PresentationContract.ts` の `WEAPON_PRESENTATION` / `ACTION_LABEL` / `SHIP_DOSSIER`。
 
 - 艦コード: `CV`, `BB`, `CA`, `DD`, `DE-01`, `DE-02`, `SS`, `SSX`
 - 兵装: `通常砲撃`, `F-4 PHANTOM`, `HARPOON`, `8-INCH STRADDLE`, `MK-45 II`, `PASSIVE SONAR`
@@ -85,7 +85,7 @@
 |---|---|
 | ブラウザタイトル、説明、OG代替文 | `app/layout.tsx` |
 | 艦名、コード、搭載兵装、通常6海域の名称・副題 | `app/game/constants.ts` の `SHIPS`, `STAGES` |
-| SURVIVAL 4作戦、MISSION 22任務、INITIAL TRAINING 6教程、任務命令・制約・終了電文 | `app/game/Campaign.ts` の `SURVIVAL_STAGES`, `MISSION_LIBRARY`, `TRAINING_STAGES`, `routeUnit` |
+| SURVIVAL 4作戦、MISSION 28任務、INITIAL TRAINING 6教程、任務命令・制約・終了電文 | `app/game/Campaign.ts` の `SURVIVAL_STAGES`, `MISSION_LIBRARY`, `TRAINING_STAGES`, `routeUnit` と `app/game/AdditionalMissions.ts` の追加6任務 |
 | MISSIONの汎用失敗報告、開始時損傷文 | `app/game/MissionRules.ts` |
 | モード選択、上部状態、操作案内、艦カード、配置、兵装、警告、LOG、AAR、ボタン、aria-label | `app/game/DeepBlueGrid.tsx` |
 | 敗北時の事実欄と指揮所見 | `app/game/AfterAction.ts` |
@@ -93,7 +93,7 @@
 | 開閉記号、MISSION情報マーカー `◇` | `app/globals.css` の疑似要素 |
 | 音声 | `app/game/AudioManager.ts`。発話テキストはなく、Web Audioによる合成音のみ |
 
-### MISSION固有の表示契約
+### 原型4 MISSIONの表示契約
 
 | 任務 | 表示上の主題 | 指揮表示 | 主要条件 |
 |---|---|---|---|

@@ -42,10 +42,12 @@ test("mobile command deck stays four columns by two rows", async () => {
 
 test("responsive regimes cover compact portrait, phone landscape, tablet landscape, and full-HD", async () => {
   const source = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
+  const presentation = await readFile(new URL("../app/game/PresentationContract.ts", import.meta.url), "utf8");
   const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
   const layout = await readFile(new URL("../app/layout.tsx", import.meta.url), "utf8");
   assert.match(source, /const COMPACT_LAYOUT_MEDIA =/);
-  assert.match(source, /max-width: 1099px\) and \(orientation: portrait\), \(max-width: 959px\) and \(max-height: 600px\)/);
+  assert.match(source, /RESPONSIVE_UI_CONTRACT\.compactLayoutMedia/);
+  assert.match(presentation, /max-width: 1099px\) and \(orientation: portrait\), \(max-width: 959px\) and \(max-height: 600px\)/);
   assert.match(source, /window\.matchMedia\(COMPACT_LAYOUT_MEDIA\)/);
   assert.match(css, /min-width:960px\) and \(orientation:landscape\)/);
   assert.match(css, /min-width:1100px/);
@@ -64,9 +66,10 @@ test("responsive regimes cover compact portrait, phone landscape, tablet landsca
 
 test("compact controls preserve full accessible weapon names and readable platform typography", async () => {
   const source = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
+  const presentation = await readFile(new URL("../app/game/PresentationContract.ts", import.meta.url), "utf8");
   const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
-  assert.match(source, /compactLabel: "GUN"/);
-  assert.match(source, /compactLabel: "SONAR"/);
+  assert.match(presentation, /compactLabel: "GUN"/);
+  assert.match(presentation, /compactLabel: "SONAR"/);
   assert.equal((source.match(/className="weapon-label-full"/g) ?? []).length, 2);
   assert.equal((source.match(/className="weapon-label-compact"/g) ?? []).length, 2);
   assert.equal((source.match(/aria-label=\{`\$\{index \+ 1\} \/ \$\{WEAPON_META\[id\]\.label\}/g) ?? []).length, 2);
@@ -159,7 +162,7 @@ test("passive sonar announces its binary result over the playfield", async () =>
 test("enemy passive sonar uses the same four-cell listening area and result overlay", async () => {
   const game = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
   assert.match(game, /setActive\(decision\.weapon === "radar" \? radarCells\(decision\.targets\[0\]\) : decision\.targets\)/);
-  assert.match(game, /sleep\(decision\.weapon === "radar" \? 800 : 750\)/);
+  assert.match(game, /sleep\(decision\.weapon === "radar" \? PRESENTATION_TIMINGS_MS\.enemySilentSonarAction : PRESENTATION_TIMINGS_MS\.enemySilentAction\)/);
   assert.match(game, /setRadarAlert\(\{ contact, hostile: true \}\)/);
   assert.match(game, /HOSTILE SONAR CONTACT/);
   assert.match(game, /FLEET DETECTED/);
@@ -240,6 +243,7 @@ test("responsive command surfaces cover iPhone portrait and full-HD play", async
 
 test("survival SEA BAT and escort link are explained in the interface", async () => {
   const game = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
+  const presentation = await readFile(new URL("../app/game/PresentationContract.ts", import.meta.url), "utf8");
   const campaign = await readFile(new URL("../app/game/Campaign.ts", import.meta.url), "utf8");
   const record = await readFile(new URL("../app/game/OperationRecord.ts", import.meta.url), "utf8");
   assert.match(campaign, /SURVIVAL_STAGES/);
@@ -253,11 +257,11 @@ test("survival SEA BAT and escort link are explained in the interface", async ()
   assert.match(game, /OPERATION RECORD/);
   assert.match(record, /noteRetry/);
   assert.match(record, /noteDamage/);
-  assert.match(game, /護衛艦の全区画を空母へ上下左右で隣接/);
+  assert.match(presentation, /護衛艦の全区画が空母へ上下左右で隣接/);
   assert.match(game, /LINK ACTIVE/);
   assert.match(game, /FIRE CONTROL LINK：ACTIVE。HARPOON発射＋1/);
   assert.match(game, /DUAL SUPPORT LINK：ACTIVE。F-4出撃＋1 \/ HARPOON発射＋1/);
-  assert.match(game, /双方への同時リンクも成立/);
+  assert.match(presentation, /双方への同時リンクも成立/);
 });
 
 test("battle log drawer and victory battlefield review remain accessible", async () => {
@@ -293,6 +297,7 @@ test("CIC terminology uses one canonical vocabulary across alerts, reports, and 
 
 test("mission mode exposes a free-select library, archive review, records, and thumb-reachable command surface", async () => {
   const game = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
+  const presentation = await readFile(new URL("../app/game/PresentationContract.ts", import.meta.url), "utf8");
   const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
   assert.match(game, /SITUATION \/ 状況/);
   assert.match(game, /OBJECTIVE \/ 任務目標/);
@@ -311,7 +316,7 @@ test("mission mode exposes a free-select library, archive review, records, and t
   assert.match(game, /aria-pressed=\{missionCompletionFilter === "uncleared"\}/);
   assert.match(game, /aria-pressed=\{missionCompletionFilter === "cleared"\}/);
   assert.match(game, /DIFFICULTY \{item\.difficulty\} \/ 6/);
-  assert.match(game, /6: "極限"/);
+  assert.match(presentation, /6: "極限"/);
   assert.match(game, /mission-status-badge/);
   assert.match(game, /cleared \? "✓" : "○"/);
   assert.match(game, /INITIAL TRAINING/);

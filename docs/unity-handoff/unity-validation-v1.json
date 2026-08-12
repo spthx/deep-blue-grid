@@ -1,0 +1,878 @@
+{
+  "schema": "deep-blue-grid.unity-validation",
+  "schemaVersion": 1,
+  "sourceRef": "unity-handoff-2026-08-12-quality",
+  "distribution": "editor-test-only",
+  "excludeFromPlayerBuild": true,
+  "warning": "Contains complete mission solutions. Keep outside runtime Resources, Addressables and StreamingAssets.",
+  "missionCount": 28,
+  "canonicalMissionRoutes": {
+    "1": {
+      "rationale": "The DD's two surviving sections are resolved together; the intersecting wakes then fix the SS cell.",
+      "evidence": [
+        "TACTICAL MAP",
+        "OBJECTIVE"
+      ],
+      "actions": [
+        {
+          "weapon": "mk45",
+          "targets": [
+            {
+              "x": 2,
+              "y": 2
+            },
+            {
+              "x": 4,
+              "y": 2
+            }
+          ]
+        },
+        {
+          "weapon": "fire",
+          "target": {
+            "x": 5,
+            "y": 5
+          }
+        }
+      ]
+    },
+    "2": {
+      "rationale": "File the two explicitly ordered listening reports without firing.",
+      "evidence": [
+        "ALPHA / C-3",
+        "BRAVO / F-1"
+      ],
+      "actions": [
+        {
+          "weapon": "radar",
+          "origin": {
+            "x": 2,
+            "y": 2
+          }
+        },
+        {
+          "weapon": "radar",
+          "origin": {
+            "x": 0,
+            "y": 5
+          }
+        }
+      ]
+    },
+    "3": {
+      "rationale": "Test the vertical BB hypothesis, then expend the second sortie on the horizontal hypothesis.",
+      "evidence": [
+        "IMPORTANT SECTION",
+        "TACTICAL MAP"
+      ],
+      "actions": [
+        {
+          "weapon": "phantom",
+          "targets": [
+            {
+              "x": 3,
+              "y": 1
+            },
+            {
+              "x": 3,
+              "y": 2
+            },
+            {
+              "x": 3,
+              "y": 4
+            },
+            {
+              "x": 3,
+              "y": 5
+            }
+          ]
+        },
+        {
+          "weapon": "phantom",
+          "targets": [
+            {
+              "x": 1,
+              "y": 3
+            },
+            {
+              "x": 2,
+              "y": 3
+            },
+            {
+              "x": 4,
+              "y": 3
+            },
+            {
+              "x": 5,
+              "y": 3
+            }
+          ]
+        }
+      ]
+    },
+    "4": {
+      "rationale": "Three X-pattern salvos cover all six unbroken CV sections while preserving the assigned link.",
+      "evidence": [
+        "IMPORTANT SECTION",
+        "TACTICAL MAP",
+        "FIRE CONTROL LINK"
+      ],
+      "actions": [
+        {
+          "weapon": "harpoon",
+          "center": {
+            "x": 4,
+            "y": 3
+          }
+        },
+        {
+          "weapon": "harpoon",
+          "center": {
+            "x": 2,
+            "y": 3
+          }
+        },
+        {
+          "weapon": "harpoon",
+          "center": {
+            "x": 4,
+            "y": 2
+          }
+        }
+      ]
+    },
+    "5": {
+      "rationale": "The only cell orthogonally adjacent to all three ECHO marks is the contact cell.",
+      "evidence": [
+        "TACTICAL MAP",
+        "4-DIRECTION ECHO"
+      ],
+      "actions": [
+        {
+          "weapon": "fire",
+          "target": {
+            "x": 3,
+            "y": 4
+          }
+        }
+      ]
+    },
+    "6": {
+      "rationale": "A north-facing ranging fan covers all unbroken horizontal CA sections.",
+      "evidence": [
+        "IMPORTANT SECTION",
+        "ECHO",
+        "TACTICAL MAP"
+      ],
+      "actions": [
+        {
+          "weapon": "sparrow",
+          "anchor": {
+            "x": 2,
+            "y": 5
+          },
+          "orientation": "north"
+        }
+      ]
+    },
+    "7": {
+      "rationale": "The X-pattern center lies midway between the two disclosed surviving sections.",
+      "evidence": [
+        "TACTICAL MAP",
+        "OBJECTIVE"
+      ],
+      "actions": [
+        {
+          "weapon": "harpoon",
+          "center": {
+            "x": 3,
+            "y": 3
+          }
+        }
+      ]
+    },
+    "8": {
+      "rationale": "Allocate the fan to the three-section CA remainder and the paired shot to the two DD sections.",
+      "evidence": [
+        "IMPORTANT SECTIONS",
+        "TACTICAL MAP",
+        "WEAPON PATTERNS"
+      ],
+      "actions": [
+        {
+          "weapon": "sparrow",
+          "anchor": {
+            "x": 2,
+            "y": 2
+          },
+          "orientation": "north"
+        },
+        {
+          "weapon": "mk45",
+          "targets": [
+            {
+              "x": 4,
+              "y": 6
+            },
+            {
+              "x": 6,
+              "y": 6
+            }
+          ]
+        }
+      ]
+    },
+    "9": {
+      "rationale": "Strike the sole CIC estimate published in the mission brief.",
+      "evidence": [
+        "ESTIMATED CIC / D-4"
+      ],
+      "actions": [
+        {
+          "weapon": "fire",
+          "target": {
+            "x": 3,
+            "y": 3
+          }
+        }
+      ]
+    },
+    "10": {
+      "rationale": "Clear ALPHA by sonar, leaving BRAVO as the only valid submarine contact.",
+      "evidence": [
+        "ALPHA / B-2",
+        "BRAVO / F-6"
+      ],
+      "actions": [
+        {
+          "weapon": "radar",
+          "origin": {
+            "x": 1,
+            "y": 1
+          }
+        },
+        {
+          "weapon": "fire",
+          "target": {
+            "x": 5,
+            "y": 5
+          }
+        }
+      ]
+    },
+    "11": {
+      "rationale": "Break the two-section escort first, then cover the four surviving carrier sections in two X salvos.",
+      "evidence": [
+        "TACTICAL MAP",
+        "ESCORT LINK",
+        "OBJECTIVE"
+      ],
+      "actions": [
+        {
+          "weapon": "fire",
+          "target": {
+            "x": 4,
+            "y": 2
+          }
+        },
+        {
+          "weapon": "harpoon",
+          "center": {
+            "x": 3,
+            "y": 4
+          }
+        },
+        {
+          "weapon": "harpoon",
+          "center": {
+            "x": 4,
+            "y": 3
+          }
+        }
+      ]
+    },
+    "12": {
+      "rationale": "Use the two arbitrary strikes on CA and DD/DE, reserving three crossing salvos for the five-section BB.",
+      "evidence": [
+        "FULL FIRE SOLUTION",
+        "DUAL SUPPORT LINK",
+        "WEAPON PATTERNS"
+      ],
+      "actions": [
+        {
+          "weapon": "phantom",
+          "targets": [
+            {
+              "x": 0,
+              "y": 3
+            },
+            {
+              "x": 1,
+              "y": 3
+            },
+            {
+              "x": 2,
+              "y": 3
+            },
+            {
+              "x": 3,
+              "y": 3
+            }
+          ]
+        },
+        {
+          "weapon": "phantom",
+          "targets": [
+            {
+              "x": 5,
+              "y": 7
+            },
+            {
+              "x": 6,
+              "y": 7
+            },
+            {
+              "x": 7,
+              "y": 7
+            },
+            {
+              "x": 6,
+              "y": 5
+            }
+          ]
+        },
+        {
+          "weapon": "harpoon",
+          "center": {
+            "x": 1,
+            "y": 1
+          }
+        },
+        {
+          "weapon": "harpoon",
+          "center": {
+            "x": 2,
+            "y": 1
+          }
+        },
+        {
+          "weapon": "harpoon",
+          "center": {
+            "x": 3,
+            "y": 1
+          }
+        }
+      ]
+    },
+    "13": {
+      "rationale": "The diary fixes ORPHEUS east-west and leaves D-2/D-3 as the only unbroken sections.",
+      "evidence": [
+        "1840Z",
+        "1841Z",
+        "1842Z",
+        "1844Z"
+      ],
+      "actions": [
+        {
+          "weapon": "mk45",
+          "targets": [
+            {
+              "x": 1,
+              "y": 3
+            },
+            {
+              "x": 2,
+              "y": 3
+            }
+          ]
+        }
+      ]
+    },
+    "14": {
+      "rationale": "The magazine log leaves one usable salvo; its upper diagonals cover ARGUS C-4/C-6 together.",
+      "evidence": [
+        "2011Z",
+        "2013Z",
+        "2015Z",
+        "2016Z",
+        "2018Z"
+      ],
+      "actions": [
+        {
+          "weapon": "harpoon",
+          "center": {
+            "x": 4,
+            "y": 3
+          }
+        }
+      ]
+    },
+    "15": {
+      "rationale": "The relief log states that Blue owns the next order and that G-8 is DD-03's sole unbroken section.",
+      "evidence": [
+        "0310Z",
+        "0311Z",
+        "0312Z",
+        "0313Z",
+        "0314Z"
+      ],
+      "actions": [
+        {
+          "weapon": "fire",
+          "target": {
+            "x": 7,
+            "y": 6
+          }
+        }
+      ]
+    },
+    "16": {
+      "rationale": "VIGILANT's named five-section southbound hull leaves C-6/D-6/E-6 for one east-facing fan.",
+      "evidence": [
+        "2210Z",
+        "2212Z",
+        "2213Z",
+        "2215Z",
+        "2216Z"
+      ],
+      "actions": [
+        {
+          "weapon": "sparrow",
+          "anchor": {
+            "x": 4,
+            "y": 3
+          },
+          "orientation": "east"
+        }
+      ]
+    },
+    "17": {
+      "rationale": "Two prescribed sonar reports separate the damaged destroyer section from the false wake; MK-45 closes both contacts together.",
+      "evidence": [
+        "ALPHA / C-3:D-4",
+        "BRAVO / E-5:F-6",
+        "LAST DD SECTION",
+        "WAKE TERMINUS"
+      ],
+      "actions": [
+        {
+          "weapon": "radar",
+          "origin": {
+            "x": 2,
+            "y": 2
+          }
+        },
+        {
+          "weapon": "radar",
+          "origin": {
+            "x": 4,
+            "y": 4
+          }
+        },
+        {
+          "weapon": "mk45",
+          "targets": [
+            {
+              "x": 3,
+              "y": 3
+            },
+            {
+              "x": 6,
+              "y": 6
+            }
+          ]
+        }
+      ]
+    },
+    "18": {
+      "rationale": "The dual escort link authorizes the second air strike and third missile; fire is distributed in the mandated DE-CV-BB order.",
+      "evidence": [
+        "DUAL SUPPORT LINK",
+        "GATE",
+        "CITADEL",
+        "IRONCLAD"
+      ],
+      "actions": [
+        {
+          "weapon": "phantom",
+          "targets": [
+            {
+              "x": 1,
+              "y": 0
+            },
+            {
+              "x": 2,
+              "y": 3
+            },
+            {
+              "x": 3,
+              "y": 3
+            },
+            {
+              "x": 4,
+              "y": 3
+            }
+          ]
+        },
+        {
+          "weapon": "phantom",
+          "targets": [
+            {
+              "x": 5,
+              "y": 3
+            },
+            {
+              "x": 7,
+              "y": 0
+            },
+            {
+              "x": 7,
+              "y": 2
+            },
+            {
+              "x": 7,
+              "y": 4
+            }
+          ]
+        },
+        {
+          "weapon": "harpoon",
+          "center": {
+            "x": 1,
+            "y": 6
+          }
+        },
+        {
+          "weapon": "harpoon",
+          "center": {
+            "x": 3,
+            "y": 6
+          }
+        },
+        {
+          "weapon": "harpoon",
+          "center": {
+            "x": 5,
+            "y": 6
+          }
+        }
+      ]
+    },
+    "19": {
+      "rationale": "The north-facing fan covers the cruiser's adjacent vertical remainder; the X-pattern diagonals close both destroyer ends.",
+      "evidence": [
+        "MERIDIAN",
+        "TRANSIT",
+        "HULL COURSE"
+      ],
+      "actions": [
+        {
+          "weapon": "sparrow",
+          "anchor": {
+            "x": 1,
+            "y": 3
+          },
+          "orientation": "north"
+        },
+        {
+          "weapon": "harpoon",
+          "center": {
+            "x": 5,
+            "y": 5
+          }
+        }
+      ]
+    },
+    "20": {
+      "rationale": "The only unbroken control sections in the two disclosed hulls and the isolated conning tower are the three critical cells.",
+      "evidence": [
+        "AIR CONTROL",
+        "MAIN DIRECTOR",
+        "CONNING TOWER"
+      ],
+      "actions": [
+        {
+          "weapon": "fire",
+          "target": {
+            "x": 2,
+            "y": 0
+          }
+        },
+        {
+          "weapon": "fire",
+          "target": {
+            "x": 2,
+            "y": 3
+          }
+        },
+        {
+          "weapon": "fire",
+          "target": {
+            "x": 7,
+            "y": 7
+          }
+        }
+      ]
+    },
+    "21": {
+      "rationale": "Four-direction echoes fix the first contact at D-4; one carrier sweep covers every publicly named silent egress box.",
+      "evidence": [
+        "D-4 ECHO FIX",
+        "EGRESS ALPHA",
+        "EGRESS BRAVO",
+        "EGRESS CHARLIE",
+        "EGRESS DELTA"
+      ],
+      "actions": [
+        {
+          "weapon": "fire",
+          "target": {
+            "x": 3,
+            "y": 3
+          }
+        },
+        {
+          "weapon": "phantom",
+          "targets": [
+            {
+              "x": 1,
+              "y": 1
+            },
+            {
+              "x": 6,
+              "y": 1
+            },
+            {
+              "x": 1,
+              "y": 6
+            },
+            {
+              "x": 6,
+              "y": 6
+            }
+          ]
+        }
+      ]
+    },
+    "22": {
+      "rationale": "Each surviving section is allocated to the only four available weapon systems; the air strike closes two separated hulls.",
+      "evidence": [
+        "ALL CONTACTS IDENTIFIED",
+        "ONE AUTHORIZATION EACH",
+        "FIRE DISTRIBUTION"
+      ],
+      "actions": [
+        {
+          "weapon": "phantom",
+          "targets": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 6,
+              "y": 1
+            },
+            {
+              "x": 7,
+              "y": 0
+            },
+            {
+              "x": 7,
+              "y": 2
+            }
+          ]
+        },
+        {
+          "weapon": "harpoon",
+          "center": {
+            "x": 4,
+            "y": 3
+          }
+        },
+        {
+          "weapon": "sparrow",
+          "anchor": {
+            "x": 4,
+            "y": 5
+          },
+          "orientation": "north"
+        },
+        {
+          "weapon": "mk45",
+          "targets": [
+            {
+              "x": 7,
+              "y": 7
+            },
+            {
+              "x": 7,
+              "y": 6
+            }
+          ]
+        }
+      ]
+    },
+    "23": {
+      "rationale": "Both competing fixes are public; MK-45 resolves them in one simultaneous order without guessing which fix is live.",
+      "evidence": [
+        "TRACK ALPHA / C-3",
+        "TRACK BRAVO / F-6"
+      ],
+      "actions": [
+        {
+          "weapon": "mk45",
+          "targets": [
+            {
+              "x": 2,
+              "y": 2
+            },
+            {
+              "x": 5,
+              "y": 5
+            }
+          ]
+        }
+      ]
+    },
+    "24": {
+      "rationale": "The complete BREAKER track is public and the surviving carrier-escort link authorizes one four-point interception.",
+      "evidence": [
+        "BREAKER / C-5",
+        "BREAKER / D-5",
+        "BREAKER / E-5",
+        "BREAKER / F-5"
+      ],
+      "actions": [
+        {
+          "weapon": "phantom",
+          "targets": [
+            {
+              "x": 2,
+              "y": 4
+            },
+            {
+              "x": 3,
+              "y": 4
+            },
+            {
+              "x": 4,
+              "y": 4
+            },
+            {
+              "x": 5,
+              "y": 4
+            }
+          ]
+        }
+      ]
+    },
+    "25": {
+      "rationale": "The three published last sections share the upper fan of one north-facing ranging salvo.",
+      "evidence": [
+        "COLUMN / C-4",
+        "NEEDLE / D-4",
+        "PICKET / E-4"
+      ],
+      "actions": [
+        {
+          "weapon": "sparrow",
+          "anchor": {
+            "x": 3,
+            "y": 4
+          },
+          "orientation": "north"
+        }
+      ]
+    },
+    "26": {
+      "rationale": "One carrier sweep can touch every published control-section estimate and identify all four unknown hulls.",
+      "evidence": [
+        "AIR CONTROL / C-1",
+        "MAIN DIRECTOR / C-4",
+        "PLOT ROOM / C-6",
+        "LOCAL CONTROL / G-8"
+      ],
+      "actions": [
+        {
+          "weapon": "phantom",
+          "targets": [
+            {
+              "x": 2,
+              "y": 0
+            },
+            {
+              "x": 2,
+              "y": 3
+            },
+            {
+              "x": 2,
+              "y": 5
+            },
+            {
+              "x": 6,
+              "y": 7
+            }
+          ]
+        }
+      ]
+    },
+    "27": {
+      "rationale": "The watch log names each last section and the FLASH signal gives the mandatory DE-BB-CV priority order.",
+      "evidence": [
+        "0742Z",
+        "0744Z",
+        "0746Z",
+        "0748Z"
+      ],
+      "actions": [
+        {
+          "weapon": "fire",
+          "target": {
+            "x": 6,
+            "y": 1
+          }
+        },
+        {
+          "weapon": "fire",
+          "target": {
+            "x": 3,
+            "y": 4
+          }
+        },
+        {
+          "weapon": "fire",
+          "target": {
+            "x": 1,
+            "y": 6
+          }
+        }
+      ]
+    },
+    "28": {
+      "rationale": "The ordered ALPHA report authorizes the published crossing salvo over both residual contacts.",
+      "evidence": [
+        "ALPHA / C-3:D-4",
+        "VECTOR LAST SECTION / C-3",
+        "SUBMERGED FIX / E-5",
+        "FIRING CENTER / D-4"
+      ],
+      "actions": [
+        {
+          "weapon": "radar",
+          "origin": {
+            "x": 2,
+            "y": 2
+          }
+        },
+        {
+          "weapon": "harpoon",
+          "center": {
+            "x": 3,
+            "y": 3
+          }
+        }
+      ]
+    }
+  }
+}

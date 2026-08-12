@@ -14,6 +14,29 @@ type AudioWindow = Window & typeof globalThis & {
 
 export const MUSIC_INTERVAL_MS = [260, 240, 220, 200, 185, 170] as const;
 
+const cue = (frequencyHz: number, durationSeconds: number, wave: OscillatorType, volume: number, slideHz: number, delayMs = 0) => ({
+  frequencyHz, durationSeconds, wave, volume, slideHz, delayMs,
+});
+
+export const AUDIO_CUE_CONTRACT = {
+  output: { masterGain: 0.82, compressorThresholdDb: -10, compressorKnee: 8, compressorRatio: 8 },
+  commandPulse: { intervalsMs: MUSIC_INTERVAL_MS, bassHz: [55, 55, 73, 55, 82, 73, 55, 49], durationSeconds: 0.12, volume: 0.012, slideHz: -4 },
+  cues: {
+    cursor: [cue(720, 0.025, "square", 0.018, -80)],
+    confirm: [cue(520, 0.06, "square", 0.035, 180)],
+    cancel: [cue(220, 0.08, "sawtooth", 0.025, -80)],
+    fire: [cue(110, 0.24, "sawtooth", 0.06, 420)],
+    splash: [cue(160, 0.18, "triangle", 0.045, -100), cue(670, 0.12, "sine", 0.025, -500)],
+    hit: [cue(80, 0.34, "square", 0.07, -40), cue(520, 0.1, "sawtooth", 0.035, -300)],
+    sunk: [cue(180, 0.36, "sawtooth", 0.07, -30), cue(140, 0.36, "sawtooth", 0.07, -30, 110), cue(100, 0.36, "sawtooth", 0.07, -30, 220), cue(65, 0.36, "sawtooth", 0.07, -30, 330)],
+    sonar: [cue(360, 0.12, "sine", 0.035, 40), cue(540, 0.12, "sine", 0.035, 40, 120), cue(720, 0.12, "sine", 0.035, 40, 240)],
+    turnFriendly: [cue(420, 0.12, "square", 0.03, 120)],
+    turnHostile: [cue(185, 0.12, "square", 0.03, -45)],
+    victory: [cue(262, 0.24, "square", 0.05, 20), cue(330, 0.24, "square", 0.05, 20, 130), cue(392, 0.24, "square", 0.05, 20, 260), cue(523, 0.24, "square", 0.05, 20, 390)],
+    defeat: [cue(260, 0.32, "triangle", 0.05, -20), cue(200, 0.32, "triangle", 0.05, -20, 150), cue(150, 0.32, "triangle", 0.05, -20, 300), cue(90, 0.32, "triangle", 0.05, -20, 450)],
+  },
+} as const;
+
 export function pulseIntervalForLosses(losses: number) {
   const tier = Math.max(0, Math.min(MUSIC_INTERVAL_MS.length - 1, Math.trunc(losses)));
   return MUSIC_INTERVAL_MS[tier];
@@ -183,17 +206,24 @@ export class AudioManager {
     gain.gain.exponentialRampToValueAtTime(.0001, ctx.currentTime + duration);
     osc.connect(gain).connect(this.master); osc.start(); osc.stop(ctx.currentTime + duration);
   }
-  cursor(){ this.tone(720,.025,"square",.018,-80); }
-  confirm(){ this.tone(520,.06,"square",.035,180); }
-  cancel(){ this.tone(220,.08,"sawtooth",.025,-80); }
-  fire(){ this.tone(110,.24,"sawtooth",.06,420); }
-  splash(){ this.tone(160,.18,"triangle",.045,-100); this.tone(670,.12,"sine",.025,-500); }
-  hit(){ this.tone(80,.34,"square",.07,-40); this.tone(520,.1,"sawtooth",.035,-300); }
-  sunk(){ [180,140,100,65].forEach((f,i)=>setTimeout(()=>this.tone(f,.36,"sawtooth",.07,-30),i*110)); }
-  sonar(){ [360,540,720].forEach((f,i)=>setTimeout(()=>this.tone(f,.12,"sine",.035,40),i*120)); }
-  turn(enemy=false){ this.tone(enemy?185:420,.12,"square",.03,enemy?-45:120); }
-  victory(){ [262,330,392,523].forEach((f,i)=>setTimeout(()=>this.tone(f,.24,"square",.05,20),i*130)); }
-  defeat(){ [260,200,150,90].forEach((f,i)=>setTimeout(()=>this.tone(f,.32,"triangle",.05,-20),i*150)); }
+  private playCue(name: keyof typeof AUDIO_CUE_CONTRACT.cues) {
+    for (const tone of AUDIO_CUE_CONTRACT.cues[name]) {
+      const play = () => this.tone(tone.frequencyHz, tone.durationSeconds, tone.wave, tone.volume, tone.slideHz);
+      if (tone.delayMs) window.setTimeout(play, tone.delayMs);
+      else play();
+    }
+  }
+  cursor(){ this.playCue("cursor"); }
+  confirm(){ this.playCue("confirm"); }
+  cancel(){ this.playCue("cancel"); }
+  fire(){ this.playCue("fire"); }
+  splash(){ this.playCue("splash"); }
+  hit(){ this.playCue("hit"); }
+  sunk(){ this.playCue("sunk"); }
+  sonar(){ this.playCue("sonar"); }
+  turn(enemy=false){ this.playCue(enemy ? "turnHostile" : "turnFriendly"); }
+  victory(){ this.playCue("victory"); }
+  defeat(){ this.playCue("defeat"); }
   private startMusic() {
     if (this.musicTimer || this.muted || this.disposed) return;
     this.scheduleNextMusic();
@@ -202,8 +232,8 @@ export class AudioManager {
     if (this.musicTimer || this.muted || this.disposed) return;
     this.musicTimer = window.setTimeout(() => {
       if (!this.muted && !this.disposed && document.visibilityState === "visible") {
-        const bass = [55,55,73,55,82,73,55,49];
-        this.tone(bass[this.step++ % bass.length], .12, "square", .012, -4);
+        const pulse = AUDIO_CUE_CONTRACT.commandPulse;
+        this.tone(pulse.bassHz[this.step++ % pulse.bassHz.length], pulse.durationSeconds, "square", pulse.volume, pulse.slideHz);
       }
       this.musicTimer = undefined;
       this.scheduleNextMusic();
@@ -224,11 +254,11 @@ export class AudioManager {
   }
   private connectOutput(ctx: AudioContext) {
     this.master = ctx.createGain();
-    this.master.gain.value = .82;
+    this.master.gain.value = AUDIO_CUE_CONTRACT.output.masterGain;
     this.compressor = ctx.createDynamicsCompressor();
-    this.compressor.threshold.value = -10;
-    this.compressor.knee.value = 8;
-    this.compressor.ratio.value = 8;
+    this.compressor.threshold.value = AUDIO_CUE_CONTRACT.output.compressorThresholdDb;
+    this.compressor.knee.value = AUDIO_CUE_CONTRACT.output.compressorKnee;
+    this.compressor.ratio.value = AUDIO_CUE_CONTRACT.output.compressorRatio;
     this.master.connect(this.compressor).connect(ctx.destination);
   }
   dispose() {

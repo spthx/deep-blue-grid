@@ -250,6 +250,43 @@ export const CANONICAL_MISSION_ROUTES: Readonly<Record<number, Route>> = {
       { weapon: "mk45", targets: [c(7, 7), c(7, 6)] },
     ],
   },
+  23: {
+    rationale: "Both competing fixes are public; MK-45 resolves them in one simultaneous order without guessing which fix is live.",
+    evidence: ["TRACK ALPHA / C-3", "TRACK BRAVO / F-6"],
+    actions: [{ weapon: "mk45", targets: [c(2, 2), c(5, 5)] }],
+  },
+  24: {
+    rationale: "The complete BREAKER track is public and the surviving carrier-escort link authorizes one four-point interception.",
+    evidence: ["BREAKER / C-5", "BREAKER / D-5", "BREAKER / E-5", "BREAKER / F-5"],
+    actions: [{ weapon: "phantom", targets: [c(2, 4), c(3, 4), c(4, 4), c(5, 4)] }],
+  },
+  25: {
+    rationale: "The three published last sections share the upper fan of one north-facing ranging salvo.",
+    evidence: ["COLUMN / C-4", "NEEDLE / D-4", "PICKET / E-4"],
+    actions: [{ weapon: "sparrow", anchor: c(3, 4), orientation: "north" }],
+  },
+  26: {
+    rationale: "One carrier sweep can touch every published control-section estimate and identify all four unknown hulls.",
+    evidence: ["AIR CONTROL / C-1", "MAIN DIRECTOR / C-4", "PLOT ROOM / C-6", "LOCAL CONTROL / G-8"],
+    actions: [{ weapon: "phantom", targets: [c(2, 0), c(2, 3), c(2, 5), c(6, 7)] }],
+  },
+  27: {
+    rationale: "The watch log names each last section and the FLASH signal gives the mandatory DE-BB-CV priority order.",
+    evidence: ["0742Z", "0744Z", "0746Z", "0748Z"],
+    actions: [
+      { weapon: "fire", target: c(6, 1) },
+      { weapon: "fire", target: c(3, 4) },
+      { weapon: "fire", target: c(1, 6) },
+    ],
+  },
+  28: {
+    rationale: "The ordered ALPHA report authorizes the published crossing salvo over both residual contacts.",
+    evidence: ["ALPHA / C-3:D-4", "VECTOR LAST SECTION / C-3", "SUBMERGED FIX / E-5", "FIRING CENTER / D-4"],
+    actions: [
+      { weapon: "radar", origin: c(2, 2) },
+      { weapon: "harpoon", center: c(3, 3) },
+    ],
+  },
 };
 
 function leviathanEgressForSimulation(): Coord[] {

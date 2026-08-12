@@ -6,15 +6,15 @@ contract in `MISSION_MODE_SPEC.md`.
 
 ## Library shape
 
-- `standard`: twelve independent tactical problems, all available from the
+- `standard`: sixteen independent tactical problems, all available from the
   mission-select screen.
-- `archive`: four independent log-analysis problems, displayed in a separate
+- `archive`: five independent log-analysis problems, displayed in a separate
   `ARCHIVE OPERATIONS / 戦闘記録解析` section.
-- `extreme`: six independent, public-information-only end-game problems,
+- `extreme`: seven independent, public-information-only end-game problems,
   displayed in `EXTREME OPERATIONS / 極限任務`.
 - Mission IDs are stable identifiers. Existing missions retain IDs 1 through
   4; display order is determined by `sortOrder`, never by ID.
-- `MISSION_LIBRARY` is the playable twenty-two-mission route used by index-based
+- `MISSION_LIBRARY` is the playable twenty-eight-mission route used by index-based
   launch code. `missionLibraryFor(category)` provides category-filtered views.
 - No mission is progression-locked. Completion and record state are stored per
   mission ID and never affect Campaign or Survival state.
@@ -75,7 +75,9 @@ sufficient.
 
 ## Standard missions
 
-The UI sorts these by `sortOrder` from introductory to expert difficulty.
+The UI sorts these by authored `sortOrder`. The original twelve retain their
+published order; IDs 23–26 append four advanced doctrine exercises without
+renumbering existing records.
 
 | Display | ID | Mission | Rating | Distinct tactical question | Canonical minimum |
 | ---: | ---: | --- | :---: | --- | ---: |
@@ -91,6 +93,10 @@ The UI sorts these by `sortOrder` from introductory to expert difficulty.
 | 10 | 11 | CUT THE SCREEN | 4 | Destroy the linked escort before the carrier | 3 |
 | 11 | 4 | BROKEN SPEAR | 5 | Cover a damaged carrier with three linked HARPOON patterns | 3 |
 | 12 | 12 | DUAL LINK | 5 | Preserve both support links and allocate all five special actions | 5 |
+| 13 | 23 | DEAD RECKONING | 3 | Cover two published competing fixes with one simultaneous MK-45 order | 1 |
+| 14 | 24 | LAST SCREEN | 4 | Survive the hostile opening and use the remaining CV–DE link for one interception | 1 |
+| 15 | 25 | LINE ABREAST | 4 | Align three published last sections under one north-facing STRADDLE | 1 |
+| 16 | 26 | CONTROL SWEEP | 5 | Touch four published control-section estimates in one identification sweep | 1 |
 
 ### Added canonical vectors
 
@@ -109,6 +115,15 @@ The UI sorts these by `sortOrder` from introductory to expert difficulty.
   order even if both ships are eventually sunk.
 - **DUAL LINK:** PHANTOM attacks `A-1`–`A-4`, PHANTOM attacks `D-1`–`D-4`,
   then HARPOON centers `B-4`, `G-7`, and `G-6`.
+- **DEAD RECKONING:** MK-45 selects both published fixes, `C-3` and `F-6`,
+  in the same order. The live contact is at `C-3`; no hidden choice is needed.
+- **LAST SCREEN:** after the authored hostile opening, PHANTOM attacks the
+  published BREAKER track at `C-5`, `D-5`, `E-5`, and `F-5`. CV and DE-01
+  must both survive the opening and the one friendly order.
+- **LINE ABREAST:** north-facing STRADDLE anchored at `E-4` covers the three
+  published residual sections `C-4`, `D-4`, and `E-4`.
+- **CONTROL SWEEP:** PHANTOM attacks the published important-section estimates
+  `C-1`, `C-4`, `C-6`, and `G-8`; all four hostile hulls become identified.
 
 The original canonical vectors for NARROW GATE, SILENT WATCH, LAST FLIGHT, and
 BROKEN SPEAR remain defined in `MISSION_MODE_SPEC.md`.
@@ -125,6 +140,7 @@ line (`HHMMZ  text`); it must not be forced into timestamp/source/body columns.
 | 14 | MAGAZINE ACCOUNT | 3 | Expended launch plus loss of escort authorization | One HARPOON remains; center `B-5` hits CV `C-4/C-6` | Magazine empty with ARGUS active |
 | 15 | RELIEF OF WATCH | 4 | Hostile-fire completion and watch transfer | BLUE acts now; FIRE `G-8` before the next hostile window | Threat remains when the one-order window closes |
 | 16 | NAMED HULL | 4 | Callsign, five-section hull, course, bow/stern hits | VIGILANT spans `B-6`–`F-6`; east STRADDLE from `D-5` covers `C-6/D-6/E-6` | Non-objective contact struck; named hull remains |
+| 27 | PRIORITY SIGNAL | 5 | Last-section fixes plus the latest FLASH priority signal | FIRE `G-2`, `D-5`, then `B-7` to sink PICKET → IRONCLAD → ASCENDANT | A correct set in the wrong order violates the priority signal |
 
 Archive 03 deliberately avoids an RNG-dependent promised enemy hit. Its
 one-order deadline represents the publicly logged next hostile firing window;
@@ -152,25 +168,35 @@ reversed route does not complete the operation.
 | 20 | COMMAND SECTIONS | 6 | Identify three critical sections without sinking the targets. |
 | 21 | OPERATION MOBY-DICK | 6 | Contain and sink SSX-02 LEVIATHAN after its disclosed silent egress. |
 | 22 | NO SECOND SALVO | 6 | Allocate the last available special salvos across five damaged targets. |
+| 28 | SENSOR TO SHOOTER | 6 | File the ordered ALPHA CONTACT, then transfer that fix into one crossing HARPOON salvo. |
+
+`SENSOR TO SHOOTER` listens at ALPHA (`C-3` through `D-4`) first. After the
+required CONTACT report, one HARPOON centered at `D-4` crosses the published
+DD last section `C-3` and submerged fix `E-5`. Reversing the two systems does
+not satisfy the authored sensor-to-shooter sequence.
 
 ## Static validation contract
 
 `validateMissionDefinition` checks:
 
 - legal, non-overlapping deployments and complete declared fleets;
+- positive stable IDs, category-local sort orders, order limits, AI skill,
+  hunt breadth, and fixed seeds, plus duplicate fleet/weapon rejection;
 - in-bounds initial hits, without an already-destroyed starting hull;
 - truthful MISS/ECHO intelligence under the current four-direction ECHO rule;
 - wakes that do not overlap a hostile hull;
 - an extant friendly carrier for each allowed special weapon;
 - valid initial magazine counters;
 - objective and protected hull membership;
-- valid 2x2 sonar origins;
+- unique, truthful 2x2 sonar origins and report codes;
 - valid required-weapon sequences/multisets and ordered-report usage;
-- disclosure counts and archive timestamp format;
+- disclosure counts, unique in-bounds plotted contacts, and valid `0000Z`–
+  `2359Z` archive timestamps;
 - required support-link state.
 
-`validateMissionLibrary` also rejects duplicate IDs and prefixes issues with
-the mission identity. The complete twenty-two-definition library must validate
+`validateMissionLibrary` also rejects duplicate IDs and duplicate category-local
+sort orders, and prefixes issues with the mission identity. The complete
+twenty-eight-definition library must validate
 with an empty issue array before build or publication.
 
 Canonical solution vectors remain outside production definitions so they

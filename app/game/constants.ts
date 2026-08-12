@@ -49,6 +49,17 @@ export const HARPOON_PATTERN: ReadonlyArray<Coord> = [
   { x: -1, y: -1 }, { x: 1, y: -1 }, { x: 0, y: 0 }, { x: -1, y: 1 }, { x: 1, y: 1 },
 ];
 
+export const RADAR_PATTERN: ReadonlyArray<Coord> = [
+  { x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 },
+];
+
+export const STRADDLE_PATTERN: Readonly<Record<Orientation, ReadonlyArray<Coord>>> = {
+  north: [{ x: 0, y: 0 }, { x: -1, y: -1 }, { x: 0, y: -1 }, { x: 1, y: -1 }],
+  east: [{ x: 0, y: 0 }, { x: 1, y: -1 }, { x: 1, y: 0 }, { x: 1, y: 1 }],
+  south: [{ x: 0, y: 0 }, { x: -1, y: 1 }, { x: 0, y: 1 }, { x: 1, y: 1 }],
+  west: [{ x: 0, y: 0 }, { x: -1, y: -1 }, { x: -1, y: 0 }, { x: -1, y: 1 }],
+};
+
 // ECHO(索敵反応)の判定方向。
 // "orthogonal" = 原作準拠、着弾点の上下左右4方向のみを見る。
 // "octant"     = 周囲8方向(斜め含む)を見る従来仕様。

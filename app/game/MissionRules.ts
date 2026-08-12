@@ -1,6 +1,6 @@
 import { SHIPS, WEAPON_MAX, type Coord, type ShipId, type WeaponId } from "./constants.ts";
 import { type MissionPlacement, type MissionStageDefinition } from "./Campaign.ts";
-import { Arsenal, Board, hasEscortLink, hasFireControlLink, inBounds, keyOf, sameCoord } from "./engine.ts";
+import { Arsenal, Board, hasEscortLink, hasFireControlLink, inBounds, keyOf, radarCells, sameCoord } from "./engine.ts";
 import { validateTrainingStage } from "./TrainingRules.ts";
 
 export type MissionOutcome =
@@ -126,6 +126,20 @@ const WEAPON_CARRIER: Partial<Record<WeaponId, ShipId>> = {
  */
 export function validateMissionDefinition(rule: MissionStageDefinition) {
   const issues: string[] = [];
+  const duplicateValues = <T,>(values: readonly T[]) => values.filter((value, index) => values.indexOf(value) !== index);
+  if (!Number.isSafeInteger(rule.id) || rule.id <= 0) issues.push(`mission id must be a positive integer: ${rule.id}`);
+  if (!Number.isSafeInteger(rule.sortOrder) || rule.sortOrder <= 0) issues.push(`sortOrder must be a positive integer: ${rule.sortOrder}`);
+  if (!Number.isInteger(rule.objective.maxFriendlyActions) || rule.objective.maxFriendlyActions <= 0) {
+    issues.push(`maxFriendlyActions must be a positive integer: ${rule.objective.maxFriendlyActions}`);
+  }
+  if (!Number.isFinite(rule.aiSkill) || rule.aiSkill < 0 || (rule.category !== "training" && rule.aiSkill === 0)) {
+    issues.push(`aiSkill must be ${rule.category === "training" ? "non-negative" : "positive"}: ${rule.aiSkill}`);
+  }
+  if (!Number.isInteger(rule.huntBreadth) || rule.huntBreadth <= 0) issues.push(`huntBreadth must be a positive integer: ${rule.huntBreadth}`);
+  if (!Number.isSafeInteger(rule.fixedSeed) || rule.fixedSeed < 0) issues.push(`fixedSeed must be a non-negative safe integer: ${rule.fixedSeed}`);
+  if (duplicateValues(rule.allowedWeapons).length) issues.push("allowedWeapons contains a duplicate weapon");
+  if (duplicateValues(rule.playerFleet).length) issues.push("friendly fleet contains a duplicate ship id");
+  if (duplicateValues(rule.enemyFleet).length) issues.push("hostile fleet contains a duplicate ship id");
   const friendly = new Board();
   const hostile = new Board();
   try {
@@ -143,16 +157,22 @@ export function validateMissionDefinition(rule: MissionStageDefinition) {
   const hostileIds = new Set(hostile.ships.map((ship) => ship.id));
   for (const id of rule.playerFleet) if (!friendlyIds.has(id)) issues.push(`friendly fleet missing ${id}`);
   for (const id of rule.enemyFleet) if (!hostileIds.has(id)) issues.push(`hostile fleet missing ${id}`);
+  for (const id of friendlyIds) if (!rule.playerFleet.includes(id)) issues.push(`friendly deployment has undeclared ${id}`);
+  for (const id of hostileIds) if (!rule.enemyFleet.includes(id)) issues.push(`hostile deployment has undeclared ${id}`);
 
   const inspectInitialHits = (board: Board, cells: Coord[] | undefined, side: "friendly" | "hostile") => {
     const countByShip = new Map<ShipId, number>();
+    const seen = new Set<string>();
     for (const cell of cells ?? []) {
+      const cellKey = keyOf(cell);
+      if (seen.has(cellKey)) issues.push(`${side} initial hit is duplicated at ${cellKey}`);
+      seen.add(cellKey);
       if (!inBounds(cell)) {
-        issues.push(`${side} initial hit out of bounds at ${keyOf(cell)}`);
+        issues.push(`${side} initial hit out of bounds at ${cellKey}`);
         continue;
       }
       const ship = board.shipAt(cell);
-      if (!ship) issues.push(`${side} initial hit has no hull at ${keyOf(cell)}`);
+      if (!ship) issues.push(`${side} initial hit has no hull at ${cellKey}`);
       else countByShip.set(ship.id, (countByShip.get(ship.id) ?? 0) + 1);
     }
     for (const [id, count] of countByShip) {
@@ -190,6 +210,7 @@ export function validateMissionDefinition(rule: MissionStageDefinition) {
 
   const objective = rule.objective;
   const targets = objective.kind === "sonar-reports" ? [] : objective.targets;
+  if (duplicateValues(targets).length) issues.push("objective targets contain a duplicate ship id");
   for (const id of targets) if (!hostileIds.has(id)) issues.push(`objective target missing from hostile fleet: ${id}`);
   for (const id of protectedShipsFor(rule)) if (!friendlyIds.has(id)) issues.push(`protected ship missing from friendly fleet: ${id}`);
   if (objective.kind === "destroy-targets" && objective.requiredDestructionOrder) {
@@ -200,9 +221,33 @@ export function validateMissionDefinition(rule: MissionStageDefinition) {
     }
   }
   if (objective.kind === "sonar-reports" || objective.kind === "scan-and-destroy") {
+    const reportOrigins = new Set<string>();
+    const reportCodes = new Set<string>();
+    const reportHostile = new Board();
+    let reportHostileValid = true;
+    try {
+      deployScenarioFleet(reportHostile, rule.enemyPlacements);
+      applyScenarioHits(reportHostile, rule.enemyInitialHits);
+    } catch {
+      reportHostileValid = false;
+    }
     for (const report of objective.reports) {
+      const originKey = keyOf(report.origin);
+      if (reportOrigins.has(originKey)) issues.push(`sonar origin is duplicated at ${originKey}`);
+      reportOrigins.add(originKey);
+      if (!report.code.trim()) issues.push(`sonar report at ${originKey} has an empty code`);
+      if (reportCodes.has(report.code)) issues.push(`sonar report code is duplicated: ${report.code}`);
+      reportCodes.add(report.code);
       if (!inBounds(report.origin) || report.origin.x >= 7 || report.origin.y >= 7) {
-        issues.push(`sonar origin cannot form 2x2 at ${keyOf(report.origin)}`);
+        issues.push(`sonar origin cannot form 2x2 at ${originKey}`);
+      } else if (reportHostileValid) {
+        const actualContact = radarCells(report.origin).some((cell) => {
+          const ship = reportHostile.shipAt(cell);
+          return Boolean(ship && !ship.sunk && !ship.hits.has(keyOf(cell)));
+        });
+        if (actualContact !== report.contact) {
+          issues.push(`sonar report ${report.code} declares ${report.contact ? "CONTACT" : "NO CONTACT"}, resolved ${actualContact ? "CONTACT" : "NO CONTACT"}`);
+        }
       }
     }
   } else if (objective.orderedReports) {
@@ -229,18 +274,40 @@ export function validateMissionDefinition(rule: MissionStageDefinition) {
     if (total > objective.maxFriendlyActions) issues.push("required weapon uses exceed action limit");
   }
 
+  const requiredCounts = new Map<WeaponId, number>();
+  for (const weapon of objective.requiredWeaponSequence ?? []) requiredCounts.set(weapon, (requiredCounts.get(weapon) ?? 0) + 1);
+  for (const [weapon, count] of Object.entries(objective.requiredWeaponUses ?? {}) as Array<[WeaponId, number]>) {
+    requiredCounts.set(weapon, count);
+  }
+  const scenarioArsenal = applyScenarioArsenal(new Arsenal(), rule.initialArsenal);
+  for (const [weapon, required] of requiredCounts) {
+    if (weapon === "fire") continue;
+    const available = scenarioArsenal.availableUses(weapon, friendly);
+    if (required > available) issues.push(`required ${weapon} uses ${required} exceed initial availability ${available}`);
+  }
+
+  if (duplicateValues(rule.initiallyIdentified ?? []).length) issues.push("initiallyIdentified contains a duplicate ship id");
+  if (duplicateValues(rule.enemyDisclosure.known).length) issues.push("enemy disclosure known list contains a duplicate ship id");
   for (const id of rule.initiallyIdentified ?? []) if (!hostileIds.has(id)) issues.push(`identified ship missing: ${id}`);
   for (const id of rule.enemyDisclosure.known) if (!hostileIds.has(id)) issues.push(`disclosed ship missing: ${id}`);
+  for (const id of Object.keys(rule.enemyDisclosure.callsigns ?? {}) as ShipId[]) {
+    if (!hostileIds.has(id)) issues.push(`callsign assigned to missing hostile ship: ${id}`);
+  }
   if (rule.enemyDisclosure.known.length + rule.enemyDisclosure.unknownCount !== rule.enemyFleet.length) {
     issues.push("enemy disclosure count does not match hostile fleet");
   }
+  const candidateCodes = new Set<string>();
   for (const candidate of rule.enemyDisclosure.candidateCells ?? []) {
+    if (!candidate.code.trim()) issues.push(`candidate at ${keyOf(candidate.coord)} has an empty code`);
+    if (candidateCodes.has(candidate.code)) issues.push(`candidate code is duplicated: ${candidate.code}`);
+    candidateCodes.add(candidate.code);
     if (!inBounds(candidate.coord)) issues.push(`candidate ${candidate.code} out of bounds`);
   }
   if (rule.category === "archive") {
     if (!rule.archiveLog?.length) issues.push("archive mission has no archiveLog");
     for (const entry of rule.archiveLog ?? []) {
-      if (!/^\d{4}Z$/.test(entry.time)) issues.push(`invalid archive timestamp: ${entry.time}`);
+      const match = entry.time.match(/^(\d{2})(\d{2})Z$/);
+      if (!match || Number(match[1]) > 23 || Number(match[2]) > 59) issues.push(`invalid archive timestamp: ${entry.time}`);
     }
   } else if (rule.archiveLog?.length) {
     issues.push(`${rule.category} mission must not carry archiveLog`);
@@ -260,9 +327,13 @@ export function validateMissionDefinition(rule: MissionStageDefinition) {
 export function validateMissionLibrary(library: ReadonlyArray<MissionStageDefinition>) {
   const issues: string[] = [];
   const ids = new Set<number>();
+  const orderKeys = new Set<string>();
   for (const rule of library) {
     if (ids.has(rule.id)) issues.push(`duplicate mission id ${rule.id}`);
     ids.add(rule.id);
+    const orderKey = `${rule.category}/${rule.sortOrder}`;
+    if (orderKeys.has(orderKey)) issues.push(`duplicate ${rule.category} sortOrder ${rule.sortOrder}`);
+    orderKeys.add(orderKey);
     issues.push(...validateMissionDefinition(rule).map((issue) => `${rule.id}/${rule.title}: ${issue}`));
   }
   return issues;

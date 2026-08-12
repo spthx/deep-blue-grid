@@ -6,6 +6,14 @@ export type AIState = "HUNT" | "TARGET" | "SEARCH";
 export type AIProfile = "casual" | "tactics" | "silent";
 export type AIDecision = { weapon: "fire" | "phantom" | "harpoon" | "sparrow" | "mk45" | "radar" | "silentMove"; targets: Coord[]; state: AIState; actor?: ShipId };
 
+export const SILENT_PROFILE_CONTRACT = {
+  cycle: ["fire", "silentMove"],
+  firstAction: "fire",
+  relocation: "one unmarked, unoccupied cell; retain accumulated damage; leave last-known contact",
+  contained: "remain in place without firing when no legal relocation cell exists",
+  wake: "generated after firing only; no wake while silently relocating",
+} as const;
+
 export class EnemyAI {
   state: AIState = "HUNT";
   knowledge: ShotMark[][] = Array.from({ length: GRID_SIZE }, () => Array<ShotMark>(GRID_SIZE).fill("unknown"));
@@ -40,7 +48,7 @@ export class EnemyAI {
           : null;
       if (silentActor) {
         this.silentCycle += 1;
-        if (this.silentCycle % 2 === 0) return { weapon: "silentMove", targets: [], state: "HUNT", actor: silentActor };
+        if (this.silentCycle % SILENT_PROFILE_CONTRACT.cycle.length === 0) return { weapon: "silentMove", targets: [], state: "HUNT", actor: silentActor };
         return { weapon: "fire", targets: [this.chooseShot()], state: this.state, actor: silentActor };
       }
     }

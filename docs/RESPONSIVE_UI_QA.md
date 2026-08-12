@@ -43,6 +43,20 @@ INITIAL TRAINING一覧、難易度、クリア状態、EXTREME、LEVIATHAN任務
 確認し、ページ横overflowはなし。狭い画面では一覧自身だけがスクロールし、
 モード背面は固定される。訓練の誤指令は行動数と弾薬を消費しない。
 
+### 2026-08-12 ライブラリ拡張の検証状態
+
+現行データはMISSION 28件（戦術16・記録解析5・極限7）へ拡張済み。
+Codex内蔵Browserでローカルproduction同等版を再走査した。320×568、
+402×740、402×874、568×320、844×390、834×1112、1112×834、
+1366×768、1536×864、1920×900で横overflowは0。配置・攻撃の主操作は
+44px以上を維持し、横画面とタブレット縦画面はページscroll 0。短い縦画面は
+盤面寸法を高さへ追従させ、402×740の配置はscroll 0、攻撃は自動位置合わせ後も
+状態帯・戦術図切替・盤面・2段指揮卓を同時表示する。
+
+402×874のMISSION一覧では16/5/7件の区分、難易度1～6、UNCLEARED/CLEARED
+色分け、内部一覧scrollを確認。TRAINING 6教程、固定ブリーフ、CASUAL配置・攻撃、
+PCの2盤面＋右指揮卓、SONAR音紋、CONTACT overlay、着弾後表示も基準画像へ保存した。
+
 公開候補座標は `PLOTTED CONTACTS` として配置ブリーフ内に常設し、スマホの
 短縮表示でも隠さない。状態名は `UNCLEARED` / `CLEARED`（教程は
 `COMPLETE`）とし、カテゴリ切替時はフィルタを `ALL` へ戻す。
@@ -64,7 +78,7 @@ INITIAL TRAINING一覧、難易度、クリア状態、EXTREME、LEVIATHAN任務
 
 ## 自動検査
 
-- `npm test`: 102件すべて成功（ゲーム規則、MISSION/TRAINING記録、非順序受講の次教程判定、極限任務の兵装順序、HTML・レスポンシブ契約、production buildを含む）。
+- 2026-08-12時点の `npm test`: 117件すべて成功（ゲーム規則、全28任務の固定解、MISSION/TRAINING記録、定義validator、Unity handoff、HTML・レスポンシブ・材質契約、production buildを含む）。
 - `npm run build:pages`: GitHub Pages用静的ビルド成功。
 - TypeScript単体検査では既存Cloudflare Worker型（`cloudflare:workers`、`Fetcher`、`D1Database`）だけが未解決。ゲーム画面と今回のレスポンシブ変更に起因する型エラーではない。
 
@@ -74,3 +88,5 @@ INITIAL TRAINING一覧、難易度、クリア状態、EXTREME、LEVIATHAN任務
 2. Android Chromeでジェスチャーナビ、3ボタンナビ、表示サイズ100% / 115% / 130%を確認。
 3. 全フェーズ（敵攻撃、損害報告、勝利、敗北、戦術図レビュー、LOG）を同じviewport表で再走査。
 4. Unity移植対象commitを固定後、Web基準画像とUnity実機画像を同一論理解像度で比較。
+5. 28件版MISSIONの実機操作では、ID 23–28の公開座標、ARCHIVEログ、長い
+   日本語条件をiPhone SafariとAndroid Chrome双方で再確認。

@@ -1,6 +1,6 @@
 # DEEP BLUE GRID — Unity / Android UI・演出引き継ぎ仕様
 
-更新日: 2026-08-01
+更新日: 2026-08-12
 
 対象: 将来の Unity 6 / Android 版。現時点では Unity 実装を開始せず、Web 版を攻略・調整した後に移植するための契約を定める。
 
@@ -22,12 +22,13 @@ Unity 版の基準は「旧作らしさの再解釈」ではなく、**現在の
 | 領域 | 正本 |
 | --- | --- |
 | 画面構造、表示文、操作 | `app/game/DeepBlueGrid.tsx` |
+| 兵装・艦艇文、演出時間、レスポンシブ・材質契約 | `app/game/PresentationContract.ts` |
 | 色、余白、レスポンシブ配置 | `app/globals.css` |
 | 8×8盤面、艦影、ECHO、音紋、SONAR、重要区画 | `app/game/Renderer.ts` |
 | ルール、艦、兵装、乱数 | `app/game/constants.ts`, `app/game/engine.ts` |
 | AI | `app/game/EnemyAI.ts` |
-| MISSION 定義・評価 | `app/game/Campaign.ts`, `app/game/MissionRules.ts` |
-| MISSION 全22問（戦術12・記録解析4・極限6）の契約 | `docs/MISSION_LIBRARY_SPEC.md` |
+| MISSION 定義・評価 | `app/game/Campaign.ts`, `app/game/AdditionalMissions.ts`, `app/game/MissionRules.ts` |
+| MISSION 全28問（戦術16・記録解析5・極限7）の契約 | `docs/MISSION_LIBRARY_SPEC.md` |
 | 用語と文体 | `docs/TEXT_STYLE_AUDIT.md` |
 | 音とテンポ | `app/game/AudioManager.ts` |
 
@@ -268,6 +269,12 @@ Unity Project が Linear color space でも、表の値は sRGB 入力として�
 - scanline opacity は約0.16、noiseは約0.06。文字の上へ強くかけない。
 - パネル: 1px steel border、内側に3px相当の濃色、左accent 3–4px。角丸を強くせず、CIC機器の切り欠き感を保つ。
 - ボタン: 上下グラデーション、内側濃色枠、下側の押し込み影。押下時は2px相当下げる。
+- ボタン・カード・タブのscanline/noiseは**各部品のローカル階層**で描く。全画面noiseの
+  z-orderや親Canvasの重なりで、固定tray、modal、結果画面だけ平滑になる実装は禁止する。
+  同じ材質は `surface fill → scanline → grain → content → focus ring` の順を保つ。
+- grainは29×31と43×47論理単位の非同期tileを重ね、通常操作部品の合成opacityは0.14、
+  長文部品は0.10、選択部品は0.17を基準にする。選択不能でも親alphaを下げず、彩度と
+  明度で状態を示して文字とgrainを維持する。正確な値は `presentation.cicMaterial` を読む。
 - `BATTLE START` は Danger 系、通常の主操作は Cyan、確認・戦況報告は Amber。選択不能は彩度を下げても文言を読める濃度を残す。
 - 9-slice sprite を使う場合は元画像と border 値を版管理する。可能なら単色 Image + custom material で生成し、解像度依存を減らす。
 
@@ -327,7 +334,7 @@ Unity Project が Linear color space でも、表の値は sRGB 入力として�
 | 敵結果保持 | 0.85秒、その後 Player Review |
 | SONAR結果 | 1.45秒。12%で表示完了、78%まで保持 |
 | 重要区画識別 | 1.65秒。敵による自軍識別は報告確定まで保持 |
-| SEA BAT 潜航警告 | 1.75秒 |
+| SEA BAT 潜航警告 | 1.90秒 |
 | LOG drawer | 0.18秒、下から18px相当 |
 | 被弾shake | 0.28秒、最大5px相当 |
 | レーダー sweep | 7.0秒/周 |
@@ -336,6 +343,9 @@ Unity Project が Linear color space でも、表の値は sRGB 入力として�
 | HIT/SUNK pulse | 約0.79秒/周期 |
 
 多区画攻撃は「発射→照準表示→区画ごとの着弾→最終報告→次状態」の順を崩さない。一斉に内部解決して即敵ターンへ送らない。内部では全結果を先に決定してもよいが、Presenter が各 `CombatEvent` を上表の間隔で提示し、最後の報告を読める時間を保証する。
+
+表の実装値は `unity-content-v2.json` の `presentation.timingsMs` を正本にする。Unity側で
+秒へ変換する際は整数msを先に読み、フレーム数へ丸めて保存し直さない。
 
 敵攻撃後は自動で自軍ターンへ戻らず `PlayerReview` へ入る。盤面とログを確認し、右下の `FILE DAMAGE REPORT` を押した時点で次の自軍行動へ進む。敵に識別された警告はこの操作まで消さない。
 
@@ -430,7 +440,9 @@ Persistence
 - AIは公開情報だけを入力とし、Viewや敵盤面Graphicを参照しない。
 - Webと同じ seed、同じ呼出順で xorshift32 を使う。C#は `unchecked uint` で `x ^= x << 13; x ^= x >> 17; x ^= x << 5;` を実装し、乱数を演出へ流用しない。
 - 座標は `{x:0..7,y:0..7}`、表示は `A-1..H-8`。向きは `east, south, west, north` の順序を固定する。
-- 保存データはschema versionを持つ。MISSION記録はIDで保存し、配列順序で保存しない。
+- 保存データは `unity-content-v2.json` の `persistence.unitySaveData` に従い、
+  schema version、temp→flush→atomic replace、last-known-good backupを実装する。
+  MISSION記録はIDで保存し、配列順序で保存しない。
 - 端末時刻はログのUTC（Zulu）表記にだけ使い、判定や乱数seedに暗黙利用しない。MISSION active time はアプリ非表示中に進めない。
 - `OnApplicationPause` / `OnApplicationFocus` では状態を保存し、再開時に音・時計・共有animation clockを安全に復帰する。
 
@@ -464,7 +476,7 @@ Persistence
 1. 同等の波形・周波数・durationをAudioClipへ手続き生成して再生する。
 2. 本作専用に生成して所有権を記録した短いWAVへ焼き、AudioMixerから再生する。
 
-音を端末ごとのビープへ置き換えない。fire/hit/sunk/sonar/turn/victory/defeatの区別を保つ。SURVIVALの脈動間隔は累積喪失0–5艦で260, 240, 220, 200, 185, 170ms。音を鳴らせない場合も、演出待ち時間やゲーム結果を変えない。
+音を端末ごとのビープへ置き換えない。fire/hit/sunk/sonar/turn/victory/defeatの区別を保つ。SURVIVALの脈動間隔は累積喪失0–5艦で260, 240, 220, 200, 185, 170ms。各cueのfrequency、wave、duration、gain、delayとoutput compressorは `unity-content-v2.json` の `audio` を正本とし、AudioClip生成テストで照合する。音を鳴らせない場合も、演出待ち時間やゲーム結果を変えない。
 
 ## 12. Browser → Unity 比較検証
 
@@ -513,7 +525,7 @@ Unity側は同じSafe Area縦横比でGame Viewと実機を撮影する。ファ
 - 動画比較で、発射から着弾、報告、次局面の順と保持時間が一致する。
 - Reduce Motionでも結果情報と操作待ちが消えない。
 - 同一seed・同一入力列でWebとUnityの盤面、攻撃結果、AI行動、残弾、勝敗、ログevent種別が一致する。
-- 22 MISSIONのcanonical vectorがUnity Domain testsでも全件成功する。
+- 28 MISSIONのcanonical vectorがUnity Domain testsでも全件成功する。解答fixtureはEditor/Test Assemblyだけから読み、Player buildへ含めない。
 
 pixel-perfect差分だけを合否にしない。フォントrasterizer差は許容する一方、要素境界は基準画像の±4論理単位、盤面中心・ボタン位置は±2%を目標とし、perceptual diffと目視を併用する。
 
@@ -534,7 +546,7 @@ pixel-perfect差分だけを合否にしない。フォントrasterizer差は許
 
 ## 14. 移植開始時の順序
 
-1. Web版をスマートフォン縦持ちで22 MISSIONと6 INITIAL TRAININGを含め実際に攻略し、未解決UIをWebで先に直す。
+1. Web版をスマートフォン縦持ちで28 MISSIONと6 INITIAL TRAININGを含め実際に攻略し、未解決UIをWebで先に直す。
 2. 基準commitと全参照スクリーンショット／動画を固定する。
 3. Domain parity testsを先に移植し、UIなしで同じ入力・結果を確認する。
 4. Theme、font atlas、SafeAreaRoot、4つのLayoutProfileを作る。

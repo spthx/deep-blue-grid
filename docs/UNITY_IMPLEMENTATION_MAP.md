@@ -10,21 +10,28 @@ UI の画面階層・安全領域・フォント・端末別レイアウトは�
 
 | 区分 | Web の正本 | Unity 側の扱い |
 | --- | --- | --- |
-| 静的ゲームデータ | `app/game/constants.ts`, `app/game/Campaign.ts`, `app/game/ExtremeMissions.ts`, `app/game/Training.ts` | JSON または ScriptableObject に変換して移送する |
+| 静的ゲームデータ | `app/game/constants.ts`, `app/game/Campaign.ts`, `app/game/ExtremeMissions.ts`, `app/game/AdditionalMissions.ts`, `app/game/Training.ts` | JSON または ScriptableObject に変換して移送する |
 | ルール実行系 | `app/game/engine.ts`, `app/game/MissionRules.ts`, `app/game/TrainingRules.ts`, `app/game/SubmarineWake.ts` | 同じ入出力契約を C# で再実装する |
 | 敵 AI | `app/game/EnemyAI.ts` | C# で再実装する。乱数消費順も互換にする |
 | 画面状態・入力 | `app/game/DeepBlueGrid.tsx` | Unity の画面・状態コンポーネントへ分割して再実装する |
 | 描画 | `app/game/Renderer.ts` | uGUI/UI Toolkit + Board View で再実装する |
 | 保存・結果集計 | `app/game/MissionRecords.ts`, `app/game/TrainingProgress.ts`, `app/game/OperationRecord.ts`, `app/game/AfterAction.ts` | JSON 保存と C# の純粋ロジックとして再実装する |
 | 音 | `app/game/AudioManager.ts` | Unity AudioMixer/AudioSource（または同等の合成）で再実装する |
-| 画面サイズ適応 | `app/globals.css`, `app/game/DeepBlueGrid.tsx`, `docs/UNITY_UI_HANDOFF.md` | CSS はコピーせず、Safe Area とレイアウト・プロファイルとして再実装する |
+| 表示契約 | `app/game/PresentationContract.ts`, `app/globals.css`, `app/game/DeepBlueGrid.tsx`, `docs/UNITY_UI_HANDOFF.md` | 表示名、時間、材質、Safe Area とレイアウト・プロファイルを再実装する |
 
 ### 機械可読性の結論
 
-- コンテンツ本体は TypeScript のオブジェクト配列で、数値座標・ID・列挙値を持つため**変換可能**である。
-- ただし現在は JSON/CSV ではない。型情報は TypeScript 専用で、`app/game/ExtremeMissions.ts` は `Set` とループで `leviathanNet` を生成する。このまま Unity が直接読む形式ではない。
-- Unity 実装開始時は、Web の静的配列を `unity-content-v1.json`（または同じフィールド構造の ScriptableObject）へ一方向に出力する export 手順を作る。値を Unity Inspector で手入力して二重管理しない。
-- `scripts/measure-missions.ts` の `CANONICAL_MISSION_ROUTES` は可解性テスト用の回答ベクトルであり、プレイ用コンテンツには入れない。Unity の Editor/PlayMode テスト専用データにする。
+- コンテンツ、AI/モード数値、表示、音の正本は `npm run export:unity` により
+  `docs/unity-handoff/unity-content-v2.json` へ一方向に変換済みである。値を Unity
+  Inspector で手入力して二重管理しない。
+- `unity-content-v2.json` は製品実行時に使用できる正本で、完全解答を含まない。
+  `scripts/measure-missions.ts` の `CANONICAL_MISSION_ROUTES` は
+  `unity-validation-v1.json` だけへ出力する。後者は Editor/PlayMode テスト専用で、
+  `Resources`、Addressables、StreamingAssets、Player buildへ含めない。
+- export、manifest、checksumは固定参照タグ `unity-handoff-2026-08-12-quality` を共有する。
+- `rules.seededRandom`、`rules.formationSupport`、`presentation.commonText`、
+  `persistence.unitySaveData` は、乱数系列、護衛連接、共通文言、停止復帰保存の
+  実装契約である。Unity側でInspector既定値へ置き換えない。
 
 ## 2. 共通スキーマ契約
 
@@ -55,9 +62,10 @@ Unity の DTO/ScriptableObject は次の名前・意味を保つ。C# のプロ�
 | 静粛移動・音紋 | `app/game/engine.ts` の `relocateShip`; `app/game/SubmarineWake.ts` | `SilentRelocationResolver`, `WakeService` | 移動先の unknown/レーダー/音紋/艦との排他、最終接触の `lost` 化、包囲時の撃沈、周囲 8 マスからの音紋選択を再実装する |
 | 護衛連接 | `app/game/engine.ts` の `hasEscortLink`, `hasFireControlLink`, `Arsenal` | `FormationLinkService`, `ArsenalState` | 護衛艦の**全区画**が空母または戦艦のいずれかの区画へ上下左右で隣接することが条件。斜め接触や一部区画だけの隣接は不可 |
 | AI | `app/game/EnemyAI.ts` | `EnemyAiController`, `AiKnowledgeState` | HUNT/TARGET/SEARCH、公開済みマークだけを使う配置スコア、SONAR、兵装選択、silent の「射撃→移動」交互サイクルを再実装する |
+| AI・モード数値 | `app/game/Campaign.ts` の `AI_MODE_CONTRACT`, `MODE_RULE_CONTRACT` | `GameModeContract`, `AiModeContract` | CASUAL/TACTICS倍率、SURVIVAL探索幅、先攻、情報秘匿、累積損耗、教程の誤指令無消費をJSONから読む |
 | ミッション型 | `app/game/Campaign.ts` の `MissionStageDefinition` と関連型 | `MissionDefinition`, `MissionObjective`, `MissionOrder` | `player/enemyFleet`, 配置、既存損傷、初期情報、公開情報、先攻、兵装、目的、初期弾数、固定 seed、リンク条件、結果文を移送する |
-| 標準・記録解析ミッション | `app/game/Campaign.ts` の `MISSION_STAGES`, `ARCHIVE_MISSIONS` | `MissionCatalog` | `MISSION_LIBRARY` は標準→記録解析→極限の順。カテゴリ、`sortOrder`、`difficulty` を UI フィルタと記録キーに使う |
-| 極限ミッション | `app/game/ExtremeMissions.ts` の `EXTREME_MISSIONS` | `MissionCatalog` | 6 件を移送。LEVIATHAN 用 `leviathanNet` は生成結果を平坦な `initialIntel[]` として export するか、同じ生成式を C# に実装する |
+| 標準・記録解析ミッション | `app/game/Campaign.ts`, `app/game/AdditionalMissions.ts` | `MissionCatalog` | `MISSION_LIBRARY` は標準16→記録解析5→極限7の順。カテゴリ、`sortOrder`、`difficulty` を UI フィルタと記録キーに使う |
+| 極限ミッション | `app/game/ExtremeMissions.ts`, `app/game/AdditionalMissions.ts` | `MissionCatalog` | 7件を移送。LEVIATHAN 用 `leviathanNet` は生成済みの平坦な `initialIntel[]` をJSONから読む |
 | 公開済み手掛かり | `MissionEnemyDisclosure.candidateCells` in `app/game/Campaign.ts`, `app/game/ExtremeMissions.ts`, `app/game/Training.ts`; 表示は `app/game/DeepBlueGrid.tsx` | `MissionBriefView`, `PublicIntelMarkerView` | `candidateCells` は座標とコードを必ず表示する。任務解が内部情報へ依存しないためのプレイ契約であり、データ export から落としてはならない |
 | ミッション判定 | `app/game/MissionRules.ts` | `MissionEvaluator`, `ScenarioLoader`, `MissionDefinitionValidator` | 目標達成を先に評価し、その後に保護艦喪失、最後に行動上限を評価する優先順位を保つ。指定 SONAR 起点、撃沈順、識別、初期弾数も同じにする |
 | 教程コンテンツ | `app/game/Training.ts` | `TrainingCatalog` | 6 教程（stage ID 101–106）の `plainBrief`, `doctrine`, `steps`, `expected`, `highlight`, `debrief` を移送する |
@@ -69,6 +77,7 @@ Unity の DTO/ScriptableObject は次の名前・意味を保つ。C# のプロ�
 | 描画 | `app/game/Renderer.ts` | `BoardView`, `BoardCellView`, `TargetPreviewView` | 盤面の隠蔽、命中/反響/音紋/SONAR/重要区画/選択/攻撃範囲を View 専用にする。ルール状態を View に持たせない |
 | UI 状態・入力 | `app/game/DeepBlueGrid.tsx` | `GameFlowController`, `BattlePresenter`, `MissionLibraryPresenter`, `InputRouter` | React state を一枚の MonoBehaviour に直訳しない。フェーズ（placement/player/enemy/review/victory/defeat）、選択、ロック、ログ、モーダルを明示的な状態機械として分離する |
 | 音 | `app/game/AudioManager.ts` | `AudioDirector`, `AudioMixer` | WebAudio の SFX は合成音で、外部音声アセットはない。cursor/confirm/cancel/fire/splash/hit/sunk/sonar/turn/victory/defeat と損失 tier の pulse 間隔をイベント契約として再実装する |
+| 表示・材質・時間 | `app/game/PresentationContract.ts` | `PresentationCatalog`, `CicTheme`, `PresentationTiming` | 兵装/艦艇説明、共通UI文言、喪失能力、難易度名、演出待ち時間、44px操作床、部品ローカルgrain/scanline契約をJSONから読む。コピー文をC#へ再入力しない |
 | レスポンシブ UI | `app/globals.css`, `app/game/DeepBlueGrid.tsx`, `docs/UNITY_UI_HANDOFF.md` | `SafeAreaFitter`, `ResponsiveRootController`, 各 View | CSS の px/メディアクエリをコピーしない。Safe Area、縦持ち 1 盤面切替、横持ち 2 盤面＋右レール、下部コマンド帯を Unity レイアウトとして再実装する |
 
 ## 4. 直接コピーするデータと、再実装するロジック
@@ -78,7 +87,9 @@ Unity の DTO/ScriptableObject は次の名前・意味を保つ。C# のプロ�
 以下は、内容を変えない変換の対象である。
 
 - `app/game/constants.ts` の艦定義、ID、盤面定数、兵装上限、HARPOON パターン、通常ステージ定義。
-- `app/game/Campaign.ts`、`app/game/ExtremeMissions.ts`、`app/game/Training.ts` のミッション・教程定義、日誌、表示文、固定 seed、公開情報、既存損傷、配置。
+- `app/game/Campaign.ts`、`app/game/ExtremeMissions.ts`、`app/game/AdditionalMissions.ts`、`app/game/Training.ts` のミッション・教程定義、日誌、表示文、固定 seed、公開情報、既存損傷、配置。
+- `app/game/PresentationContract.ts` の兵装/艦艇説明、用語、時間、レスポンシブUI、CIC材質契約。
+- `app/game/AudioManager.ts` の `AUDIO_CUE_CONTRACT`。Web Audio API自体ではなく波形・周波数・duration・gain・pulse間隔を移す。
 - `app/game/TrainingProgress.ts` と `app/game/MissionRecords.ts` の保存スキーマ version とフィールド意味。
 - `scripts/measure-missions.ts` の canonical route は、配布データではなく Unity のテスト fixture としてのみ export する。
 
@@ -86,11 +97,14 @@ Unity の DTO/ScriptableObject は次の名前・意味を保つ。C# のプロ�
 
 ```json
 {
-  "schemaVersion": 1,
-  "gridSize": 8,
-  "cellLabels": "ABCDEFGH",
+  "schemaVersion": 2,
+  "sourceRef": "unity-handoff-2026-08-12-quality",
+  "coordinateContract": { "gridSize": 8, "cellLabels": "ABCDEFGH" },
+  "rules": { "echo": {}, "aiModes": {}, "gameModes": {} },
   "shipDefinitions": [],
-  "weaponMaximums": {},
+  "weapons": {},
+  "presentation": {},
+  "audio": {},
   "campaignStages": [],
   "survivalStages": [],
   "missions": [],
@@ -98,7 +112,7 @@ Unity の DTO/ScriptableObject は次の名前・意味を保つ。C# のプロ�
 }
 ```
 
-`missions` には標準、archive、extreme を含め、`trainingStages` は別配列にする。これは Web の `MISSION_LIBRARY` と `TRAINING_STAGES` が別の選択・進行経路であることに対応する。
+`missions` には標準、archive、extreme を含め、`trainingStages` は別配列にする。これは Web の `MISSION_LIBRARY` と `TRAINING_STAGES` が別の選択・進行経路であることに対応する。完全解答はこのJSONへ追加せず、`unity-validation-v1.json`だけからUnity Test Assemblyへ読む。
 
 ### 4.2 コピーしてはいけないもの
 
@@ -146,9 +160,8 @@ npm run measure:survival
 npm run lint
 ```
 
-`npm run lint` は移植契約そのものではなく、Web側の既知のReact ref構造も検査する。
-2026-08-08時点では `DeepBlueGrid.tsx` に既存の50 errors / 2 warningsが残るため、
-Unity JSONの合否は `npm run export:unity` と `npm test`（export一致テストを含む）で判定する。
+`npm run lint` は移植契約そのものではなくWeb実装全体を検査する。Unity bundleの合否は
+`npm run export:unity` と `npm test`（runtime/fixture分離、contract一致、checksum検証を含む）で判定する。
 
 主な証拠ファイルは以下である。
 
@@ -161,9 +174,9 @@ Unity JSONの合否は `npm run export:unity` と `npm test`（export一致テ�
 ### Unity 側の必須受入基準
 
 - [ ] 8×8、座標、向き、全 `ShipId`、全 `WeaponId`、重要区画、弾数、ECHO モードが Web と一致する。
-- [ ] Web の固定データから、通常 12、archive 4、extreme 6、training 6 を漏れなく読める。stage ID、sort order、カテゴリ、難易度、文章、公開座標を保持する。
+- [ ] Web の固定データから、通常16、archive 5、extreme 7、training 6を漏れなく読める。stage ID、sort order、カテゴリ、難易度、文章、公開座標を保持する。
 - [ ] `tests/game-rules.test.ts` の同等ケースを C# Unit Test に移し、Board/Arsenal/護衛リンク/静粛移動/RNG の結果が一致する。
-- [ ] `scripts/measure-missions.ts` の全 canonical route を Unity PlayMode またはヘッドレステストで実行し、全 22 任務が勝利する。テストは配置・初期損傷・seed・敵先攻を固定する。
+- [ ] `unity-validation-v1.json` の全 canonical route を Unity Editor/PlayModeテストで実行し、全28任務が勝利する。fixtureをPlayer buildへ含めず、配置・初期損傷・seed・敵先攻を固定する。
 - [ ] 教程 101–106 は期待 order 以外を消費なしで拒否し、期待 order を順番に実行すると修了する。複数目標兵装は目標の選択順を問わない。
 - [ ] `candidateCells`、SONAR zone、initialIntel、initialEnemyWakes を Unity UI に表示し、固定解がプレイヤーに非公開の座標へ依存しない。
 - [ ] 保存 JSON の version 1 を読み書きし、破損 JSON、重複した教程、無効な記録で例外を出さず Web と同じ正規化結果になる。

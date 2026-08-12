@@ -12,6 +12,15 @@
   --font-tactical: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Roboto Mono", "Noto Sans Mono CJK JP", "Noto Sans JP", "Hiragino Sans", "Yu Gothic UI", Meiryo, monospace;
   --tap-target: 44px;
   --tap-primary: 50px;
+  /*
+   * CIC material layers are intentionally component-local.  The old screen-wide
+   * grain sat above some controls and below fixed/mobile controls, so identical
+   * buttons changed material when their z-index changed.  These tokens keep the
+   * period and strength deterministic across portrait, landscape and modals.
+   */
+  --cic-grain-a: repeating-radial-gradient(circle at 17% 23%, rgba(223,255,255,.42) 0 1px, transparent 1px 7px);
+  --cic-grain-b: repeating-radial-gradient(circle at 73% 67%, rgba(223,255,255,.30) 0 1px, transparent 1px 11px);
+  --cic-scanline: repeating-linear-gradient(0deg, transparent 0 3px, rgba(1,10,15,.72) 3px 4px);
 }
 
 * { box-sizing: border-box; }
@@ -51,13 +60,14 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
   position: relative;
   isolation: isolate;
 }
+.game-shell:not(.mode-selected) { height:100dvh; overflow:hidden; }
 .game-shell::before {
-  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 30;
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: -1;
   background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(1,10,15,.16) 3px 4px);
   mix-blend-mode: multiply;
 }
 .noise {
-  position: fixed; inset: 0; pointer-events: none; opacity: .06; z-index: 29;
+  position: fixed; inset: 0; pointer-events: none; opacity: .045; z-index: -2;
   background:
     repeating-radial-gradient(circle at 17% 23%, #dfffff 0 1px, transparent 1px 7px),
     repeating-radial-gradient(circle at 73% 67%, #dfffff 0 1px, transparent 1px 11px);
@@ -155,11 +165,11 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
 @keyframes sweep { to { transform: rotate(360deg); } }
 
 .fleet-row { display:grid; grid-template-columns: repeat(3,1fr); gap:6px; margin-top:9px; }
-.ship-card { min-width:0; border:1px solid #315965; background:#081923; padding:7px; color:var(--steel); text-align:left; }
+.ship-card { min-width:0; min-height:var(--tap-target); border:1px solid #315965; background:#081923; padding:7px; color:var(--steel); text-align:left; }
 .ship-card strong { display:block; color:var(--foam); font-size:10px; white-space:nowrap; }
 .ship-card small { font-size:8px; }
 .ship-card.active { border-color:var(--cyan); background:#10323c; box-shadow:0 0 10px #58c8c333; }
-.ship-card.sunk { border-color:#7c4247; color:#6c5b60; opacity:.72; }
+.ship-card.sunk { border-color:#7c4247; color:#6c5b60; opacity:1; filter:saturate(.42) brightness(.68); }
 .ship-card.sunk strong { color:var(--danger); text-decoration:line-through; }
 .hull-meter { display:flex; gap:2px; margin-top:5px; }
 .hull-meter i { display:block; height:3px; flex:1; background:#426b72; }
@@ -183,7 +193,7 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
 }
 .placement-confirm.ready b { color:#fff6bd; }
 .placement-restore {
-  grid-column:1 / -1; min-height:32px; border:1px solid #3f6069; color:var(--steel); background:#081a23;
+  grid-column:1 / -1; min-height:var(--tap-target); border:1px solid #3f6069; color:var(--steel); background:#081a23;
   font:inherit; font-size:9px; letter-spacing:.06em; cursor:pointer;
 }
 .placement-restore span { margin-left:8px; color:#587984; font-size:7px; }
@@ -232,7 +242,7 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
 }
 .cmd.confirm.ready b { color:#fff6bd; }
 @keyframes confirmReady { to { filter:brightness(1.22); box-shadow:inset 0 0 0 2px #151108,0 0 25px #e5d78a77; } }
-.cmd:disabled { opacity:.4; cursor:not-allowed; filter:saturate(.3); }
+.cmd:disabled { opacity:1; cursor:not-allowed; filter:saturate(.3) brightness(.56); }
 .action-cluster { display:flex; gap:8px; margin-left:auto; }
 .action-cluster .cancel-command { min-width:108px; }
 .action-cluster .confirm { min-width:190px; }
@@ -243,14 +253,16 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
   box-shadow:0 5px 18px #000a; backdrop-filter:blur(8px);
 }
 .utility-overlay button {
-  display:grid; place-items:center; width:38px; height:38px; padding:0; cursor:pointer;
+  display:grid; place-items:center; width:var(--tap-target); height:var(--tap-target); padding:0; cursor:pointer;
   border:1px solid #52727a; color:var(--cyan); background:linear-gradient(#173943,#091f28);
   box-shadow:inset 0 0 0 2px #07151d; font-size:17px; line-height:1;
 }
 .utility-overlay button:hover:not(:disabled) { filter:brightness(1.25); }
 .utility-overlay button.log-button { color:var(--amber); font-size:8px; font-weight:900; letter-spacing:.05em; }
 .utility-overlay button.retry { color:var(--danger); font-size:25px; }
-.utility-overlay button:disabled { opacity:.4; cursor:not-allowed; }
+.utility-overlay button:disabled { opacity:1; cursor:not-allowed; filter:saturate(.3) brightness(.56); }
+.utility-glyph { display:block; width:20px; height:20px; overflow:visible; }
+.retry .utility-glyph { width:23px; height:23px; }
 
 .ops-lower { display:grid; grid-template-columns:minmax(230px,.75fr) minmax(360px,1.25fr); gap:8px; margin-top:8px; }
 .command-detail,.battle-log {
@@ -382,7 +394,7 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
 .result-actions .cmd { width:100%; min-width:0; }
 .result-actions .review-battlefield { border-color:var(--amber); }
 .result-actions .open-operation-log { grid-column:1 / -1; border-color:#668b94; }
-.result-actions .withdraw-action { grid-column:1 / -1; background:#1a1518; border-color:#6b4a4a; opacity:.82; }
+.result-actions .withdraw-action { grid-column:1 / -1; background:#1a1518; border-color:#6b4a4a; opacity:1; filter:saturate(.72) brightness(.82); }
 .result-actions .withdraw-action b { color:#c98f8f; font-size:11px; }
 .result-actions .withdraw-action small { color:#8a6b6b; }
 .result-actions .withdraw-action.armed { opacity:1; border-color:var(--danger); background:linear-gradient(#4a1f1f,#2a1113); box-shadow:0 0 0 2px #07171f,0 0 16px #ff575744; }
@@ -401,7 +413,7 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
 .operation-record-summary span { color:var(--steel); font-size:7px; letter-spacing:.08em; }
 .operation-record-summary b { margin-top:2px; color:var(--foam); font-size:13px; font-variant-numeric:tabular-nums; }
 .operation-record details { margin-top:8px; border-top:1px solid #34545e; }
-.operation-record summary { padding:8px 2px 2px; color:var(--amber); font-size:8px; font-weight:900; cursor:pointer; }
+.operation-record summary { min-height:var(--tap-target); display:flex; align-items:center; padding:8px 2px 2px; color:var(--amber); font-size:8px; font-weight:900; cursor:pointer; }
 .operation-record ol { display:grid; gap:5px; margin:7px 0 0; padding:0; list-style:none; }
 .operation-record li { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:2px 8px; padding:7px; background:#0a2029; border-left:2px solid #52757d; }
 .operation-record li span { color:var(--cyan); font-size:8px; font-weight:900; }
@@ -630,7 +642,7 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
 .training-hold-notice { display:block; margin:4px 0; padding:5px 7px; border:1px solid #bd765f; border-left:3px solid #ef9274; background:#351b1ae8; color:#ffd7c9; font-size:8px; line-height:1.45; letter-spacing:.03em; }
 .training-directive > small { display:block; color:#83abb3; font-size:7px; letter-spacing:.08em; }
 .training-directive details { margin-top:5px; border-top:1px solid #31545d; }
-.training-directive summary { min-height:30px; display:flex; align-items:center; color:#a6d9dd; cursor:pointer; font-size:8px; font-weight:800; }
+.training-directive summary { min-height:var(--tap-target); display:flex; align-items:center; color:#a6d9dd; cursor:pointer; font-size:8px; font-weight:800; }
 .training-directive details p { margin:0 0 5px; color:#a9c6cb; font-size:8px; line-height:1.5; }
 .mission-orders {
   display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px;
@@ -662,7 +674,7 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
 .mission-end-report { border-color:#7f754d; border-left-color:var(--amber); }
 .mission-end-report::after { border-color:rgba(229,215,138,.1); }
 .identification-rules { margin-top:14px; padding:13px 15px; border:1px solid #596344; background:#0b1819c9; text-align:left; }
-.identification-rules summary { display:flex; align-items:center; justify-content:space-between; gap:12px; list-style:none; cursor:pointer; }
+.identification-rules summary { min-height:var(--tap-target); display:flex; align-items:center; justify-content:space-between; gap:12px; list-style:none; cursor:pointer; }
 .identification-rules summary::-webkit-details-marker { display:none; }
 .identification-rules summary span { color:var(--amber); font-size:12px; font-weight:800; letter-spacing:.1em; }
 .identification-rules summary small { color:var(--steel); font-size:8px; letter-spacing:.08em; white-space:nowrap; }
@@ -717,7 +729,7 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
   .placement-dock .cmd { min-height:56px; padding:7px 6px; }
   .placement-dock .cmd b { font-size:10px; white-space:nowrap; }
   .placement-dock .cmd small { overflow:hidden; text-overflow:ellipsis; font-size:7px; white-space:nowrap; }
-  .placement-restore { min-height:30px; }
+  .placement-restore { min-height:var(--tap-target); }
   .placement-secondary { grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
   .placement-tools .cmd { width:100%; min-width:0; min-height:46px; }
   .placement-start { min-width:0; }
@@ -730,7 +742,7 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
   .turn-review > div b { font-size:10px; }
   .turn-review > div small { font-size:8px; line-height:1.45; }
   .utility-overlay { top:7px; right:7px; gap:3px; padding:3px; }
-  .utility-overlay button { width:34px; height:34px; font-size:15px; }
+  .utility-overlay button { width:var(--tap-target); height:var(--tap-target); font-size:15px; }
   .utility-overlay button.log-button { font-size:7px; }
   .utility-overlay button.retry { font-size:22px; }
   .ops-lower { grid-template-columns:1fr; }
@@ -748,13 +760,13 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
   .mission-library-head > div > span { font-size:7px; letter-spacing:.1em; }
   .mission-library-head h2 { margin:1px 0; font-size:20px; letter-spacing:.07em; }
   .mission-library-head p { display:none; }
-  .mission-library-back { min-height:38px; padding:3px; }
+  .mission-library-back { min-height:var(--tap-target); padding:3px; }
   .mission-library-back span { font-size:18px; }
   .mission-library-back b { font-size:7.5px; }
   .mission-library-progress b { font-size:14px; }
   .mission-library-progress small { font-size:7px; }
   .mission-library-tabs { gap:4px; padding:5px 7px; }
-  .mission-library-tabs button { min-height:39px; padding:4px 5px; }
+  .mission-library-tabs button { min-height:var(--tap-target); padding:4px 5px; }
   .mission-library-tabs button b { font-size:9px; }
   .mission-library-tabs button small { font-size:8px; }
   .mission-library-filters { gap:4px; padding:0 7px 5px; }
@@ -806,7 +818,7 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
     color:var(--abyss); border-color:var(--cyan); background:var(--cyan);
     box-shadow:0 0 12px #7ce5df55;
   }
-  .mobile-field-switch button:disabled { opacity:.35; cursor:not-allowed; }
+  .mobile-field-switch button:disabled { opacity:1; cursor:not-allowed; filter:saturate(.25) brightness(.52); }
   .mobile-field-switch .mobile-switch-utilities {
     display:grid; grid-template-columns:repeat(3,44px); gap:3px; padding-left:2px;
     border-left:1px solid #34545e;
@@ -853,7 +865,7 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
   .fleet-row { margin-top:6px; }
   .ship-card { padding:5px; }
   .command-deck { padding:7px; }
-  .cmd { min-height:38px; }
+  .cmd { min-height:var(--tap-target); }
 }
 
 
@@ -872,9 +884,67 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
 .ship-card.read-only { cursor:default; }
 .ship-card.read-only:hover { border-color:#52757d; background:#0a222b; }
 .ship-card:disabled { opacity:1; cursor:default; }
-.cmd.unavailable { opacity:.56; filter:saturate(.48); cursor:help; }
+.cmd.unavailable { opacity:1; filter:saturate(.38) brightness(.62); cursor:help; }
 .cmd.unavailable:active { transform:none; box-shadow:inset 0 0 0 2px #07171f,0 3px 0 #041015; }
-.cmd.unavailable:hover,.cmd.unavailable:focus-visible { opacity:.78; filter:saturate(.72) brightness(1.08); }
+.cmd.unavailable:hover,.cmd.unavailable:focus-visible { opacity:1; filter:saturate(.58) brightness(.78); }
+
+/*
+ * DETERMINISTIC CIC MATERIAL
+ *
+ * Every interactive surface carries its own restrained phosphor grain.  This
+ * is deliberately independent of the global atmosphere and therefore remains
+ * identical when a control moves into a fixed phone tray, modal or desktop
+ * command rail.  The overlay never receives pointer events and is kept subtle
+ * enough that labels and focus rings remain clean.
+ */
+:where(
+  .cmd,
+  .mode-button,
+  .mission-card,
+  .mission-library-back,
+  .mission-library-tabs button,
+  .mission-library-filters button,
+  .mobile-field-switch button,
+  .utility-overlay button,
+  .placement-restore,
+  .ship-card,
+  .log-drawer header button
+) {
+  --cic-material-opacity:.14;
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+}
+:where(
+  .cmd,
+  .mode-button,
+  .mission-card,
+  .mission-library-back,
+  .mission-library-tabs button,
+  .mission-library-filters button,
+  .mobile-field-switch button,
+  .utility-overlay button,
+  .placement-restore,
+  .ship-card,
+  .log-drawer header button
+)::after {
+  content:"";
+  position:absolute;
+  z-index:-1;
+  inset:1px;
+  border-radius:inherit;
+  pointer-events:none;
+  opacity:var(--cic-material-opacity);
+  background:var(--cic-grain-a),var(--cic-grain-b),var(--cic-scanline);
+  background-size:29px 31px,43px 47px,100% 4px;
+  background-blend-mode:soft-light,soft-light,multiply;
+}
+:where(.mode-button,.mission-card,.mission-library-tabs button,.mission-library-filters button) {
+  --cic-material-opacity:.10;
+}
+:where(.cmd.primary,.cmd.battle-start,.cmd.selected,.mobile-field-switch button.active) {
+  --cic-material-opacity:.17;
+}
 
 .weapon-peek {
   position:absolute; z-index:24; left:7px; right:7px; bottom:calc(100% + 7px); min-height:70px; padding:8px 10px;
@@ -889,7 +959,7 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
 .weapon-peek small { margin-top:3px; color:var(--foam); font-size:8px; line-height:1.4; }
 
 .placement-dossier { display:block; padding:10px 12px; border:1px solid #355a64; border-left:3px solid var(--cyan); background:#081c25; text-align:left; }
-.placement-dossier summary { display:flex; align-items:baseline; gap:9px; min-width:0; list-style:none; cursor:pointer; }
+.placement-dossier summary { min-height:var(--tap-target); display:flex; align-items:center; gap:9px; min-width:0; list-style:none; cursor:pointer; }
 .placement-dossier summary::-webkit-details-marker { display:none; }
 .placement-dossier summary span { color:var(--steel); font-size:7px; letter-spacing:.16em; }
 .placement-dossier summary b { color:var(--cyan); font-size:12px; }
@@ -965,7 +1035,7 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
   .rail-placement-tools .placement-dock .cmd { min-width:0; min-height:46px; padding:5px 6px; }
   .rail-placement-tools .placement-dock .cmd b { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:9px; }
   .rail-placement-tools .placement-dock .cmd small { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:7.5px; }
-  .rail-placement-tools .placement-restore { min-height:30px; font-size:8px; }
+  .rail-placement-tools .placement-restore { min-height:var(--tap-target); font-size:8px; }
   .rail-placement-tools .placement-secondary { grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px; min-width:0; }
   .rail-placement-tools .placement-secondary .cmd { width:100%; min-width:0; min-height:var(--tap-target); padding:5px 6px; }
   .rail-placement-tools .placement-secondary .cmd b { font-size:9px; }
@@ -1063,7 +1133,7 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
   .quick-guide { display:none; }
   .status-strip { min-height:40px; padding:6px 8px; }
   .placement-dossier { padding:6px 8px; }
-  .placement-dossier summary { min-height:28px; gap:6px; align-items:center; }
+  .placement-dossier summary { min-height:var(--tap-target); gap:6px; align-items:center; }
   .placement-dossier summary span { display:none; }
   .placement-dossier summary b { overflow:hidden; text-overflow:ellipsis; font-size:10px; white-space:nowrap; }
   .placement-dossier summary em { overflow:hidden; text-overflow:ellipsis; font-size:7px; white-space:nowrap; }
@@ -1077,6 +1147,7 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
        (max-width:959px) and (max-height:600px) {
   /* The operation status strip becomes the primary title bar in compact play. */
   .mode-selected .masthead { display:none; }
+  .mode-selected .campaign-track { display:none; }
   .game-shell {
     padding-left:max(8px,env(safe-area-inset-left,0px));
     padding-right:max(8px,env(safe-area-inset-right,0px));
@@ -1138,10 +1209,16 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
 }
 
 @media (max-width:760px) and (orientation:portrait) {
+  .phase-placement .canvas-wrap { width:min(100%,max(240px,calc(100dvh - 443px))); }
+  .phase-player .canvas-wrap,
+  .phase-enemy .canvas-wrap,
+  .phase-review .canvas-wrap,
+  .phase-victory .canvas-wrap,
+  .phase-defeat .canvas-wrap { width:min(100%,max(240px,calc(100dvh - 419px))); }
   .mode-selected.phase-placement:not(.mission-mode) {
     padding-bottom:calc(180px + env(safe-area-inset-bottom,0px));
   }
-  .phase-placement {
+  .mode-selected.phase-placement {
     padding-bottom:calc(234px + env(safe-area-inset-bottom,0px));
   }
   .mission-mode.phase-placement {
@@ -1285,12 +1362,12 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
   .combat-workspace.active .enemy-command-help { display:none; }
   .combat-workspace.active .canvas-wrap { width:min(100%,max(150px,calc(100dvh - 180px)),280px); }
   .combat-workspace.active .fleet-row { grid-template-columns:repeat(3,minmax(0,1fr)); }
-  .combat-workspace.active .ship-card { min-height:34px; }
+  .combat-workspace.active .ship-card { min-height:var(--tap-target); }
   .desktop-command-rail .rail-command-deck { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .desktop-command-rail .rail-command-deck .cmd b { font-size:10px; }
   .desktop-command-rail .rail-command-deck .cmd small { font-size:8px; }
   .desktop-command-rail .rail-log { display:none; }
-  .combat-workspace.active .ship-card { height:42px; min-height:0; overflow:hidden; padding:3px 4px; }
+  .combat-workspace.active .ship-card { height:var(--tap-target); min-height:var(--tap-target); overflow:hidden; padding:3px 4px; }
   .combat-workspace.active .ship-card strong { font-size:8.5px; }
   .combat-workspace.active .ship-card small { font-size:7.5px; }
   .rail-placement-tools .placement-dossier-body { display:none; }
@@ -1311,7 +1388,7 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
   .mission-library-head h2 { font-size:23px; }
   .mission-library-head p { display:none; }
   .mission-library-tabs { padding:5px 8px; }
-  .mission-library-tabs button { min-height:40px; }
+  .mission-library-tabs button { min-height:var(--tap-target); }
   .mission-library-filters { padding:0 8px 5px; }
   .mission-library-filters button { min-height:44px; }
   .mission-library-band { min-height:28px; padding:4px 10px; }
@@ -1340,7 +1417,7 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
 /* Mid-height portrait tablets should expose the plot and command surface without
    the small corrective scroll caused by a width-only 680px plot cap. */
 @media (min-width:761px) and (max-width:1099px) and (max-height:1150px) and (orientation:portrait) {
-  .phase-placement .canvas-wrap { width:min(100%,646px,max(360px,calc(100dvh - 466px))); }
+  .phase-placement .canvas-wrap { width:min(100%,646px,max(360px,calc(100dvh - 492px))); }
   .phase-player .canvas-wrap,
   .phase-enemy .canvas-wrap,
   .phase-review .canvas-wrap,
@@ -1356,7 +1433,7 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
   .panel-head h2 { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:9.5px; letter-spacing:.08em; }
   .panel-head span { display:none; }
   .fleet-row { margin-top:4px; }
-  .ship-card { height:38px; min-height:0; overflow:hidden; padding:3px 4px; }
+  .ship-card { height:var(--tap-target); min-height:var(--tap-target); overflow:hidden; padding:3px 4px; }
   .ship-card strong { font-size:8.5px; }
   .ship-card small { display:none; }
   .hull-meter { margin-top:4px; }
@@ -1382,7 +1459,7 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
 @media (prefers-contrast:more) {
   :root { --steel:#9db8bf; --cyan:#9ffff8; --amber:#fff0a0; }
   :where(.cmd,.mode-button,.mobile-field-switch button,.tactical-panel) { border-width:2px; }
-  .cmd:disabled { opacity:.62; }
+  .cmd:disabled { opacity:1; filter:saturate(.38) brightness(.72); }
 }
 
 @media (forced-colors:active) {

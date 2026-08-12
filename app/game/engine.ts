@@ -1,4 +1,4 @@
-import { ECHO_DIRECTIONS, GRID_SIZE, HARPOON_PATTERN, ORIENTATIONS, SHIPS, STANDARD_FLEET, WEAPON_MAX, isEscort, isHorizontal, type Coord, type Orientation, type ShipId } from "./constants.ts";
+import { ECHO_DIRECTIONS, GRID_SIZE, HARPOON_PATTERN, ORIENTATIONS, RADAR_PATTERN, SHIPS, STANDARD_FLEET, STRADDLE_PATTERN, WEAPON_MAX, isEscort, isHorizontal, type Coord, type Orientation, type ShipId } from "./constants.ts";
 
 export type ShotMark = "unknown" | "miss" | "echo" | "hit" | "lost" | "sunk";
 export type AttackKind = "MISS" | "ECHO" | "HIT" | "SUNK" | "ALREADY";
@@ -11,6 +11,18 @@ export type RelocationOptions = {
   relaxSignalBlocksWhenTrapped?: boolean;
   resolveContainmentWhenTrapped?: boolean;
 };
+
+export const SEEDED_RANDOM_CONTRACT = {
+  algorithm: "xorshift32",
+  normalizationDivisor: 4294967296,
+  zeroSeedFallback: 0x9e3779b9,
+  streams: {
+    environment: { seed: "stageSeed", consumers: ["automatic friendly placement", "hostile placement", "submarine wake", "silent relocation"] },
+    hostileCommander: { seed: "stageSeed XOR 0x51f15e", consumers: ["EnemyAI decisions"] },
+    contactOrder: { seed: "stageSeed XOR 0x19c4a7", consumers: ["tactics identification display order"] },
+  },
+  fixedMissionRetry: "reuse authored fixedSeed and reconstruct every board, mark, arsenal and AI stream",
+} as const;
 
 export class SeededRandom {
   private state: number;
@@ -192,16 +204,17 @@ export class Board {
 }
 
 export function harpoonCells(center: Coord) { return HARPOON_PATTERN.map((o) => ({ x: center.x + o.x, y: center.y + o.y })).filter(inBounds); }
-export function radarCells(origin: Coord) { return [{ x: origin.x, y: origin.y }, { x: origin.x + 1, y: origin.y }, { x: origin.x, y: origin.y + 1 }, { x: origin.x + 1, y: origin.y + 1 }].filter(inBounds); }
+export function radarCells(origin: Coord) { return RADAR_PATTERN.map((offset) => ({ x: origin.x + offset.x, y: origin.y + offset.y })).filter(inBounds); }
 export function straddleCells(anchor: Coord, orientation: Orientation) {
-  const offsets: Record<Orientation, ReadonlyArray<Coord>> = {
-    north: [{ x: 0, y: 0 }, { x: -1, y: -1 }, { x: 0, y: -1 }, { x: 1, y: -1 }],
-    east: [{ x: 0, y: 0 }, { x: 1, y: -1 }, { x: 1, y: 0 }, { x: 1, y: 1 }],
-    south: [{ x: 0, y: 0 }, { x: -1, y: 1 }, { x: 0, y: 1 }, { x: 1, y: 1 }],
-    west: [{ x: 0, y: 0 }, { x: -1, y: -1 }, { x: -1, y: 0 }, { x: -1, y: 1 }],
-  };
-  return offsets[orientation].map((offset) => ({ x: anchor.x + offset.x, y: anchor.y + offset.y })).filter(inBounds);
+  return STRADDLE_PATTERN[orientation].map((offset) => ({ x: anchor.x + offset.x, y: anchor.y + offset.y })).filter(inBounds);
 }
+
+export const FORMATION_SUPPORT_CONTRACT = {
+  adjacency: "every occupied escort cell must have a cardinally adjacent occupied cell of the supported capital ship",
+  stacking: "multiple escorts never increase a weapon above its linked cap",
+  carrier: { supportedShip: "carrier", supportingShips: ["escort", "escortBravo"], weapon: "phantom", unlinkedMaximum: 1, linkedMaximum: WEAPON_MAX.phantom },
+  battleship: { supportedShip: "battleship", supportingShips: ["escort", "escortBravo"], weapon: "harpoon", unlinkedMaximum: 2, linkedMaximum: WEAPON_MAX.harpoon },
+} as const;
 function hasEscortLinkTo(board: Board, targetId: "carrier" | "battleship") {
   const target = board.ships.find((ship) => ship.id === targetId && !ship.sunk);
   const escorts = board.ships.filter((ship) => isEscort(ship.id) && !ship.sunk);
@@ -229,8 +242,8 @@ export class Arsenal {
   uses: Record<keyof typeof WEAPON_MAX, number> = { ...WEAPON_MAX };
   reset() { this.uses = { ...WEAPON_MAX }; }
   maxUses(id: keyof typeof WEAPON_MAX, board: Board) {
-    if (id === "phantom") return hasEscortLink(board) ? WEAPON_MAX.phantom : 1;
-    if (id === "harpoon") return hasFireControlLink(board) ? WEAPON_MAX.harpoon : 2;
+    if (id === "phantom") return hasEscortLink(board) ? FORMATION_SUPPORT_CONTRACT.carrier.linkedMaximum : FORMATION_SUPPORT_CONTRACT.carrier.unlinkedMaximum;
+    if (id === "harpoon") return hasFireControlLink(board) ? FORMATION_SUPPORT_CONTRACT.battleship.linkedMaximum : FORMATION_SUPPORT_CONTRACT.battleship.unlinkedMaximum;
     return WEAPON_MAX[id];
   }
   availableUses(id: keyof typeof WEAPON_MAX, board: Board) {

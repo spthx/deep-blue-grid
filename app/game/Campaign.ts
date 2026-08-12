@@ -8,12 +8,33 @@ import {
   type Orientation,
 } from "./constants.ts";
 import { EXTREME_MISSIONS } from "./ExtremeMissions.ts";
+import {
+  ADDITIONAL_ARCHIVE_MISSIONS,
+  ADDITIONAL_EXTREME_MISSIONS,
+  ADDITIONAL_STANDARD_MISSIONS,
+} from "./AdditionalMissions.ts";
 import { TRAINING_STAGES } from "./Training.ts";
 
 export { EXTREME_MISSIONS } from "./ExtremeMissions.ts";
 export { TRAINING_STAGES } from "./Training.ts";
 
 export type GameMode = "casual" | "tactics" | "survival" | "mission" | "training";
+
+export const AI_MODE_CONTRACT = {
+  casualMultiplier: 1.38,
+  tacticsMultiplier: 1.7,
+  tacticsStageFiveSkill: 1.819,
+  survivalFinalBaseSkill: 1.05,
+  survivalHuntBreadth: [8, 5, 1, 3],
+} as const;
+
+export const MODE_RULE_CONTRACT = {
+  casual: { friendlyStarts: true, identificationRules: false, concealEnemyDamage: false, cumulativeLosses: false },
+  tactics: { friendlyStarts: false, identificationRules: true, concealEnemyDamage: true, cumulativeLosses: false },
+  survival: { friendlyStarts: false, identificationRules: true, concealEnemyDamage: true, cumulativeLosses: true },
+  mission: { friendlyStarts: "stage-defined", identificationRules: true, concealEnemyDamage: true, cumulativeLosses: false },
+  training: { friendlyStarts: "stage-defined", identificationRules: true, concealEnemyDamage: true, cumulativeLosses: false, wrongOrdersConsumeAction: false },
+} as const;
 
 type MissionObjectiveCore =
   | {
@@ -893,9 +914,9 @@ export const ARCHIVE_MISSIONS: ReadonlyArray<MissionStageDefinition> = [
 ];
 
 export const MISSION_LIBRARY: ReadonlyArray<MissionStageDefinition> = [
-  ...[...MISSION_STAGES].sort((a, b) => a.sortOrder - b.sortOrder),
-  ...[...ARCHIVE_MISSIONS].sort((a, b) => a.sortOrder - b.sortOrder),
-  ...[...EXTREME_MISSIONS].sort((a, b) => a.sortOrder - b.sortOrder),
+  ...[...MISSION_STAGES, ...ADDITIONAL_STANDARD_MISSIONS].sort((a, b) => a.sortOrder - b.sortOrder),
+  ...[...ARCHIVE_MISSIONS, ...ADDITIONAL_ARCHIVE_MISSIONS].sort((a, b) => a.sortOrder - b.sortOrder),
+  ...[...EXTREME_MISSIONS, ...ADDITIONAL_EXTREME_MISSIONS].sort((a, b) => a.sortOrder - b.sortOrder),
 ];
 
 export function missionLibraryFor(category: MissionCategory) {
@@ -909,9 +930,9 @@ export function usesTacticsRules(mode: GameMode) {
 
 export function aiSkillFor(mode: GameMode, stageId: number, base: number) {
   if (mode === "mission" || mode === "training") return base;
-  if (usesTacticsRules(mode) && stageId === 5) return 1.819;
-  if (mode === "survival" && stageId === 6) return 1.05 * 1.7;
-  return base * (usesTacticsRules(mode) ? 1.7 : 1.38);
+  if (usesTacticsRules(mode) && stageId === 5) return AI_MODE_CONTRACT.tacticsStageFiveSkill;
+  if (mode === "survival" && stageId === 6) return AI_MODE_CONTRACT.survivalFinalBaseSkill * AI_MODE_CONTRACT.tacticsMultiplier;
+  return base * (usesTacticsRules(mode) ? AI_MODE_CONTRACT.tacticsMultiplier : AI_MODE_CONTRACT.casualMultiplier);
 }
 
 export function enemyFleetFor(mode: GameMode, stage: StageDefinition) {
@@ -947,7 +968,7 @@ export function isSilentStage(mode: GameMode, stage: StageDefinition) {
 }
 
 export function huntBreadthFor(mode: GameMode, operationIndex: number) {
-  if (mode === "survival") return [8, 5, 1, 3][operationIndex] ?? 1;
+  if (mode === "survival") return AI_MODE_CONTRACT.survivalHuntBreadth[operationIndex] ?? 1;
   if (mode === "mission") return MISSION_LIBRARY[operationIndex]?.huntBreadth ?? 1;
   if (mode === "training") return TRAINING_STAGES[operationIndex]?.huntBreadth ?? 1;
   return 1;

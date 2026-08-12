@@ -154,9 +154,9 @@ test("first clear timestamp is retained while later victories increment the coun
   assert.equal(second.records.missions[0].firstClearedAt, "2026-08-01T03:00:00.000Z");
 });
 
-test("all twenty-two freely selected missions keep independent records", () => {
+test("all twenty-eight freely selected missions keep independent records", () => {
   let records = createEmptyMissionRecords();
-  for (let missionId = 22; missionId >= 1; missionId -= 1) {
+  for (let missionId = 28; missionId >= 1; missionId -= 1) {
     records = applyMissionResult(records, {
       missionId,
       result: "victory",
@@ -166,8 +166,8 @@ test("all twenty-two freely selected missions keep independent records", () => {
     }).records;
   }
 
-  assert.equal(records.missions.length, 22);
-  for (let missionId = 1; missionId <= 22; missionId += 1) {
+  assert.equal(records.missions.length, 28);
+  for (let missionId = 1; missionId <= 28; missionId += 1) {
     assert.equal(findMissionRecord(records, missionId)?.fewestCommands, missionId);
   }
 });
