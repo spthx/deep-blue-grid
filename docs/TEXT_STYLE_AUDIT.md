@@ -85,7 +85,7 @@
 |---|---|
 | ブラウザタイトル、説明、OG代替文 | `app/layout.tsx` |
 | 艦名、コード、搭載兵装、通常6海域の名称・副題 | `app/game/constants.ts` の `SHIPS`, `STAGES` |
-| SURVIVAL 4作戦、MISSION 28任務、INITIAL TRAINING 6教程、任務命令・制約・終了電文 | `app/game/Campaign.ts` の `SURVIVAL_STAGES`, `MISSION_LIBRARY`, `TRAINING_STAGES`, `routeUnit` と `app/game/AdditionalMissions.ts` の追加6任務 |
+| SURVIVAL 4作戦、MISSION 28任務、INITIAL TRAINING 9教程、任務命令・制約・終了電文 | `app/game/Campaign.ts` の `SURVIVAL_STAGES`, `MISSION_LIBRARY`, `TRAINING_STAGES`, `routeUnit` と `app/game/AdditionalMissions.ts` の追加6任務 |
 | MISSIONの汎用失敗報告、開始時損傷文 | `app/game/MissionRules.ts` |
 | モード選択、上部状態、操作案内、艦カード、配置、兵装、警告、LOG、AAR、ボタン、aria-label | `app/game/DeepBlueGrid.tsx` |
 | 敗北時の事実欄と指揮所見 | `app/game/AfterAction.ts` |

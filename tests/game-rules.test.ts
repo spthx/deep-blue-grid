@@ -51,12 +51,12 @@ test("mission mode exposes tactical, archive, and extreme operations while train
   assert.equal(MISSION_STAGES.length, 12);
   assert.equal(ARCHIVE_MISSIONS.length, 4);
   assert.equal(EXTREME_MISSIONS.length, 6);
-  assert.equal(TRAINING_STAGES.length, 6);
+  assert.equal(TRAINING_STAGES.length, 9);
   assert.equal(MISSION_LIBRARY.length, 28);
   assert.equal(missionLibraryFor("standard").length, 16);
   assert.equal(missionLibraryFor("archive").length, 5);
   assert.equal(missionLibraryFor("extreme").length, 7);
-  assert.equal(missionLibraryFor("training").length, 6);
+  assert.equal(missionLibraryFor("training").length, 9);
   assert.deepEqual(MISSION_LIBRARY.map((mission) => mission.difficulty), [1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 5, 5, 3, 4, 4, 5, 2, 3, 4, 4, 5, 6, 6, 6, 6, 6, 6, 6]);
   assert.deepEqual(MISSION_LIBRARY.map((mission) => mission.id), [5, 2, 6, 1, 7, 8, 9, 3, 10, 11, 4, 12, 23, 24, 25, 26, 13, 14, 15, 16, 27, 17, 18, 19, 20, 21, 22, 28]);
   assert.equal(stagesFor("training"), TRAINING_STAGES);

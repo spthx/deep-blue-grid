@@ -51,6 +51,11 @@ import {
   TRAINING_PROGRESS_VERSION,
 } from "../app/game/TrainingProgress.ts";
 import { SUBMARINE_WAKE_CONTRACT } from "../app/game/SubmarineWake.ts";
+import {
+  PROGRESSION_HANDOFF_CONTRACT,
+  PROGRESSION_STORAGE_KEY,
+  PROGRESSION_VERSION,
+} from "../app/game/Progression.ts";
 import { CANONICAL_MISSION_ROUTES } from "../scripts/measure-missions.ts";
 
 const runtimeUrl = new URL("../docs/unity-handoff/unity-content-v2.json", import.meta.url);
@@ -63,7 +68,7 @@ const manifest = JSON.parse(await readFile(manifestUrl, "utf8"));
 test("Unity runtime handoff matches canonical domain and content", () => {
   assert.equal(exported.schema, "deep-blue-grid.unity-content");
   assert.equal(exported.schemaVersion, 2);
-  assert.equal(exported.sourceRef, "unity-handoff-2026-08-12-quality");
+  assert.equal(exported.sourceRef, "unity-handoff-2026-08-21-progression");
   assert.equal(exported.distribution, "runtime-safe");
   assert.equal(exported.validationSolutionsIncluded, false);
   assert.deepEqual(exported.coordinateContract, {
@@ -120,7 +125,7 @@ test("Unity runtime handoff preserves counts and persistence contracts", () => {
     tacticsStages: 6,
     survivalStages: 4,
     missions: { total: 28, standard: 16, archive: 5, extreme: 7 },
-    trainingStages: 6,
+    trainingStages: 9,
   });
   assert.deepEqual(exported.persistence, {
     missionRecords: {
@@ -131,6 +136,11 @@ test("Unity runtime handoff preserves counts and persistence contracts", () => {
       storageKey: TRAINING_PROGRESS_STORAGE_KEY,
       version: TRAINING_PROGRESS_VERSION,
       lessons: TRAINING_LESSONS,
+    },
+    progression: {
+      storageKey: PROGRESSION_STORAGE_KEY,
+      version: PROGRESSION_VERSION,
+      contract: PROGRESSION_HANDOFF_CONTRACT,
     },
     unitySaveData: UNITY_SAVE_DATA_CONTRACT,
   });

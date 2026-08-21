@@ -90,11 +90,31 @@ export type TrainingStep = {
   expected: MissionOrder;
   highlight?: Coord[];
 };
+export type TrainingPlacementDrill = {
+  title: string;
+  instruction: string;
+  placements: MissionPlacement[];
+  confirmLabel: string;
+};
+export type TrainingEnemyDemonstration = {
+  title: string;
+  instruction: string;
+  weaponLabel: string;
+  target: Coord;
+  result: "hit";
+  ship: ShipId;
+  damageReport: string[];
+  acknowledgmentLabel: string;
+};
 export type TrainingPlan = {
   lesson: number;
   plainBrief: string;
   doctrine: string;
   suppressEnemyActions: true;
+  /** Optional pre-battle placement interaction. The authored placement remains the deterministic fallback. */
+  placementDrill?: TrainingPlacementDrill;
+  /** Optional one-shot hostile action shown by the training UI; normal enemy turns remain disabled. */
+  enemyDemonstration?: TrainingEnemyDemonstration;
   steps: TrainingStep[];
   debrief: string[];
 };

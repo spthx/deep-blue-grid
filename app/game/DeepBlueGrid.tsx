@@ -75,13 +75,32 @@ import {
 } from "./PresentationContract.ts";
 import {
   isTrainingLessonComplete,
+  isLegacyTrainingRouteComplete,
   loadTrainingProgress,
   nextIncompleteTrainingLesson,
+  TRAINING_LESSONS,
   trainingCompletionCount,
   trainingStageIdForLesson,
   updateStoredTrainingProgress,
   type TrainingProgress,
 } from "./TrainingProgress.ts";
+import {
+  MODE_ROUTE,
+  PROGRESSION_STORAGE_KEY,
+  completeMode,
+  createEmptyProgression,
+  debugUnlockAllFromSearch,
+  isTrainingLessonUnlocked,
+  loadProgression,
+  missionQualificationComplete,
+  missionQualificationMarks,
+  modeAccess,
+  progressionSerializedStatus,
+  saveProgression,
+  serializeProgression,
+  type ProgressionMode,
+  type ProgressionState,
+} from "./Progression.ts";
 
 type Phase = "placement" | "player" | "enemy" | "review" | "victory" | "defeat";
 type ActiveEffect = "none" | "target" | "scan" | "impact";
@@ -94,6 +113,7 @@ type PlacementBackup = { id: ShipId; start: Coord; orientation: Orientation };
 type MissionLibrarySection = "tactical" | "archive" | "extreme" | "training";
 type MissionCompletionFilter = "all" | "uncleared" | "cleared";
 type MissionClock = { accumulatedMs: number; activeSince: number | null };
+type AuthorizationNotice = { completed: ProgressionMode; authorized: ProgressionMode | null };
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const activeNow = () => typeof performance === "undefined" ? Date.now() : performance.now();
@@ -120,6 +140,27 @@ const missionSectionFor = (category: MissionStageDefinition["category"]): Missio
 const missionFleetLabel = (fleet: ShipId[]) => fleet
   .map((id) => SHIPS.find((ship) => ship.id === id)?.code ?? id.toUpperCase())
   .join(" / ");
+const missionOrderTargetLabel = (order: MissionOrder) => {
+  if (order.weapon === "fire") return coordName(order.target);
+  if (order.weapon === "harpoon") return coordName(order.center);
+  if (order.weapon === "sparrow") return `${coordName(order.anchor)} / ${STRADDLE_DIRECTION[order.orientation]}向き`;
+  if (order.weapon === "radar") return coordName(order.origin);
+  return order.targets.map(coordName).join(" → ");
+};
+const PROGRESSION_MODE_LABEL: Record<ProgressionMode, string> = {
+  training: "INITIAL TRAINING",
+  casual: "CASUAL",
+  tactics: "TACTICS",
+  mission: "MISSION",
+  survival: "SURVIVAL",
+};
+const PROGRESSION_MODE_PLAIN: Record<ProgressionMode, string> = {
+  training: "まず操作と索敵の基礎を、短い固定教材で確認します。",
+  casual: "敵艦の情報が見える海域で、配置・索敵・攻撃の流れを身につけます。",
+  tactics: "敵情報を隠した実戦規則で、識別と追撃を判断します。",
+  mission: "固定された状況と制限を読み、必要な戦術だけを選んで任務を達成します。",
+  survival: "撃沈艦が戻らない連続作戦へ、残存艦隊で挑みます。",
+};
 
 function SoundGlyph({ muted }: { muted: boolean }) {
   return (
@@ -185,9 +226,13 @@ export function DeepBlueGrid() {
   const stage = activeStages[stageIndex] ?? activeStages[0];
   const mission = missionFor(activeMode, stage);
   const missionRule = missionRuleFor(activeMode, stage);
+  const placementDrill = missionRule?.training?.placementDrill;
+  const interactivePlacement = !missionRule || Boolean(placementDrill);
   const controlStation = missionRule?.objective.kind === "sonar-reports" || missionRule?.objective.kind === "scan-and-destroy"
     ? { english: "SONAR CONTROL", japanese: "聴音指揮" }
     : { english: "FIRE CONTROL", japanese: "射撃指揮" };
+  const reviewConfirmLabel = missionRule?.training?.enemyDemonstration?.acknowledgmentLabel
+    ?? UI_TEXT_CATALOG.actions.fileDamageReport;
   const weaponOrder = missionRule?.allowedWeapons ?? WEAPON_ORDER;
   const playerFleet = playerFleetFor(activeMode, stage, survivalFleet);
   const progressUnit = routeUnit(activeMode);
@@ -232,6 +277,12 @@ export function DeepBlueGrid() {
   const [missionCompletionFilter, setMissionCompletionFilter] = useState<MissionCompletionFilter>("all");
   const [missionRecords, setMissionRecords] = useState<MissionRecordBook>(loadMissionRecords);
   const [trainingProgress, setTrainingProgress] = useState<TrainingProgress>(loadTrainingProgress);
+  const [progression, setProgression] = useState<ProgressionState>(createEmptyProgression);
+  const [progressionReady, setProgressionReady] = useState(false);
+  const [debugAll, setDebugAll] = useState(false);
+  const [accessNotice, setAccessNotice] = useState("");
+  const [persistenceWarning, setPersistenceWarning] = useState("");
+  const [authorizationNotice, setAuthorizationNotice] = useState<AuthorizationNotice | null>(null);
   const [trainingHoldNotice, setTrainingHoldNotice] = useState("");
   const [missionRecordUpdate, setMissionRecordUpdate] = useState<MissionRecordUpdate | null>(null);
   const [missionElapsedMs, setMissionElapsedMs] = useState(0);
@@ -283,9 +334,9 @@ export function DeepBlueGrid() {
     player.current = new Board();
     enemy.current = new Board();
     if (nextRule) {
-      deployScenarioFleet(player.current, nextRule.playerPlacements);
+      if (!nextRule.training?.placementDrill) deployScenarioFleet(player.current, nextRule.playerPlacements);
       deployScenarioFleet(enemy.current, nextRule.enemyPlacements);
-      applyScenarioHits(player.current, nextRule.playerInitialHits);
+      if (!nextRule.training?.enemyDemonstration) applyScenarioHits(player.current, nextRule.playerInitialHits);
       applyScenarioHits(enemy.current, nextRule.enemyInitialHits);
       for (const intel of nextRule.initialIntel ?? []) enemy.current.shots[intel.coord.y][intel.coord.x] = intel.mark;
     } else {
@@ -341,6 +392,7 @@ export function DeepBlueGrid() {
     setMissionEndReport("");
     setMissionElapsedMs(0);
     setMissionRecordUpdate(null);
+    setAuthorizationNotice(null);
     setStageIndex(nextStageIndex);
     setPhase("placement");
     setMessage(nextRule
@@ -369,6 +421,45 @@ export function DeepBlueGrid() {
   }, [initStage]);
 
   useEffect(() => {
+    const loadedTraining = loadTrainingProgress();
+    const loadedRecords = loadMissionRecords();
+    const debugAuthorized = debugUnlockAllFromSearch(window.location.search);
+    const allTrainingComplete = TRAINING_LESSONS.every((lesson) => isTrainingLessonComplete(loadedTraining, lesson));
+    const legacyTrainingComplete = isLegacyTrainingRouteComplete(loadedTraining);
+    const evidence = {
+      trainingComplete: allTrainingComplete || legacyTrainingComplete,
+      hasMissionRecord: loadedRecords.missions.length > 0,
+      missionQualified: missionQualificationComplete(loadedRecords, MISSION_LIBRARY),
+    };
+    let storedProgression: string | null = null;
+    try {
+      storedProgression = window.localStorage.getItem(PROGRESSION_STORAGE_KEY);
+    } catch {
+      storedProgression = null;
+    }
+    const storedProgressionStatus = progressionSerializedStatus(storedProgression);
+    const loadedProgression = loadProgression(undefined, evidence);
+    const repairedProgression = storedProgressionStatus === "invalid"
+      || (storedProgressionStatus === "current" && storedProgression !== serializeProgression(loadedProgression));
+    const shouldPersistProgression = !debugAuthorized && (storedProgressionStatus === "missing" || repairedProgression);
+    const progressionPersisted = !shouldPersistProgression || saveProgression(loadedProgression);
+    const stateFrame = window.requestAnimationFrame(() => {
+      setTrainingProgress(loadedTraining);
+      setMissionRecords(loadedRecords);
+      setProgression(loadedProgression);
+      setDebugAll(debugAuthorized);
+      if (storedProgressionStatus === "future") setAccessNotice("この端末には新しい版の進行記録があります。記録を上書きせず、確認できた既存実績だけで作戦権限を復元しました。");
+      else if (repairedProgression) setAccessNotice("進行記録の不整合を検出したため、確認できた既存実績と達成済みの連続区間から安全に復元しました。");
+      else if (storedProgression === null && legacyTrainingComplete && !allTrainingComplete) {
+        setAccessNotice("旧版の全6教程修了を認定し、CASUAL作戦権限を維持しました。追加教程はCASUAL解放には不要ですが、受講する場合は一覧順に進みます。");
+      }
+      if (!progressionPersisted) setPersistenceWarning("この端末に進行記録を保存できません。現在の画面では続行できますが、再読込後に解放・達成記録が戻る可能性があります。");
+      setProgressionReady(true);
+    });
+    return () => window.cancelAnimationFrame(stateFrame);
+  }, []);
+
+  useEffect(() => {
     const portraitQuery = window.matchMedia(COMPACT_LAYOUT_MEDIA);
     const updateLayout = () => setCompactViewport(portraitQuery.matches);
     updateLayout();
@@ -384,6 +475,39 @@ export function DeepBlueGrid() {
     return () => motionQuery.removeEventListener("change", updateMotion);
   }, []);
 
+  const rejectAccess = (reason: string) => {
+    setAccessNotice(reason);
+    audio.current?.cancel();
+    return false;
+  };
+
+  const canEnterMode = (mode: ProgressionMode) => {
+    const access = modeAccess(progression, mode, debugAll);
+    if (!progressionReady) return rejectAccess("進行記録を確認しています。数秒後にもう一度選択してください。");
+    if (!access.allowed) return rejectAccess(access.requirement);
+    return true;
+  };
+
+  const canOpenMissionSection = (section: MissionLibrarySection) => {
+    if (section === "training") return canEnterMode("training");
+    if (!canEnterMode("mission")) return false;
+    if (section === "extreme" && !debugAll && !progression.completedModes.includes("survival")) {
+      return rejectAccess("EXTREME解放条件：SURVIVAL全4作戦を完遂してください。");
+    }
+    return true;
+  };
+
+  const recordModeCompletion = (mode: ProgressionMode) => {
+    if (debugAll) return;
+    const updated = completeMode(progression, mode);
+    if (updated === progression) return;
+    const persisted = saveProgression(updated);
+    setProgression(updated);
+    if (!persisted) setPersistenceWarning("この端末に作戦権限を保存できません。現在の画面では解放済みですが、再読込後に戻る可能性があります。");
+    const completedIndex = MODE_ROUTE.indexOf(mode);
+    setAuthorizationNotice({ completed: mode, authorized: MODE_ROUTE[completedIndex + 1] ?? null });
+  };
+
   useEffect(() => {
     if (!compactViewport || !difficulty) return;
     setVisibleBoard(phase === "player" ? "enemy" : "player");
@@ -393,8 +517,25 @@ export function DeepBlueGrid() {
   }, [phase, compactViewport, difficulty]);
 
   const startCampaign = (selectedDifficulty: GameMode, startingIndex = 0) => {
+    const progressionMode = selectedDifficulty as ProgressionMode;
+    if (!canEnterMode(progressionMode)) return;
     const selectedStages = stagesFor(selectedDifficulty);
     const selectedStage = selectedStages[startingIndex] ?? selectedStages[0];
+    const selectedRule = missionRuleFor(selectedDifficulty, selectedStage);
+    if (selectedDifficulty === "training") {
+      const lesson = selectedRule?.training?.lesson ?? selectedStage.id;
+      if (!isTrainingLessonUnlocked(trainingProgress, lesson, TRAINING_LESSONS, debugAll)) {
+        const sequenceIndex = TRAINING_LESSONS.indexOf(lesson as typeof TRAINING_LESSONS[number]);
+        const prerequisiteDisplay = sequenceIndex > 0 ? sequenceIndex : null;
+        return rejectAccess(prerequisiteDisplay === null
+          ? "この教程はまだ開始できません。"
+          : `教程は順番に進みます。一覧のLESSON ${String(prerequisiteDisplay).padStart(2, "0")}を先に修了してください。`);
+      }
+    }
+    if (selectedRule?.category === "extreme" && !debugAll && !progression.completedModes.includes("survival")) {
+      return rejectAccess("EXTREME解放条件：SURVIVAL全4作戦を完遂してください。");
+    }
+    setAccessNotice("");
     const startingFleet = selectedDifficulty === "survival"
       ? [...FULL_FLEET]
       : playerFleetFor(selectedDifficulty, selectedStage, FULL_FLEET);
@@ -414,7 +555,6 @@ export function DeepBlueGrid() {
       : `${selectedDifficulty.toUpperCase()} / 作戦行動`;
     setLogs([{ id: startedAt, at: startedAt, text: `＝ ${routeName} 開始 ＝`, tone: "info", kind: "campaign" }]);
     if (selectedDifficulty === "mission" || selectedDifficulty === "training") {
-      const selectedRule = missionRuleFor(selectedDifficulty, selectedStage);
       if (selectedRule) setMissionLibrarySection(missionSectionFor(selectedRule.category));
     }
     setMissionLibraryOpen(false);
@@ -422,14 +562,18 @@ export function DeepBlueGrid() {
   };
 
   const openMissionLibrary = (section: MissionLibrarySection = "tactical") => {
+    if (!canOpenMissionSection(section)) return;
     setMissionRecords(loadMissionRecords());
     setTrainingProgress(loadTrainingProgress());
+    setAccessNotice("");
     setMissionLibrarySection(section);
     setMissionCompletionFilter("all");
     setMissionLibraryOpen(true);
   };
 
   const selectMissionLibrarySection = (section: MissionLibrarySection) => {
+    if (!canOpenMissionSection(section)) return;
+    setAccessNotice("");
     setMissionLibrarySection(section);
     setMissionCompletionFilter("all");
   };
@@ -556,7 +700,7 @@ export function DeepBlueGrid() {
   }, []);
 
   const randomize = () => {
-    if (missionRule) return;
+    if (!interactivePlacement || placementDrill) return;
     player.current.randomize(rngRef.current, playerFleet);
     setSelectedShip(playerFleet[0]);
     setPlacementBackup(null);
@@ -567,13 +711,15 @@ export function DeepBlueGrid() {
   };
 
   const clearPlacement = () => {
-    if (missionRule) return;
+    if (!interactivePlacement) return;
     player.current.reset();
     setSelectedShip(playerFleet[0]);
     setOrientation("east");
     setPlacementBackup(null);
     setCursor({ x: 1, y: 2 });
-    setMessage("配置を初期化しました。艦を選び直してください。");
+    setMessage(placementDrill
+      ? `配置を初期化しました。${placementDrill.instruction}`
+      : "配置を初期化しました。艦を選び直してください。");
     addLog("配置を初期化しました。");
     audio.current?.cancel();
     bump();
@@ -636,18 +782,30 @@ export function DeepBlueGrid() {
       "stage-end",
     );
     if (outcome.result === "victory" && missionRule?.training) {
-      const update = updateStoredTrainingProgress(missionRule.training.lesson);
-      setTrainingProgress(update.progress);
       setMissionRecordUpdate(null);
+      if (!debugAll) {
+        const update = updateStoredTrainingProgress(missionRule.training.lesson);
+        setTrainingProgress(update.progress);
+        if (!update.persisted) setPersistenceWarning("この端末に教程の修了記録を保存できません。再読込後に修了状況が戻る可能性があります。");
+        if (TRAINING_LESSONS.every((lesson) => isTrainingLessonComplete(update.progress, lesson))) {
+          recordModeCompletion("training");
+        }
+      }
     } else if (outcome.result === "victory" && missionRule) {
-      const update = updateStoredMissionResult({
-        missionId: missionRule.id,
-        result: "victory",
-        commands: missionFriendlyActionsRef.current,
-        activeMs: elapsedMs,
-      });
-      setMissionRecords(update.records);
-      setMissionRecordUpdate(update);
+      if (debugAll) {
+        setMissionRecordUpdate(null);
+      } else {
+        const update = updateStoredMissionResult({
+          missionId: missionRule.id,
+          result: "victory",
+          commands: missionFriendlyActionsRef.current,
+          activeMs: elapsedMs,
+        });
+        setMissionRecords(update.records);
+        setMissionRecordUpdate(update);
+        if (!update.persisted) setPersistenceWarning("この端末に任務達成記録を保存できません。再読込後に達成状況が戻る可能性があります。");
+        if (missionQualificationComplete(update.records, MISSION_LIBRARY)) recordModeCompletion("mission");
+      }
     }
     setMessage(outcome.report);
     setOperationEnd(endedAt);
@@ -658,10 +816,62 @@ export function DeepBlueGrid() {
     else audio.current?.defeat();
   };
 
+  const runTrainingEnemyDemonstration = async () => {
+    const demonstration = missionRule?.training?.enemyDemonstration;
+    if (!demonstration) return;
+    setPhase("enemy");
+    setVisibleBoard("player");
+    setFlash("enemy");
+    setActive([demonstration.target]);
+    setActiveEffect("target");
+    setMessage(`HOSTILE ACTION：${demonstration.weaponLabel} / ${coordName(demonstration.target)}へ敵弾接近。`);
+    audio.current?.turn(true);
+    await sleep(PRESENTATION_TIMINGS_MS.enemyOpeningHold);
+    setFlash(null);
+    audio.current?.fire();
+    const result = player.current.attack(demonstration.target);
+    setActiveEffect("impact");
+    if (result.kind === "HIT" || result.kind === "SUNK") {
+      audio.current?.hit();
+      setStats((current) => ({ ...current, damage: current.damage + 1 }));
+      addLog(`敵${demonstration.weaponLabel}による攻撃。${result.shipName ?? "自軍艦"} ${coordName(demonstration.target)} 被弾。`, "bad");
+    } else {
+      audio.current?.splash();
+      addLog(`敵${demonstration.weaponLabel}、${coordName(demonstration.target)}着弾。損害なし。`, "info");
+    }
+    bump();
+    await sleep(Math.max(PRESENTATION_TIMINGS_MS.enemyImpactBeat, 650));
+    setActive([]);
+    setActiveEffect("none");
+    setMessage(`DAMAGE REPORT：${demonstration.damageReport.join(" / ")}`);
+    addLog(`DAMAGE REPORT：${demonstration.damageReport.join(" ")}`, "bad");
+    setPhase("review");
+    setLocked(false);
+    bump();
+  };
+
   const startBattle = () => {
     if (!player.current.allPlaced(playerFleet)) {
       setMessage(`この${routeUnit(difficultyRef.current).japanese}へ出撃する全艦を配置してください。`);
       return;
+    }
+    if (placementDrill) {
+      const mismatch = placementDrill.placements.find((expected) => {
+        const actual = player.current.ships.find((ship) => ship.id === expected.id);
+        if (!actual || actual.orientation !== expected.orientation) return true;
+        const start = actual.cells.reduce(
+          (best, cell) => ({ x: Math.min(best.x, cell.x), y: Math.min(best.y, cell.y) }),
+          { x: 7, y: 7 },
+        );
+        return !sameCoord(start, expected.start);
+      });
+      if (mismatch) {
+        setMessage(`TRAINING HOLD：${placementDrill.instruction} 艦をタップすると、配置をやり直せます。`);
+        setTrainingHoldNotice("指定された位置と向きを確認してください。");
+        audio.current?.cancel();
+        return;
+      }
+      setTrainingHoldNotice("");
     }
     if (missionRule?.requiredLink === "carrier" && !hasEscortLink(player.current)) {
       setMessage("ASSIGNED FORMATION ERROR：空母と護衛艦の護衛リンクを確認できません。");
@@ -685,7 +895,8 @@ export function DeepBlueGrid() {
     setOperationEnd(null);
     stageAttemptRef.current += 1;
     if (difficultyRef.current === "survival") operationRecorderRef.current?.noteEngagement(stageIndex);
-    const ownInitiative = friendlyStarts(difficultyRef.current, stage);
+    const scriptedHostileAction = Boolean(missionRule?.training?.enemyDemonstration);
+    const ownInitiative = scriptedHostileAction ? false : friendlyStarts(difficultyRef.current, stage);
     addLog(
       ownInitiative ? `総員戦闘配置。自艦隊、${controlStation.japanese}開始。` : "総員戦闘配置。敵艦隊、先制行動。",
       ownInitiative ? "info" : "bad",
@@ -700,7 +911,7 @@ export function DeepBlueGrid() {
     if (missionRule) {
       addLog(`${missionRule.training ? "TRAINING BRIEF" : "SITUATION"}：${missionRule.training?.plainBrief ?? missionRule.subtitle}`, "info", startedAt);
       addLog(`${missionRule.training ? "DIRECTIVE" : "OBJECTIVE"}：${missionRule.directive}`, "info", startedAt);
-      if (missionRule.playerInitialHits?.length) addLog(`開始時損傷：${missionRule.playerInitialHits.length}区画。`, "bad", startedAt);
+      if (missionRule.playerInitialHits?.length && !scriptedHostileAction) addLog(`開始時損傷：${missionRule.playerInitialHits.length}区画。`, "bad", startedAt);
       if (missionRule.initialIntel?.length || missionRule.initialEnemyWakes?.length) addLog("INTELLIGENCE：既知の着弾・音紋資料を戦術図へ反映。", "info", startedAt);
     }
     const airSupport = hasEscortLink(player.current);
@@ -715,7 +926,8 @@ export function DeepBlueGrid() {
       setLocked(true);
       audio.current?.confirm();
       bump();
-      void enemyTurn();
+      if (scriptedHostileAction) void runTrainingEnemyDemonstration();
+      else void enemyTurn();
       return;
     }
     setPhase("player");
@@ -756,6 +968,7 @@ export function DeepBlueGrid() {
         endedAt,
         "campaign",
       );
+      recordModeCompletion(difficultyRef.current as ProgressionMode);
     }
     setOperationEnd(endedAt);
     setPhase("victory");
@@ -1286,7 +1499,7 @@ export function DeepBlueGrid() {
   };
 
   const rotatePlacement = () => {
-    if (missionRule) return;
+    if (!interactivePlacement) return;
     if (!placementPreviewActive) return;
     const nextOrientation = ORIENTATIONS[(ORIENTATIONS.indexOf(orientation) + 1) % ORIENTATIONS.length];
     const nextCursor = player.current.canPlace(selectedShip, cursor, nextOrientation)
@@ -1313,7 +1526,7 @@ export function DeepBlueGrid() {
   };
 
   const selectPlacementShip = (shipId: ShipId) => {
-    if (phase !== "placement" || missionRule) return;
+    if (phase !== "placement" || !interactivePlacement) return;
     setInspectedShip(shipId);
     if (placementBackup && placementBackup.id !== shipId) {
       player.current.placeShip(placementBackup.id, placementBackup.start, placementBackup.orientation);
@@ -1348,7 +1561,7 @@ export function DeepBlueGrid() {
     const coord = pointerToCoord(event.currentTarget, event.clientX, event.clientY);
     if (!coord) return;
     if (side === "player" && phase === "placement") {
-      if (missionRule) return;
+      if (!interactivePlacement) return;
       if (!placementPreviewActive) {
         const ship = player.current.shipAt(coord);
         if (!ship) return;
@@ -1578,13 +1791,17 @@ export function DeepBlueGrid() {
 
   const result = phase === "victory" || phase === "defeat";
   const trainingAllComplete = difficulty === "training"
-    && TRAINING_STAGES.every((lesson) => isTrainingLessonComplete(trainingProgress, lesson.training?.lesson ?? lesson.id));
+    && (debugAll
+      ? stageIndex === activeStages.length - 1
+      : TRAINING_STAGES.every((lesson) => isTrainingLessonComplete(trainingProgress, lesson.training?.lesson ?? lesson.id)));
   const nextTrainingLesson = difficulty === "training" && !trainingAllComplete
     ? nextIncompleteTrainingLesson(trainingProgress)
     : null;
-  const nextTrainingIndex = nextTrainingLesson === null
-    ? -1
-    : activeStages.findIndex((lesson) => lesson.id === trainingStageIdForLesson(nextTrainingLesson));
+  const nextTrainingIndex = debugAll && difficulty === "training"
+    ? (stageIndex + 1 < activeStages.length ? stageIndex + 1 : -1)
+    : nextTrainingLesson === null
+      ? -1
+      : activeStages.findIndex((lesson) => lesson.id === trainingStageIdForLesson(nextTrainingLesson));
   const hasNextTrainingLesson = nextTrainingIndex >= 0;
   const campaignClear = phase === "victory" && (difficulty === "training"
     ? trainingAllComplete
@@ -1660,6 +1877,10 @@ export function DeepBlueGrid() {
   const activeMissionRecord = missionRule && missionRule.category !== "training" ? findMissionRecord(missionRecords, missionRule.id) : null;
   const missionCompletedCount = MISSION_LIBRARY.filter((item) => findMissionRecord(missionRecords, item.id)).length;
   const trainingCompletedCount = trainingCompletionCount(trainingProgress);
+  const qualificationMarks = missionQualificationMarks(missionRecords, MISSION_LIBRARY);
+  const qualificationCount = qualificationMarks.filter((mark) => mark.complete).length;
+  const progressionAccess = Object.fromEntries(MODE_ROUTE.map((mode) => [mode, modeAccess(progression, mode, debugAll)])) as Record<ProgressionMode, ReturnType<typeof modeAccess>>;
+  const extremeAuthorized = debugAll || progression.completedModes.includes("survival");
   const selectedMissionCategory = missionLibrarySection === "archive"
     ? "archive"
     : missionLibrarySection === "extreme"
@@ -1779,6 +2000,7 @@ export function DeepBlueGrid() {
         return <section className="training-directive" aria-live="polite" aria-label="現在の訓練指示">
           <header><span>TRAINING DIRECTIVE {String(stepIndex + 1).padStart(2, "0")} / {String(missionRule.training.steps.length).padStart(2, "0")}</span><b>{step.title}</b></header>
           <p>{step.instruction}</p>
+          <div className="training-input-hint"><b>操作</b><span>「{WEAPON_META[step.expected.weapon].label}」を選択 → {missionOrderTargetLabel(step.expected)}を指定 → 「{ACTION_LABEL[step.expected.weapon]}」ボタン</span></div>
           {trainingHoldNotice && <strong className="training-hold-notice" role="alert">TRAINING HOLD / {trainingHoldNotice}</strong>}
           <small>{step.doctrine}</small>
           <details><summary>説明を再表示</summary><p>{missionRule.training.plainBrief}</p></details>
@@ -1824,7 +2046,7 @@ export function DeepBlueGrid() {
     </>
   );
 
-  const renderPlacementControls = (surface: "rail" | "bottom") => missionRule ? (
+  const renderPlacementControls = (surface: "rail" | "bottom") => missionRule && !placementDrill ? (
     <>
       <section className={"mission-brief " + (missionRule.category === "archive" ? "archive " : "") + (missionRule.category === "training" ? "training" : "") }>
         <header><span>{missionRule.category === "training" ? "TRAINING BRIEF / 教程" : missionRule.category === "archive" ? "CURRENT STATE / 現況" : "SITUATION / 状況"}</span><b>{missionRule.title}</b></header>
@@ -1834,6 +2056,29 @@ export function DeepBlueGrid() {
           <div><dt>CONSTRAINTS / 制約</dt><dd>{missionRule.condition}</dd></div>
           {missionRule.category !== "archive" && <div><dt>{missionRule.category === "training" ? "DOCTRINE / 要点" : "HOSTILE DISCLOSURE / 敵情"}</dt><dd>{missionRule.category === "training" ? missionRule.training?.doctrine : missionRule.enemyDisclosure.summary}</dd></div>}
         </dl>
+        {missionRule.training?.placementDrill && (
+          <section className="training-setup-plan" aria-label="配置訓練の手順">
+            <header><span>PLACEMENT DRILL</span><b>{missionRule.training.placementDrill.title}</b></header>
+            <p>{missionRule.training.placementDrill.instruction}</p>
+            <ul>{missionRule.training.placementDrill.placements.map((placement) => {
+              const definition = SHIPS.find((ship) => ship.id === placement.id);
+              const direction = { north: "北（上）", east: "東（右）", south: "南（下）", west: "西（左）" }[placement.orientation];
+              return <li key={placement.id}><b>{definition?.name ?? placement.id}</b><span>{coordName(placement.start)} / {direction}向き</span></li>;
+            })}</ul>
+            <small>配置後は「{missionRule.training.placementDrill.confirmLabel}」を押します。</small>
+          </section>
+        )}
+        {missionRule.training?.enemyDemonstration && (
+          <section className="training-enemy-plan" aria-label="敵攻撃の見学手順">
+            <header><span>HOSTILE DEMONSTRATION</span><b>{missionRule.training.enemyDemonstration.title}</b></header>
+            <p>{missionRule.training.enemyDemonstration.instruction}</p>
+            <dl>
+              <div><dt>敵兵装</dt><dd>{missionRule.training.enemyDemonstration.weaponLabel}</dd></div>
+              <div><dt>着弾座標</dt><dd>{coordName(missionRule.training.enemyDemonstration.target)}</dd></div>
+            </dl>
+            <small>着弾後は損傷表示を確認し、「{missionRule.training.enemyDemonstration.acknowledgmentLabel}」で次へ進みます。</small>
+          </section>
+        )}
         {Boolean(missionRule.enemyDisclosure.candidateCells?.length) && (
           <div className="mission-public-intel" aria-label="公開済み戦術プロット">
             <span>PLOTTED CONTACTS / 公開座標</span>
@@ -1868,6 +2113,19 @@ export function DeepBlueGrid() {
     </>
   ) : (
     <>
+      {placementDrill && missionRule?.training && (
+        <section className="training-setup-plan active-drill" aria-label="配置訓練の現在指示">
+          <header><span>PLACEMENT DRILL</span><b>{placementDrill.title}</b></header>
+          <p>{missionRule.training.plainBrief}</p>
+          <strong>{placementDrill.instruction}</strong>
+          <ul>{placementDrill.placements.map((placement) => {
+            const definition = SHIPS.find((ship) => ship.id === placement.id);
+            const direction = { north: "北（上）", east: "東（右）", south: "南（下）", west: "西（左）" }[placement.orientation];
+            return <li key={placement.id}><b>{definition?.name ?? placement.id}</b><span>{coordName(placement.start)} / {direction}向き</span></li>;
+          })}</ul>
+          <small>艦を選択 → ドラッグで移動 → ROTATEで回転 → LOCKで配置決定</small>
+        </section>
+      )}
       <details
         key={`${surface}-${compactViewport ? "compact-dossier" : "desktop-dossier"}`}
         className="placement-help placement-dossier"
@@ -1898,11 +2156,11 @@ export function DeepBlueGrid() {
       )}
       <div className="placement-secondary">
         <button className="cmd" onClick={clearPlacement}><b>CLEAR</b><small>配置をやり直す</small></button>
-        <button className="cmd" onClick={randomize}><b>RANDOM</b><small>自動配置</small></button>
+        {!placementDrill && <button className="cmd" onClick={randomize}><b>RANDOM</b><small>自動配置</small></button>}
       </div>
       {player.current.allPlaced(playerFleet) && (
         <button className="cmd battle-start placement-start" onClick={startBattle}>
-          <b>{UI_TEXT_CATALOG.actions.commence}</b><small>ENGAGEMENT / {player.current.ships.length} / {playerFleet.length} 艦配置完了</small>
+          <b>{placementDrill ? `COMMENCE / ${placementDrill.confirmLabel}` : UI_TEXT_CATALOG.actions.commence}</b><small>ENGAGEMENT / {player.current.ships.length} / {playerFleet.length} 艦配置完了</small>
         </button>
       )}
     </>
@@ -1914,6 +2172,19 @@ export function DeepBlueGrid() {
     const operationCode = `${item.category === "training" ? "LESSON" : item.category === "archive" ? "ARCHIVE" : item.category === "extreme" ? "EXTREME" : "MISSION"} ${String(categoryIndex + 1).padStart(2, "0")}`;
     const record = item.category === "training" ? null : findMissionRecord(missionRecords, item.id);
     const cleared = isScenarioCleared(item);
+    const lesson = item.training?.lesson ?? item.id;
+    const trainingUnlocked = item.category !== "training"
+      || isTrainingLessonUnlocked(trainingProgress, lesson, TRAINING_LESSONS, debugAll);
+    const extremeUnlocked = item.category !== "extreme" || extremeAuthorized;
+    const cardUnlocked = trainingUnlocked && extremeUnlocked;
+    const completionGlyph = cleared ? "✓" : "○";
+    const trainingSequenceIndex = TRAINING_LESSONS.indexOf(lesson as typeof TRAINING_LESSONS[number]);
+    const priorLessonDisplay = trainingSequenceIndex > 0 ? trainingSequenceIndex : null;
+    const lockReason = !trainingUnlocked
+      ? `先に一覧のLESSON ${String(priorLessonDisplay ?? 1).padStart(2, "0")}を修了してください。`
+      : !extremeUnlocked
+        ? "SURVIVAL全4作戦の完遂後に解放されます。"
+        : "";
     const knownContacts = item.enemyDisclosure.known.map((id) =>
       item.enemyDisclosure.callsigns?.[id] ?? SHIPS.find((ship) => ship.id === id)?.code ?? id.toUpperCase());
     const hostileDisclosure = [
@@ -1923,13 +2194,15 @@ export function DeepBlueGrid() {
     return (
       <button
         key={item.id}
-        className={"mission-card " + (cleared ? "cleared " : "uncleared ") + (item.category === "archive" ? "archive " : "") + (item.category === "extreme" ? "extreme " : "") + (item.category === "training" ? "training" : "")}
+        className={"mission-card " + (cleared ? "cleared " : "uncleared ") + (!cardUnlocked ? "locked " : "") + (item.category === "archive" ? "archive " : "") + (item.category === "extreme" ? "extreme " : "") + (item.category === "training" ? "training" : "")}
         onClick={() => startCampaign(item.category === "training" ? "training" : "mission", libraryIndex)}
-        aria-label={`${operationCode} ${item.title}、難易度${item.difficulty}、${missionDifficultyName(item.difficulty)}、${cleared ? "達成済み" : "未達成"}。開始`}
+        aria-disabled={!cardUnlocked}
+        aria-describedby={!cardUnlocked ? "library-access-notice" : undefined}
+        aria-label={`${operationCode} ${item.title}、難易度${item.difficulty}、${missionDifficultyName(item.difficulty)}、${cleared ? "達成済み" : cardUnlocked ? "未達成、開始可能" : `未解放、${lockReason}`}`}
       >
         <header>
           <span>{operationCode}</span>
-          <em className={"mission-status-badge " + (cleared ? "cleared" : "uncleared")}><i aria-hidden="true">{cleared ? "✓" : "○"}</i>{cleared ? item.category === "training" ? "COMPLETE" : "CLEARED" : "UNCLEARED"}</em>
+          <em className={"mission-status-badge " + (cleared ? "cleared" : cardUnlocked ? "uncleared" : "locked")}><i aria-hidden="true">{cardUnlocked ? completionGlyph : "×"}</i>{cleared ? item.category === "training" ? "COMPLETE" : "CLEARED" : cardUnlocked ? "AVAILABLE" : "LOCKED"}</em>
         </header>
         <h3>{item.title}</h3>
         <p>{item.subtitle}</p>
@@ -1944,7 +2217,9 @@ export function DeepBlueGrid() {
           <div><dt>HOSTILE DATA</dt><dd>{hostileDisclosure}</dd></div>
         </dl>
         <div className="mission-card-record">
-          {item.category === "training" ? (
+          {!cardUnlocked ? (
+            <><span>AUTHORIZATION REQUIRED</span><b>{lockReason}</b></>
+          ) : item.category === "training" ? (
             <><span>{cleared ? "LESSON COMPLETE" : "AVAILABLE"}</span><b>{item.training?.steps.length ?? item.objective.maxFriendlyActions} DIRECTIVES</b></>
           ) : record ? (
             <><span>CLEARED × {record.clearCount}</span><b>BEST {record.fewestCommands} ORDERS / {formatOperationDuration(record.fastestActiveMs)}</b></>
@@ -1956,12 +2231,37 @@ export function DeepBlueGrid() {
     );
   };
 
+  const modeStatusLabel = (mode: ProgressionMode) => {
+    const access = progressionAccess[mode];
+    if (access.state === "completed") return "COMPLETE";
+    if (access.state === "available") return "AVAILABLE";
+    if (access.state === "debug") return "DEBUG OPEN";
+    return "LOCKED";
+  };
+
+  const modeStatusGlyph = (mode: ProgressionMode) => {
+    const state = progressionAccess[mode].state;
+    return state === "completed" ? "✓" : state === "locked" ? "×" : "○";
+  };
+
   return (
     <main
-      className={"game-shell operation-active phase-" + phase + " " + (difficulty ? "mode-selected " : "") + (difficulty === "mission" || difficulty === "training" ? "mission-mode scenario-mode " : "") + (difficulty === "training" ? "training-mode " : "") + (phase === "review" ? "review-phase " : "") + (activeEffect === "impact" ? "shake" : "")}
+      className={"game-shell operation-active phase-" + phase + " " + (difficulty ? "mode-selected " : "") + (difficulty === "mission" || difficulty === "training" ? "mission-mode scenario-mode " : "") + (difficulty === "training" ? "training-mode " : "") + (phase === "review" ? "review-phase " : "") + (activeEffect === "impact" ? "shake" : "") + (debugAll ? " debug-all " : "")}
       data-phase={phase}
     >
       <div className="noise" />
+      {debugAll && (
+        <aside className="debug-authorization-banner" role="status" aria-live="polite">
+          <b>DEBUG AUTHORIZATION / 全作戦開放</b>
+          <span>進行・教程・任務記録は保存されません</span>
+        </aside>
+      )}
+      {persistenceWarning && (
+        <div className="persistence-warning" role="alert" aria-live="assertive">
+          <div><b>LOCAL RECORD NOT SAVED</b><span>{persistenceWarning}</span></div>
+          <button onClick={() => setPersistenceWarning("")} aria-label="保存警告を閉じる">閉じる</button>
+        </div>
+      )}
       <header className="masthead">
         <div>
           <div className="brand-kicker">COMBAT INFORMATION CENTER / CIC / {difficulty === "survival" ? "SURVIVAL" : difficulty === "mission" ? "MISSION OPERATIONS" : difficulty === "training" ? "INITIAL TRAINING" : difficulty ? "CAMPAIGN" : "OPERATION"}</div>
@@ -1977,7 +2277,7 @@ export function DeepBlueGrid() {
       {difficulty === "mission" || difficulty === "training" ? (
         <nav className="campaign-track mission-current-track" aria-label={difficulty === "training" ? "選択中の教程" : "選択中の限定任務"}>
           <span className="current"><i>{stageIndex + 1}</i><b>{mission.title}</b></span>
-          <span className={difficulty === "training" ? isTrainingLessonComplete(trainingProgress, stageIndex + 1) ? "cleared" : "" : activeMissionRecord ? "cleared" : ""}><i>{difficulty === "training" ? trainingCompletedCount : missionCompletedCount}</i><b>{difficulty === "training" ? `修了済み / ${TRAINING_STAGES.length}` : `達成済み / ${MISSION_LIBRARY.length}`}</b></span>
+          <span className={difficulty === "training" ? isTrainingLessonComplete(trainingProgress, missionRule?.training?.lesson ?? -1) ? "cleared" : "" : activeMissionRecord ? "cleared" : ""}><i>{difficulty === "training" ? trainingCompletedCount : missionCompletedCount}</i><b>{difficulty === "training" ? `修了済み / ${TRAINING_STAGES.length}` : `達成済み / ${MISSION_LIBRARY.length}`}</b></span>
         </nav>
       ) : (
         <nav className="campaign-track" aria-label={`${currentUnitJapanese}進行`}>
@@ -2094,7 +2394,7 @@ export function DeepBlueGrid() {
             />
             <div className="radar-line" />
           </div>
-      <div className="fleet-row">{playerFleet.map((id) => shipCard(player.current, id, { selectable: phase === "placement" && !missionRule }))}</div>
+      <div className="fleet-row">{playerFleet.map((id) => shipCard(player.current, id, { selectable: phase === "placement" && interactivePlacement }))}</div>
         </section>
 
         <section className={"tactical-panel enemy-board " + (compactViewport && visibleBoard !== "enemy" ? "mobile-hidden" : "")}>
@@ -2159,7 +2459,7 @@ export function DeepBlueGrid() {
                 <span>DAMAGE REPORT / CIC LOG</span>
                 <b>損害報告を戦闘記録へ反映</b>
                 <p>自軍戦術図の着弾・損傷・識別警告を報告へ記載します。</p>
-                <button className="cmd primary review-confirm" onClick={continueToPlayer}><b>{UI_TEXT_CATALOG.actions.fileDamageReport}</b><small>FILE DAMAGE REPORT / {controlStation.japanese}へ復帰</small></button>
+                <button className="cmd primary review-confirm" onClick={continueToPlayer}><b>{reviewConfirmLabel}</b><small>FILE DAMAGE REPORT / {controlStation.japanese}へ復帰</small></button>
               </section>
             ) : resultReview ? (
               <button className="cmd primary" onClick={() => setResultReview(false)}><b>結果画面へ戻る</b><small>作戦報告を表示</small></button>
@@ -2193,7 +2493,7 @@ export function DeepBlueGrid() {
             <small>警告と戦闘ログは、記録への記載まで保持されます。</small>
           </div>
           <button className="cmd primary review-confirm" onClick={continueToPlayer}>
-            <b>{UI_TEXT_CATALOG.actions.fileDamageReport}</b><small>FILE DAMAGE REPORT / {controlStation.japanese}へ復帰</small>
+            <b>{reviewConfirmLabel}</b><small>FILE DAMAGE REPORT / {controlStation.japanese}へ復帰</small>
           </button>
         </section>
       ) : !result ? (
@@ -2297,26 +2597,51 @@ export function DeepBlueGrid() {
       {!difficulty && !missionLibraryOpen && (
         <div className="difficulty-modal">
           <section className="difficulty-card" role="dialog" aria-modal="true" aria-labelledby="operation-mode-title">
-            <div className="eyebrow">SELECT OPERATION MODE</div>
+            <div className="eyebrow">CLEARANCE ROUTE / SELECT OPERATION MODE</div>
             <h2 id="operation-mode-title">OPERATION MODE</h2>
-            <p>継続海域、累積損耗、固定状況の限定任務から航路を選択します。敵指揮系統は、いずれも実際に得た情報だけで判断します。</p>
+            <p>初めての場合はINITIAL TRAININGから開始してください。前のモードを完了すると、次の作戦権限が解放されます。達成済みのモードはいつでも再出撃できます。敵指揮系統は、いずれも実際に得た情報だけで判断します。</p>
+            <ol className="clearance-rail" aria-label="作戦モードの解放順序">
+              {MODE_ROUTE.map((mode, index) => (
+                <li key={mode} className={progressionAccess[mode].state}>
+                  <i>{String(index + 1).padStart(2, "0")}</i>
+                  <b>{mode === "training" ? "TRAINING" : PROGRESSION_MODE_LABEL[mode]}</b>
+                  <small>{modeStatusGlyph(mode)} {modeStatusLabel(mode)}</small>
+                </li>
+              ))}
+            </ol>
             <div className="difficulty-options">
-              <button className="mode-button" onClick={() => startCampaign("casual")}>
-                <span>CASUAL</span><b>自軍先攻・情報公開</b><small>敵艦種と損傷を常に表示。重要区画と識別処理は使用せず、基本の索敵・追撃を楽しむ標準モードです。</small>
+              <button className={`mode-button training ${progressionAccess.training.state}`} onClick={() => openMissionLibrary("training")} aria-disabled={!progressionAccess.training.allowed} aria-describedby="mode-access-notice">
+                <span>INITIAL TRAINING</span><em className="mode-access-badge">{modeStatusGlyph("training")} {modeStatusLabel("training")}</em>
+                <b>{TRAINING_STAGES.length}教程・順番に受講</b><small>{PROGRESSION_MODE_PLAIN.training} 操作を間違えても行動や弾薬は減りません。</small>
+                <strong>{progressionAccess.training.requirement}</strong>
               </button>
-              <button className="mode-button tactics" onClick={() => startCampaign("tactics")}>
-                <span>TACTICS</span><b>敵先制・重要区画識別</b><small>敵艦はUNKNOWN CONTACT表示。重要区画へ命中すると艦種・コードだけを識別できます。耐久・向き・未命中区画は非公開です。</small>
+              <button className={`mode-button ${progressionAccess.casual.state}`} onClick={() => startCampaign("casual")} aria-disabled={!progressionAccess.casual.allowed} aria-describedby="mode-access-notice">
+                <span>CASUAL</span><em className="mode-access-badge">{modeStatusGlyph("casual")} {modeStatusLabel("casual")}</em>
+                <b>自軍先攻・敵艦情報を表示</b><small>{PROGRESSION_MODE_PLAIN.casual} 敵艦種と損傷を確認しながら基本の索敵と追撃を練習できます。</small>
+                <strong>{progressionAccess.casual.requirement}</strong>
               </button>
-              <button className="mode-button survival" onClick={() => startCampaign("survival")}>
-                <span>SURVIVAL</span><b>4作戦・TACTICS＋艦隊損耗</b><small>全6隻で二重護衛網、砲戦、SEA BAT、最終海域へ挑戦。作戦後に生存艦と兵装は回復しますが、撃沈艦は戻りません。リトライを含む全被害を作戦記録へ残します。</small>
+              <button className={`mode-button tactics ${progressionAccess.tactics.state}`} onClick={() => startCampaign("tactics")} aria-disabled={!progressionAccess.tactics.allowed} aria-describedby="mode-access-notice">
+                <span>TACTICS</span><em className="mode-access-badge">{modeStatusGlyph("tactics")} {modeStatusLabel("tactics")}</em>
+                <b>敵先制・重要区画で識別</b><small>{PROGRESSION_MODE_PLAIN.tactics} 敵の耐久・向き・未命中区画は表示されません。</small>
+                <strong>{progressionAccess.tactics.requirement}</strong>
               </button>
-              <button className="mode-button mission" onClick={() => openMissionLibrary("tactical")}>
-                <span>MISSION</span><b>{MISSION_LIBRARY.length}任務・自由選択</b><small>{missionLibraryFor("standard").length}戦術課題、{missionLibraryFor("archive").length}戦闘記録解析、{missionLibraryFor("extreme").length}極限任務。固定状況と指令制限を読み、任意の任務へ挑戦します。</small>
+              <button className={`mode-button mission ${progressionAccess.mission.state}`} onClick={() => openMissionLibrary("tactical")} aria-disabled={!progressionAccess.mission.allowed} aria-describedby="mode-access-notice">
+                <span>MISSION</span><em className="mode-access-badge">{modeStatusGlyph("mission")} {modeStatusLabel("mission")}</em>
+                <b>{MISSION_LIBRARY.length}任務・状況別課題</b><small>{PROGRESSION_MODE_PLAIN.mission} D1～D5各1件とARCHIVE 1件の達成でSURVIVAL資格を取得します。</small>
+                <div className="mode-qualification-stamps" aria-label={`SURVIVAL認定印 ${qualificationCount} / 6`}>
+                  {qualificationMarks.map((mark) => <i key={mark.key} className={mark.complete ? "complete" : ""}>{mark.complete ? "✓" : "○"} {mark.label}</i>)}
+                </div>
+                <strong>{progressionAccess.mission.requirement}</strong>
               </button>
-              <button className="mode-button training" onClick={() => openMissionLibrary("training")}>
-                <span>INITIAL TRAINING</span><b>6教程・何度でも再受講</b><small>通常射撃、四方反響、船影復元、護衛連接、戦艦射撃、潜水艦の音紋と受動聴音を固定教材で確認します。誤指令は行動・弾薬を消費しません。</small>
+              <button className={`mode-button survival ${progressionAccess.survival.state}`} onClick={() => startCampaign("survival")} aria-disabled={!progressionAccess.survival.allowed} aria-describedby="mode-access-notice">
+                <span>SURVIVAL</span><em className="mode-access-badge">{modeStatusGlyph("survival")} {modeStatusLabel("survival")}</em>
+                <b>4作戦・艦隊損耗を継承</b><small>{PROGRESSION_MODE_PLAIN.survival} 生存艦と兵装は作戦後に回復しますが、撃沈艦は戦列へ戻りません。</small>
+                <strong>{progressionAccess.survival.requirement}</strong>
               </button>
             </div>
+            <p id="mode-access-notice" className={`access-notice ${accessNotice ? "active" : ""}`} role="status" aria-live="polite">
+              {accessNotice || "各カードの下段に、現在の解放条件を表示しています。"}
+            </p>
             <details className="identification-rules">
               <summary><span>◆ IMPORTANT SECTION / 重要区画</span><small>識別戦ルール</small></summary>
               <ul>
@@ -2337,13 +2662,13 @@ export function DeepBlueGrid() {
           <section className="mission-library" role="dialog" aria-modal="true" aria-labelledby="mission-library-title">
             <header className="mission-library-head">
               <button className="mission-library-back" onClick={() => setMissionLibraryOpen(false)}><span>‹</span><b>MODE SELECT</b></button>
-              <div><span>{missionLibrarySection === "training" ? "SELECT TRAINING DIRECTIVE" : "SELECT AUTHORIZED OPERATION"}</span><h2 id="mission-library-title">{missionLibrarySection === "training" ? "INITIAL TRAINING" : "MISSION INDEX"}</h2><p>{missionLibrarySection === "training" ? "教程は任意選択・再受講可能。説明は平易に、指揮表示はCIC様式で統一しています。" : "全任務を自由選択。制限・配備・敵情開示を確認して出撃してください。"}</p></div>
+              <div><span>{missionLibrarySection === "training" ? "SELECT TRAINING DIRECTIVE" : "SELECT AUTHORIZED OPERATION"}</span><h2 id="mission-library-title">{missionLibrarySection === "training" ? "INITIAL TRAINING" : "MISSION INDEX"}</h2><p>{missionLibrarySection === "training" ? "教程は上から順に解放されます。修了済みの教程は、いつでも再受講できます。" : "任務ごとの目標・使える兵装・指令回数を確認してから出撃してください。"}</p></div>
               <div className="mission-library-progress"><b>{missionLibrarySection === "training" ? trainingCompletedCount : missionCompletedCount} / {missionLibrarySection === "training" ? TRAINING_STAGES.length : MISSION_LIBRARY.length}</b><small>{missionLibrarySection === "training" ? "LESSONS COMPLETE" : "MISSIONS CLEARED"}</small></div>
             </header>
             <nav className="mission-library-tabs" aria-label="任務分類">
               {missionLibrarySection === "training" ? <>
                 <button aria-pressed="true" className="active training-tab"><b>INITIAL TRAINING</b><small>初任訓練 / {TRAINING_STAGES.length}</small></button>
-                <button aria-pressed="false" onClick={() => selectMissionLibrarySection("tactical")}><b>MISSION INDEX</b><small>限定任務へ切替</small></button>
+                <button aria-pressed="false" aria-disabled={!progressionAccess.mission.allowed} onClick={() => selectMissionLibrarySection("tactical")}><b>MISSION INDEX</b><small>{progressionAccess.mission.allowed ? "限定任務へ切替" : "TACTICS完了で解放"}</small></button>
               </> : <>
                 <button aria-pressed={missionLibrarySection === "tactical"} className={missionLibrarySection === "tactical" ? "active" : ""} onClick={() => selectMissionLibrarySection("tactical")}>
                   <b>TACTICAL OPERATIONS</b><small>戦術課題 / {missionLibraryFor("standard").length}</small>
@@ -2351,8 +2676,8 @@ export function DeepBlueGrid() {
                 <button aria-pressed={missionLibrarySection === "archive"} className={missionLibrarySection === "archive" ? "active" : ""} onClick={() => selectMissionLibrarySection("archive")}>
                   <b>ARCHIVE OPERATIONS</b><small>戦闘記録 / {missionLibraryFor("archive").length}</small>
                 </button>
-                <button aria-pressed={missionLibrarySection === "extreme"} className={missionLibrarySection === "extreme" ? "active" : ""} onClick={() => selectMissionLibrarySection("extreme")}>
-                  <b>EXTREME OPERATIONS</b><small>極限任務 / {missionLibraryFor("extreme").length}</small>
+                <button aria-pressed={missionLibrarySection === "extreme"} aria-disabled={!extremeAuthorized} className={(missionLibrarySection === "extreme" ? "active " : "") + (!extremeAuthorized ? "locked" : "")} onClick={() => selectMissionLibrarySection("extreme")}>
+                  <b>EXTREME OPERATIONS</b><small>{extremeAuthorized ? `極限任務 / ${missionLibraryFor("extreme").length}` : "SURVIVAL完遂で解放"}</small>
                 </button>
                 <button aria-pressed="false" onClick={() => selectMissionLibrarySection("training")}><b>TRAINING</b><small>初任訓練へ</small></button>
               </>}
@@ -2371,6 +2696,22 @@ export function DeepBlueGrid() {
                 ? <><b>ARCHIVE REVIEW</b><span>ヒントは作戦日誌のみ。LOGと現状を照合し、射撃解を復元せよ。</span></>
                 : <><b>TACTICAL EXERCISE</b><span>低難度から高難度まで、索敵・火力配分・護衛連接を重複なく訓練。</span></>}
             </div>
+            <section className="mission-authorization-strip" aria-label={missionLibrarySection === "training" ? "教程の進行状況" : "サバイバル認定状況"}>
+              {missionLibrarySection === "training" ? (
+                <div className="training-route-summary">
+                  <b>SEQUENTIAL TRAINING</b><span>修了 {trainingCompletedCount} / {TRAINING_STAGES.length}</span><small>青緑のAVAILABLEから受講。LOCKEDは一つ前の教程を修了すると解放されます。</small>
+                </div>
+              ) : (
+                <div className="qualification-stamps">
+                  <b>SURVIVAL QUALIFICATION</b>
+                  {qualificationMarks.map((mark) => <i key={mark.key} className={mark.complete ? "complete" : ""}>{mark.complete ? "✓" : "○"} {mark.label}</i>)}
+                  <small>{qualificationCount} / 6</small>
+                </div>
+              )}
+              <p id="library-access-notice" className={accessNotice ? "active" : ""} role="status" aria-live="polite">
+                {accessNotice || (missionLibrarySection === "training" ? "次に受講できる教程を選択してください。" : "各難易度D1～D5とARCHIVEを各1件達成すると認定されます。")}
+              </p>
+            </section>
             <div className="mission-card-grid" aria-live="polite">
               {missionChoices.length > 0
                 ? missionChoices.map(renderMissionCard)
@@ -2402,6 +2743,16 @@ export function DeepBlueGrid() {
                   ? "敵艦隊、戦闘能力喪失。対象海域の敵性脅威を排除。次海域への進出可。"
                   : "自軍艦隊、戦闘能力喪失。戦闘記録に基づく指揮所見を表示します。"}
             </p>
+            {authorizationNotice && (
+              <section className="new-authorization" role="status" aria-live="assertive" aria-label="新しい作戦権限">
+                <header><span>NEW AUTHORIZATION / 新規作戦権限</span><b>{PROGRESSION_MODE_LABEL[authorizationNotice.completed]} COMPLETE</b></header>
+                {authorizationNotice.authorized ? (
+                  <p><strong>{PROGRESSION_MODE_LABEL[authorizationNotice.authorized]} AUTHORIZED</strong><span>{PROGRESSION_MODE_PLAIN[authorizationNotice.authorized]} モード選択から出撃できます。</span></p>
+                ) : (
+                  <p><strong>ALL OPERATIONS AUTHORIZED</strong><span>全作戦課程を完了しました。達成済みのモードへ何度でも再出撃できます。</span></p>
+                )}
+              </section>
+            )}
             <div className="operation-time" aria-label="交戦時刻">
               <div><span>ENGAGEMENT START</span><b>{formatZulu(operationStart)}</b><small>JST {formatJapan(operationStart)}</small></div>
               <div><span>ENGAGEMENT END</span><b>{formatZulu(operationEnd ?? operationStart)}</b><small>JST {formatJapan(operationEnd ?? operationStart)}</small></div>

@@ -6,16 +6,19 @@ import { missionOrdersEqual, sameTargetSet, validateTrainingLibrary } from "../a
 import { Board, harpoonCells, straddleCells } from "../app/game/engine.ts";
 import type { Coord, ShipId } from "../app/game/constants.ts";
 
-test("training exposes six isolated fixed lessons", () => {
+test("training exposes nine isolated lessons in the authorized teaching sequence", () => {
   assert.equal(stagesFor("training"), TRAINING_STAGES);
-  assert.deepEqual(TRAINING_STAGES.map((stage) => stage.id), [101, 102, 103, 104, 105, 106]);
+  assert.deepEqual(TRAINING_STAGES.map((stage) => stage.id), [107, 101, 102, 103, 104, 105, 106, 108, 109]);
   assert.deepEqual(TRAINING_STAGES.map((stage) => stage.title), [
+    "FLEET DEPLOYMENT",
     "TACTICAL PLOT",
     "ACOUSTIC BEARING",
     "CROSS FIX",
     "ESCORT SUPPORT",
     "FIRE CONTROL LINK",
     "SILENT TRACE",
+    "DAMAGE REPORT",
+    "IMPORTANT SECTION",
   ]);
   assert.ok(TRAINING_STAGES.every((stage) => stage.category === "training" && stage.training?.suppressEnemyActions));
   assert.deepEqual(validateMissionLibrary(TRAINING_STAGES), []);

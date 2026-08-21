@@ -48,9 +48,14 @@ import {
   TRAINING_PROGRESS_VERSION,
 } from "../app/game/TrainingProgress.ts";
 import { SUBMARINE_WAKE_CONTRACT } from "../app/game/SubmarineWake.ts";
+import {
+  PROGRESSION_HANDOFF_CONTRACT,
+  PROGRESSION_STORAGE_KEY,
+  PROGRESSION_VERSION,
+} from "../app/game/Progression.ts";
 import { CANONICAL_MISSION_ROUTES } from "./measure-missions.ts";
 
-const SOURCE_REF = "unity-handoff-2026-08-12-quality";
+const SOURCE_REF = "unity-handoff-2026-08-21-progression";
 const handoffDirectory = resolve("docs/unity-handoff");
 const runtimeOutputPath = resolve(handoffDirectory, "unity-content-v2.json");
 const validationOutputPath = resolve(handoffDirectory, "unity-validation-v1.json");
@@ -160,6 +165,11 @@ const runtimePayload = {
       version: TRAINING_PROGRESS_VERSION,
       lessons: TRAINING_LESSONS,
     },
+    progression: {
+      storageKey: PROGRESSION_STORAGE_KEY,
+      version: PROGRESSION_VERSION,
+      contract: PROGRESSION_HANDOFF_CONTRACT,
+    },
     unitySaveData: UNITY_SAVE_DATA_CONTRACT,
   },
 } as const;
@@ -208,6 +218,7 @@ const manifest = {
     "../../app/game/SubmarineWake.ts",
     "../../app/game/engine.ts",
     "../../app/game/PresentationContract.ts",
+    "../../app/game/Progression.ts",
     "../../app/game/AudioManager.ts",
   ],
   documentation: handoffDocumentation,

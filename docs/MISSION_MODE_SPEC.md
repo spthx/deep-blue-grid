@@ -11,6 +11,13 @@ its separate four-operation route and persistent-loss rules. MISSION does not
 change or reuse either route's progress, fleet state, arsenal state, loss tempo,
 or result calculations.
 
+MISSION is authorized after all six TACTICS sectors are secured. SURVIVAL is
+authorized by six MISSION qualification marks: one cleared standard mission at
+each displayed difficulty 1 through 5, plus one cleared ARCHIVE mission. The
+marks may be earned in any mission order. EXTREME remains visible but locked
+until all four SURVIVAL operations are complete. `?debug=all` bypasses these
+guards for testing without saving progression or mission results.
+
 ## Design intent
 
 - Each mission asks one sharply defined tactical question instead of requiring

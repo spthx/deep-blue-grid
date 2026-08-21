@@ -5,6 +5,7 @@ import {
   completeTrainingLesson,
   createEmptyTrainingProgress,
   isTrainingLessonComplete,
+  isLegacyTrainingRouteComplete,
   nextIncompleteTrainingLesson,
   parseTrainingProgress,
   serializeTrainingProgress,
@@ -31,7 +32,7 @@ test("training completion updates are immutable, ordered, and idempotent", () =>
   assert.equal(completeTrainingLesson(afterOne, 2), afterOne);
   assert.equal(completeTrainingLesson(afterOne, 99), afterOne);
   assert.equal(isTrainingLessonComplete(afterOne, 2), true);
-  assert.equal(nextIncompleteTrainingLesson(afterOne), 3);
+  assert.equal(nextIncompleteTrainingLesson(afterOne), 7);
   assert.equal(trainingCompletionCount(afterOne), 2);
   assert.deepEqual(completeTrainingLesson(afterOne, 103).completedLessons, [1, 2, 3]);
 });
@@ -39,10 +40,19 @@ test("training completion updates are immutable, ordered, and idempotent", () =>
 test("non-sequential completion routes to the actual missing lesson", () => {
   const almostComplete = parseTrainingProgress(JSON.stringify({
     version: 1,
-    completedLessons: [1, 2, 4, 5, 6],
+    completedLessons: [7, 1, 2, 4, 5, 6, 8, 9],
   }));
   assert.equal(nextIncompleteTrainingLesson(almostComplete), 3);
   assert.equal(nextIncompleteTrainingLesson(completeTrainingLesson(almostComplete, 3)), null);
+});
+
+test("the original six-lesson completion remains valid migration evidence", () => {
+  const legacy = parseTrainingProgress(JSON.stringify({
+    version: 1,
+    completedLessons: [1, 2, 3, 4, 5, 6],
+  }));
+  assert.equal(isLegacyTrainingRouteComplete(legacy), true);
+  assert.equal(nextIncompleteTrainingLesson(legacy), 7);
 });
 
 test("stored training updates use the dedicated key and survive storage errors", () => {

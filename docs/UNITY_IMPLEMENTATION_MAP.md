@@ -68,10 +68,11 @@ Unity の DTO/ScriptableObject は次の名前・意味を保つ。C# のプロ�
 | 極限ミッション | `app/game/ExtremeMissions.ts`, `app/game/AdditionalMissions.ts` | `MissionCatalog` | 7件を移送。LEVIATHAN 用 `leviathanNet` は生成済みの平坦な `initialIntel[]` をJSONから読む |
 | 公開済み手掛かり | `MissionEnemyDisclosure.candidateCells` in `app/game/Campaign.ts`, `app/game/ExtremeMissions.ts`, `app/game/Training.ts`; 表示は `app/game/DeepBlueGrid.tsx` | `MissionBriefView`, `PublicIntelMarkerView` | `candidateCells` は座標とコードを必ず表示する。任務解が内部情報へ依存しないためのプレイ契約であり、データ export から落としてはならない |
 | ミッション判定 | `app/game/MissionRules.ts` | `MissionEvaluator`, `ScenarioLoader`, `MissionDefinitionValidator` | 目標達成を先に評価し、その後に保護艦喪失、最後に行動上限を評価する優先順位を保つ。指定 SONAR 起点、撃沈順、識別、初期弾数も同じにする |
-| 教程コンテンツ | `app/game/Training.ts` | `TrainingCatalog` | 6 教程（stage ID 101–106）の `plainBrief`, `doctrine`, `steps`, `expected`, `highlight`, `debrief` を移送する |
+| 教程コンテンツ | `app/game/Training.ts` | `TrainingCatalog` | 9教程（運用順107, 101–106, 108, 109）の `plainBrief`, `doctrine`, `steps`, `placementDrill`, `enemyDemonstration`, `expected`, `highlight`, `debrief` を移送する |
 | 教程の誤操作処理 | `app/game/TrainingRules.ts`, `app/game/DeepBlueGrid.tsx` | `TrainingStepValidator`, `TrainingFlowController` | `fire/radar/harpoon/sparrow` は座標と向きの完全一致、F-4/MK-45 は順不同の集合一致。誤操作は弾数・行動を消費せず同じ手順を再提示する |
 | ミッション記録 | `app/game/MissionRecords.ts` | `MissionRecordRepository`, `MissionRecordService` | JSON version 1、キー `deep-blue-grid.mission-records` の意味を維持。勝利だけを記録し、総合 best は指令数優先→活動時間、最少指令と最短時間は独立して更新する |
-| 教程進行 | `app/game/TrainingProgress.ts` | `TrainingProgressRepository` | JSON version 1、キー `deep-blue-grid.training-progress`、修了 lesson 1–6 の重複排除・昇順・冪等更新を維持。stage ID 101–106 も入力として受け付ける |
+| 教程進行 | `app/game/TrainingProgress.ts` | `TrainingProgressRepository` | JSON version 1、キー `deep-blue-grid.training-progress`、運用順 lesson 7, 1–6, 8, 9 の重複排除・正規化・冪等更新を維持。旧1–6全修了はCASUAL権限を維持する |
+| モード解放 | `app/game/Progression.ts` | `ProgressionRepository`, `AuthorizationService` | `TRAINING→CASUAL→TACTICS→MISSION→SURVIVAL`、MISSION認定6印、SURVIVAL後EXTREME、旧実績からの単調復旧、保存失敗警告、`?debug=all`非保存をJSON contractどおり実装する |
 | SURVIVAL 作戦記録 | `app/game/OperationRecord.ts` | `SurvivalOperationRecorder` | 実行中のみの aggregate。pause/resume、stage 別の engagement/retry/行動/被害/損失、完了スナップショットを再実装する |
 | 戦果報告 | `app/game/AfterAction.ts` | `AfterActionFormatter`, `CommandAssessmentService` | 事実テーブル、非難しない所見、Zulu/JST 時刻、経過時間を再実装。端末ロケールではなく日本時間表示を明示する |
 | 描画 | `app/game/Renderer.ts` | `BoardView`, `BoardCellView`, `TargetPreviewView` | 盤面の隠蔽、命中/反響/音紋/SONAR/重要区画/選択/攻撃範囲を View 専用にする。ルール状態を View に持たせない |
@@ -90,7 +91,7 @@ Unity の DTO/ScriptableObject は次の名前・意味を保つ。C# のプロ�
 - `app/game/Campaign.ts`、`app/game/ExtremeMissions.ts`、`app/game/AdditionalMissions.ts`、`app/game/Training.ts` のミッション・教程定義、日誌、表示文、固定 seed、公開情報、既存損傷、配置。
 - `app/game/PresentationContract.ts` の兵装/艦艇説明、用語、時間、レスポンシブUI、CIC材質契約。
 - `app/game/AudioManager.ts` の `AUDIO_CUE_CONTRACT`。Web Audio API自体ではなく波形・周波数・duration・gain・pulse間隔を移す。
-- `app/game/TrainingProgress.ts` と `app/game/MissionRecords.ts` の保存スキーマ version とフィールド意味。
+- `app/game/TrainingProgress.ts`、`app/game/MissionRecords.ts`、`app/game/Progression.ts` の保存スキーマ version とフィールド意味。
 - `scripts/measure-missions.ts` の canonical route は、配布データではなく Unity のテスト fixture としてのみ export する。
 
 推奨する export の最上位構造は次のとおりである。
@@ -98,7 +99,7 @@ Unity の DTO/ScriptableObject は次の名前・意味を保つ。C# のプロ�
 ```json
 {
   "schemaVersion": 2,
-  "sourceRef": "unity-handoff-2026-08-12-quality",
+  "sourceRef": "unity-handoff-2026-08-21-progression",
   "coordinateContract": { "gridSize": 8, "cellLabels": "ABCDEFGH" },
   "rules": { "echo": {}, "aiModes": {}, "gameModes": {} },
   "shipDefinitions": [],
@@ -120,7 +121,7 @@ Unity の DTO/ScriptableObject は次の名前・意味を保つ。C# のプロ�
 - `app/game/DeepBlueGrid.tsx` の JSX、React Hook、DOM タイマー、`requestAnimationFrame`、ブラウザ focus trap を移植しない。画面遷移と入力状態の意味だけを採用する。
 - `app/game/Renderer.ts` の Canvas 2D 描画命令、`app/globals.css` の CSS、`pointerToCoord` のブラウザ座標変換をコピーしない。Unity RectTransform/イベント系で作り直す。
 - `app/game/AudioManager.ts` の WebAudio/Wake Lock/visibility API をコピーしない。Android lifecycle、Audio Focus、Unity pause/resume へ置き換える。
-- Web の `localStorage` API をコピーしない。Unity 側はアプリ領域の JSON（暗号化が必要ならその上位層）へ保存し、破損時は Web と同じく空データに戻す。
+- Web の `localStorage` API をコピーしない。Unity 側はアプリ領域の JSON（暗号化が必要ならその上位層）へ保存する。破損時は、確認できる旧教程・任務実績から権限を単調復旧し、根拠がなければ空データへ戻す。書込失敗は黙殺せず画面へ警告する。
 
 ## 5. 実装順と依存関係
 
@@ -174,10 +175,10 @@ npm run lint
 ### Unity 側の必須受入基準
 
 - [ ] 8×8、座標、向き、全 `ShipId`、全 `WeaponId`、重要区画、弾数、ECHO モードが Web と一致する。
-- [ ] Web の固定データから、通常16、archive 5、extreme 7、training 6を漏れなく読める。stage ID、sort order、カテゴリ、難易度、文章、公開座標を保持する。
+- [ ] Web の固定データから、通常16、archive 5、extreme 7、training 9を漏れなく読める。stage ID、sort order、カテゴリ、難易度、文章、公開座標を保持する。
 - [ ] `tests/game-rules.test.ts` の同等ケースを C# Unit Test に移し、Board/Arsenal/護衛リンク/静粛移動/RNG の結果が一致する。
 - [ ] `unity-validation-v1.json` の全 canonical route を Unity Editor/PlayModeテストで実行し、全28任務が勝利する。fixtureをPlayer buildへ含めず、配置・初期損傷・seed・敵先攻を固定する。
-- [ ] 教程 101–106 は期待 order 以外を消費なしで拒否し、期待 order を順番に実行すると修了する。複数目標兵装は目標の選択順を問わない。
+- [ ] 教程107、101–106、108、109は期待操作以外を消費なしで拒否し、運用順に修了できる。107は実配置、108は敵弾着後のreview確認、複数目標兵装は選択順を問わない。
 - [ ] `candidateCells`、SONAR zone、initialIntel、initialEnemyWakes を Unity UI に表示し、固定解がプレイヤーに非公開の座標へ依存しない。
 - [ ] 保存 JSON の version 1 を読み書きし、破損 JSON、重複した教程、無効な記録で例外を出さず Web と同じ正規化結果になる。
 - [ ] phone portrait、tablet portrait、compact landscape、wide landscape で、安全領域内に盤面・主操作・LOG・任務ブリーフが収まる。詳細な数値は `docs/UNITY_UI_HANDOFF.md` に従う。

@@ -3,7 +3,7 @@
   "schemaVersion": 2,
   "sourceRepository": "https://github.com/spthx/deep-blue-grid",
   "sourceBranch": "master",
-  "sourceRef": "unity-handoff-2026-08-12-quality",
+  "sourceRef": "unity-handoff-2026-08-21-progression",
   "publicReferenceUrl": "https://spthx.github.io/deep-blue-grid/",
   "primaryContent": "unity-content-v2.json",
   "editorValidationFixture": "unity-validation-v1.json",
@@ -50,6 +50,7 @@
     "../../app/game/SubmarineWake.ts",
     "../../app/game/engine.ts",
     "../../app/game/PresentationContract.ts",
+    "../../app/game/Progression.ts",
     "../../app/game/AudioManager.ts"
   ],
   "documentation": [

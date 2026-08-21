@@ -11,7 +11,7 @@
     "build:pages": "vite build --config vite.pages.config.ts",
     "preview:pages": "vite preview --config vite.pages.config.ts",
     "start": "vinext start",
-    "test": "npm run build && node --experimental-strip-types --test tests/game-rules.test.ts tests/mission-validator.test.ts tests/additional-missions.test.ts tests/mission-records.test.ts tests/mission-simulation.test.ts tests/training-rules.test.ts tests/training-progress.test.ts tests/unity-handoff.test.ts tests/rendered-html.test.mjs tests/ui-quality.test.mjs",
+    "test": "npm run build && node --experimental-strip-types --test tests/game-rules.test.ts tests/mission-validator.test.ts tests/additional-missions.test.ts tests/mission-records.test.ts tests/mission-simulation.test.ts tests/training-rules.test.ts tests/training-progress.test.ts tests/training-expansion.test.ts tests/progression.test.ts tests/progression-ui.test.mjs tests/unity-handoff.test.ts tests/rendered-html.test.mjs tests/ui-quality.test.mjs",
     "export:unity": "node --experimental-strip-types scripts/export-unity-content.ts",
     "measure:missions": "node --experimental-strip-types scripts/measure-missions.ts",
     "measure:survival": "node --experimental-strip-types scripts/measure-survival.ts",

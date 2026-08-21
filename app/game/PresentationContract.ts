@@ -135,11 +135,12 @@ export const UNITY_SAVE_DATA_CONTRACT = {
   version: 1,
   writePolicy: "serialize to a temporary file, flush, then atomically replace the primary save; retain one last-known-good backup",
   corruptionPolicy: "validate version and field ranges; fall back to backup, then to defaults without deleting the unreadable file",
-  lifecycle: ["save after settings change", "save after mission/training result", "save after every survival operation", "save on OnApplicationPause(true)", "save on OnApplicationQuit"],
+  lifecycle: ["save after settings change", "save after mission/training result", "save after mode authorization", "save after every survival operation", "save on OnApplicationPause(true)", "save on OnApplicationQuit"],
   fields: {
     settings: ["muted", "reducedMotion", "textScale"],
     missionRecords: ["missionId", "cleared", "bestFriendlyActions", "bestElapsedMs", "attemptCount"],
     trainingProgress: ["completedLessons"],
+    progression: ["completedModes"],
     survivalRun: ["active", "operationIndex", "survivingFleet", "cumulativeLog", "startedAtUtc", "elapsedMs"],
   },
 } as const;

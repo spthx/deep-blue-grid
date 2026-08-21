@@ -1,6 +1,8 @@
 export const TRAINING_PROGRESS_VERSION = 1 as const;
 export const TRAINING_PROGRESS_STORAGE_KEY = "deep-blue-grid.training-progress";
-export const TRAINING_LESSONS = [1, 2, 3, 4, 5, 6] as const;
+/** Operational route. Lesson numbers remain stable so existing saves keep their meaning. */
+export const TRAINING_LESSONS = [7, 1, 2, 3, 4, 5, 6, 8, 9] as const;
+export const LEGACY_TRAINING_LESSONS = [1, 2, 3, 4, 5, 6] as const;
 
 export type TrainingLesson = typeof TRAINING_LESSONS[number];
 export type TrainingProgress = Readonly<{
@@ -20,7 +22,7 @@ export function parseTrainingProgress(serialized: string | null): TrainingProgre
     if (!isObject(value) || value.version !== TRAINING_PROGRESS_VERSION || !Array.isArray(value.completedLessons)) {
       return createEmptyTrainingProgress();
     }
-    const completedLessons = [...new Set(value.completedLessons.filter(isTrainingLesson))].sort((a, b) => a - b);
+    const completedLessons = canonicalLessons(value.completedLessons.filter(isTrainingLesson));
     return { version: TRAINING_PROGRESS_VERSION, completedLessons };
   } catch {
     return createEmptyTrainingProgress();
@@ -28,7 +30,7 @@ export function parseTrainingProgress(serialized: string | null): TrainingProgre
 }
 
 export function serializeTrainingProgress(progress: TrainingProgress) {
-  const completedLessons = [...new Set(progress.completedLessons.filter(isTrainingLesson))].sort((a, b) => a - b);
+  const completedLessons = canonicalLessons(progress.completedLessons.filter(isTrainingLesson));
   return JSON.stringify({ version: TRAINING_PROGRESS_VERSION, completedLessons });
 }
 
@@ -37,13 +39,13 @@ export function isTrainingLessonComplete(progress: TrainingProgress, lesson: num
   return normalized !== null && progress.completedLessons.includes(normalized);
 }
 
-/** Immutable and idempotent progress update. Accepts lesson 1..6 or stage id 101..106. */
+/** Immutable and idempotent progress update. Accepts a lesson number or its 100-series stage id. */
 export function completeTrainingLesson(progress: TrainingProgress, lesson: number): TrainingProgress {
   const normalized = normalizeLesson(lesson);
   if (normalized === null || progress.completedLessons.includes(normalized)) return progress;
   return {
     version: TRAINING_PROGRESS_VERSION,
-    completedLessons: [...progress.completedLessons, normalized].sort((a, b) => a - b),
+    completedLessons: canonicalLessons([...progress.completedLessons, normalized]),
   };
 }
 
@@ -56,6 +58,10 @@ export function nextIncompleteTrainingLesson(progress: TrainingProgress): Traini
 
 export function trainingCompletionCount(progress: TrainingProgress) {
   return progress.completedLessons.length;
+}
+
+export function isLegacyTrainingRouteComplete(progress: TrainingProgress) {
+  return LEGACY_TRAINING_LESSONS.every((lesson) => progress.completedLessons.includes(lesson));
 }
 
 export function trainingStageIdForLesson(lesson: TrainingLesson) {
@@ -117,6 +123,11 @@ function normalizeLesson(value: unknown): TrainingLesson | null {
   if (isTrainingLesson(value)) return value;
   const fromStageId = typeof value === "number" ? value - 100 : NaN;
   return isTrainingLesson(fromStageId) ? fromStageId : null;
+}
+
+function canonicalLessons(values: readonly TrainingLesson[]) {
+  const completed = new Set(values);
+  return TRAINING_LESSONS.filter((lesson) => completed.has(lesson));
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {

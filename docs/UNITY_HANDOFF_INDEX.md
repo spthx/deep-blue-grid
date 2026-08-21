@@ -40,9 +40,13 @@ Unityへ渡す静的データは、手入力ではなく `npm run export:unity` 
   兵装残数を継承しない。難易度表示は `1 / 6`〜`6 / 6`。
 - EXTREME 21 は **OPERATION MOBY-DICK**、目標は SSX-02 **LEVIATHAN**。SURVIVAL
   第3作戦の SSX-01 **SEA BAT** と艦、行動規則、表示名を混同しない。
-- INITIAL TRAINING は6教程を任意順で再受講できる固定教材。誤操作は行動、弾薬、
-  計時、敵手を消費せず、現在の指示を再表示する。6教程すべての完了IDがある時だけ
-  `TRAINING COMPLETE / 全教程修了` とする。
+- INITIAL TRAINING は9教程を順次解放する固定教材。修了済みは再受講でき、誤操作は
+  行動、弾薬、計時、敵手を消費しない。全9教程の完了IDでCASUALを解放する。旧1–6
+  全修了記録は既存CASUAL権限を維持する。
+- 解放順は TRAINING→CASUAL→TACTICS→MISSION→SURVIVAL。MISSIONは難易度1–5
+  各1件とARCHIVE 1件の認定印、EXTREMEはSURVIVAL全4作戦完遂を要する。
+- 旧実績は現行の空・破損進行記録より優先して単調復旧する。保存に失敗した場合は
+  `LOCAL RECORD NOT SAVED` を即時表示し、再読込で権限が戻る可能性を明示する。
 - MISSION/TRAINING の候補座標は隠しヒントではない。`PLOTTED CONTACTS / 公開座標`
   として必ず表示する。目標達成は撃沈だけでなく、順序付き SONAR 報告、兵装順序・
   使用数、撃沈順、重要区画の識別、保護艦生存を含む。
@@ -100,7 +104,7 @@ AudioClip または本作専用 WAV）の詳細は [Unity UI handoff](UNITY_UI_H
    制約、EXTREME一覧、静的検証。
 4. [MISSION mode spec](MISSION_MODE_SPEC.md) — 初期4任務の詳細、評価順、リトライ、
    AAR、canonical vector。
-5. [INITIAL TRAINING spec](TRAINING_MODE_SPEC.md) — 6教程、誤指令、進捗、全教程修了。
+5. [INITIAL TRAINING spec](TRAINING_MODE_SPEC.md) — 9教程、実配置、損傷報告、誤指令、進捗、全教程修了。
 6. [SURVIVAL directive](SURVIVAL_4_OPERATION_SPEC.md) — 4作戦、SEA BAT、永続損耗、
    脈動。
 7. [Responsive UI contract](RESPONSIVE_UI_SPEC.md) と
@@ -113,13 +117,13 @@ AudioClip または本作専用 WAV）の詳細は [Unity UI handoff](UNITY_UI_H
 
 - [ ] 同じ seed・初期状態・入力列で、盤面、着弾、ECHO、識別、SONAR、wake、残弾、
   敵手、勝敗、ログevent種別が一致する。
-- [ ] CASUAL / TACTICS 6海域、SURVIVAL 4作戦、28 MISSION、6教程を開始・リトライ・
+- [ ] CASUAL / TACTICS 6海域、SURVIVAL 4作戦、28 MISSION、9教程を開始・リトライ・
   終了まで通す。28 canonical route はすべて成功する。
 - [ ] 28任務の `PLOTTED CONTACTS`、ARCHIVE日誌、順序付き報告、兵装順・使用数、
   撃沈順、保護艦敗北を同じ条件で評価する。
 - [ ] SEA BAT の攻撃/無音潜航交互行動と、LEVIATHAN の公開済み離脱候補・2手兵装順を
   別テストにする。
-- [ ] 誤った教程指令が無消費であること、再受講が重複保存されないこと、全6教程以外で
+- [ ] 誤った教程指令が無消費であること、再受講が重複保存されないこと、全9教程以外で
   `TRAINING COMPLETE` を出さないことを確認する。
 - [ ] `UNCLEARED` / `CLEARED` / `COMPLETE`、カテゴリ切替時の `ALL` reset、候補座標、
   難易度 `n / 6`、LOGと結果の文言・aria labelを照合する。
@@ -151,6 +155,6 @@ AudioClip または本作専用 WAV）の詳細は [Unity UI handoff](UNITY_UI_H
    font binaryや仮版assetを正式資産にしない。
 4. 盤面、艦カード、兵装、配置、戦況報告、LOG、AARを一つの通常交戦ループとして実装する。
 5. TACTICS と SURVIVAL（永続損耗、SEA BAT、pulse）を追加する。
-6. MISSION 28任務、ARCHIVE日誌、EXTREME制約、INITIAL TRAINING 6教程と進捗を追加する。
+6. MISSION 28任務、ARCHIVE日誌、EXTREME制約、INITIAL TRAINING 9教程と進捗・モード解放を追加する。
 7. 音、モーション、Reduce Motion、haptics、アクセシビリティ、Android実機QAを追加し、
    parity checklist と `npm test` 相当のUnity Domain/UIテストを完了する。
