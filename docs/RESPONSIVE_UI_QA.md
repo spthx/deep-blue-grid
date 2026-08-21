@@ -38,7 +38,7 @@ Codex内蔵Browserでローカル開発版を操作し、モード選択からCA
 ## 2026-08-08 MISSION / TRAINING 再検証
 
 Codex内蔵Browserで `320×568`、`402×874`、`568×320`、`844×390`、
-`834×1112`、`1366×768` を再走査した。22件のMISSION一覧、6教程の
+`834×1112`、`1366×768` を再走査した。当時の22件MISSION一覧、旧6教程の
 INITIAL TRAINING一覧、難易度、クリア状態、EXTREME、LEVIATHAN任務を
 確認し、ページ横overflowはなし。狭い画面では一覧自身だけがスクロールし、
 モード背面は固定される。訓練の誤指令は行動数と弾薬を消費しない。
@@ -54,7 +54,7 @@ Codex内蔵Browserでローカルproduction同等版を再走査した。320×56
 状態帯・戦術図切替・盤面・2段指揮卓を同時表示する。
 
 402×874のMISSION一覧では16/5/7件の区分、難易度1～6、UNCLEARED/CLEARED
-色分け、内部一覧scrollを確認。TRAINING 6教程、固定ブリーフ、CASUAL配置・攻撃、
+色分け、内部一覧scrollを確認。当時のTRAINING旧6教程、固定ブリーフ、CASUAL配置・攻撃、
 PCの2盤面＋右指揮卓、SONAR音紋、CONTACT overlay、着弾後表示も基準画像へ保存した。
 
 公開候補座標は `PLOTTED CONTACTS` として配置ブリーフ内に常設し、スマホの

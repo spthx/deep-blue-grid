@@ -3,7 +3,7 @@
   "schemaVersion": 2,
   "sourceRepository": "https://github.com/spthx/deep-blue-grid",
   "sourceBranch": "master",
-  "sourceRef": "unity-handoff-2026-08-21-progression",
+  "sourceRef": "unity-handoff-2026-08-21-progression-v2",
   "publicReferenceUrl": "https://spthx.github.io/deep-blue-grid/",
   "primaryContent": "unity-content-v2.json",
   "editorValidationFixture": "unity-validation-v1.json",

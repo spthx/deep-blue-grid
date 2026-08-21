@@ -1,7 +1,7 @@
 {
   "schema": "deep-blue-grid.unity-content",
   "schemaVersion": 2,
-  "sourceRef": "unity-handoff-2026-08-21-progression",
+  "sourceRef": "unity-handoff-2026-08-21-progression-v2",
   "distribution": "runtime-safe",
   "validationSolutionsIncluded": false,
   "coordinateContract": {

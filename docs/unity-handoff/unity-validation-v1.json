@@ -1,7 +1,7 @@
 {
   "schema": "deep-blue-grid.unity-validation",
   "schemaVersion": 1,
-  "sourceRef": "unity-handoff-2026-08-21-progression",
+  "sourceRef": "unity-handoff-2026-08-21-progression-v2",
   "distribution": "editor-test-only",
   "excludeFromPlayerBuild": true,
   "warning": "Contains complete mission solutions. Keep outside runtime Resources, Addressables and StreamingAssets.",

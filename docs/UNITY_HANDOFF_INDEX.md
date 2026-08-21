@@ -14,7 +14,7 @@ Unityへ渡す静的データは、手入力ではなく `npm run export:unity` 
 [unity-content-v2.json](unity-handoff/unity-content-v2.json) を再生成する。完全解答を含む
 [unity-validation-v1.json](unity-handoff/unity-validation-v1.json) は Editor / Test 専用で、
 `Resources`、Addressables、StreamingAssets、製品ビルドへ入れない。固定参照タグは
-`unity-handoff-2026-08-12-quality` とする。配布物一覧は
+`unity-handoff-2026-08-21-progression-v2` とする。配布物一覧は
 [handoff manifest](unity-handoff/manifest.json)、JSONの正本対応とC#側の
 分割方針は [Unity implementation map](UNITY_IMPLEMENTATION_MAP.md)、画面比較資料は
 [Unity reference captures](unity-reference/README.md) を参照する。

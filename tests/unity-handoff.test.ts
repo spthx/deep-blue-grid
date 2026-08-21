@@ -68,7 +68,7 @@ const manifest = JSON.parse(await readFile(manifestUrl, "utf8"));
 test("Unity runtime handoff matches canonical domain and content", () => {
   assert.equal(exported.schema, "deep-blue-grid.unity-content");
   assert.equal(exported.schemaVersion, 2);
-  assert.equal(exported.sourceRef, "unity-handoff-2026-08-21-progression");
+  assert.equal(exported.sourceRef, "unity-handoff-2026-08-21-progression-v2");
   assert.equal(exported.distribution, "runtime-safe");
   assert.equal(exported.validationSolutionsIncluded, false);
   assert.deepEqual(exported.coordinateContract, {

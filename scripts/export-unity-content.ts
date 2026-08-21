@@ -55,7 +55,7 @@ import {
 } from "../app/game/Progression.ts";
 import { CANONICAL_MISSION_ROUTES } from "./measure-missions.ts";
 
-const SOURCE_REF = "unity-handoff-2026-08-21-progression";
+const SOURCE_REF = "unity-handoff-2026-08-21-progression-v2";
 const handoffDirectory = resolve("docs/unity-handoff");
 const runtimeOutputPath = resolve(handoffDirectory, "unity-content-v2.json");
 const validationOutputPath = resolve(handoffDirectory, "unity-validation-v1.json");

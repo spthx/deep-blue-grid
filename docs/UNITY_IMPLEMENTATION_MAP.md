@@ -28,7 +28,7 @@ UI の画面階層・安全領域・フォント・端末別レイアウトは�
   `scripts/measure-missions.ts` の `CANONICAL_MISSION_ROUTES` は
   `unity-validation-v1.json` だけへ出力する。後者は Editor/PlayMode テスト専用で、
   `Resources`、Addressables、StreamingAssets、Player buildへ含めない。
-- export、manifest、checksumは固定参照タグ `unity-handoff-2026-08-12-quality` を共有する。
+- export、manifest、checksumは固定参照タグ `unity-handoff-2026-08-21-progression-v2` を共有する。
 - `rules.seededRandom`、`rules.formationSupport`、`presentation.commonText`、
   `persistence.unitySaveData` は、乱数系列、護衛連接、共通文言、停止復帰保存の
   実装契約である。Unity側でInspector既定値へ置き換えない。
@@ -99,7 +99,7 @@ Unity の DTO/ScriptableObject は次の名前・意味を保つ。C# のプロ�
 ```json
 {
   "schemaVersion": 2,
-  "sourceRef": "unity-handoff-2026-08-21-progression",
+  "sourceRef": "unity-handoff-2026-08-21-progression-v2",
   "coordinateContract": { "gridSize": 8, "cellLabels": "ABCDEFGH" },
   "rules": { "echo": {}, "aiModes": {}, "gameModes": {} },
   "shipDefinitions": [],
