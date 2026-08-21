@@ -1,0 +1,40 @@
+name: Balance audit
+
+on:
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+      - run: npm ci
+      - name: Existing build and rule tests
+        run: npm test
+      - name: Configure skilled-player composition audit
+        run: |
+          python scripts/patch-survival-audit.py
+          node --experimental-strip-types --check scripts/survival-composition-audit.ts
+      - name: Survival enemy composition search
+        env:
+          SURVIVAL_SCREEN_TRIALS: 20
+          SURVIVAL_CALIBRATION_TRIALS: 30
+          SURVIVAL_FINAL_TRIALS: 200
+          SURVIVAL_FINALIST_COUNT: 5
+        run: node --experimental-strip-types scripts/survival-composition-audit.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deep-blue-grid-survival-composition-audit
+          path: artifacts/deep-blue-grid-survival-composition-audit.*
+          if-no-files-found: warn
