@@ -16,6 +16,7 @@ UI の画面階層・安全領域・フォント・端末別レイアウトは�
 | 画面状態・入力 | `app/game/DeepBlueGrid.tsx` | Unity の画面・状態コンポーネントへ分割して再実装する |
 | 描画 | `app/game/Renderer.ts` | uGUI/UI Toolkit + Board View で再実装する |
 | 保存・結果集計 | `app/game/MissionRecords.ts`, `app/game/TrainingProgress.ts`, `app/game/OperationRecord.ts`, `app/game/AfterAction.ts` | JSON 保存と C# の純粋ロジックとして再実装する |
+| 教練・解放ブリーフィング | `app/game/BriefingSequence.ts`, `app/game/BriefingDirector.ts`, `app/game/TrainingStoryboard.ts`, `app/game/ModeAuthorization.ts` | JSON cueを読み、ゲーム状態と分離した再生状態機械と盤面overlayを実装する |
 | 音 | `app/game/AudioManager.ts` | Unity AudioMixer/AudioSource（または同等の合成）で再実装する |
 | 表示契約 | `app/game/PresentationContract.ts`, `app/globals.css`, `app/game/DeepBlueGrid.tsx`, `docs/UNITY_UI_HANDOFF.md` | 表示名、時間、材質、Safe Area とレイアウト・プロファイルを再実装する |
 
@@ -30,7 +31,8 @@ UI の画面階層・安全領域・フォント・端末別レイアウトは�
   `Resources`、Addressables、StreamingAssets、Player buildへ含めない。
 - export、manifest、checksumは固定参照タグ `unity-handoff-2026-08-21-progression-v2` を共有する。
 - `rules.seededRandom`、`rules.formationSupport`、`presentation.commonText`、
-  `persistence.unitySaveData` は、乱数系列、護衛連接、共通文言、停止復帰保存の
+  `presentation.briefings`、`persistence.progression.completionCommit`、`persistence.unitySaveData` は、
+  乱数系列、護衛連接、共通文言、教練/解放演出、解放保存transaction、停止復帰保存の
   実装契約である。Unity側でInspector既定値へ置き換えない。
 
 ## 2. 共通スキーマ契約
@@ -69,10 +71,12 @@ Unity の DTO/ScriptableObject は次の名前・意味を保つ。C# のプロ�
 | 公開済み手掛かり | `MissionEnemyDisclosure.candidateCells` in `app/game/Campaign.ts`, `app/game/ExtremeMissions.ts`, `app/game/Training.ts`; 表示は `app/game/DeepBlueGrid.tsx` | `MissionBriefView`, `PublicIntelMarkerView` | `candidateCells` は座標とコードを必ず表示する。任務解が内部情報へ依存しないためのプレイ契約であり、データ export から落としてはならない |
 | ミッション判定 | `app/game/MissionRules.ts` | `MissionEvaluator`, `ScenarioLoader`, `MissionDefinitionValidator` | 目標達成を先に評価し、その後に保護艦喪失、最後に行動上限を評価する優先順位を保つ。指定 SONAR 起点、撃沈順、識別、初期弾数も同じにする |
 | 教程コンテンツ | `app/game/Training.ts` | `TrainingCatalog` | 9教程（運用順107, 101–106, 108, 109）の `plainBrief`, `doctrine`, `steps`, `placementDrill`, `enemyDemonstration`, `expected`, `highlight`, `debrief` を移送する |
+| 教程図解 | `app/game/TrainingStoryboard.ts`, `presentation.briefings.training` | `BriefingCatalog`, `GridBoardBriefingOverlayGraphic` | opening / step / damageReview / debriefをJSONから再生する。文章・座標・表示尺をC#側で再構成しない |
 | 教程の誤操作処理 | `app/game/TrainingRules.ts`, `app/game/DeepBlueGrid.tsx` | `TrainingStepValidator`, `TrainingFlowController` | `fire/radar/harpoon/sparrow` は座標と向きの完全一致、F-4/MK-45 は順不同の集合一致。誤操作は弾数・行動を消費せず同じ手順を再提示する |
 | ミッション記録 | `app/game/MissionRecords.ts` | `MissionRecordRepository`, `MissionRecordService` | JSON version 1、キー `deep-blue-grid.mission-records` の意味を維持。勝利だけを記録し、総合 best は指令数優先→活動時間、最少指令と最短時間は独立して更新する |
 | 教程進行 | `app/game/TrainingProgress.ts` | `TrainingProgressRepository` | JSON version 1、キー `deep-blue-grid.training-progress`、運用順 lesson 7, 1–6, 8, 9 の重複排除・正規化・冪等更新を維持。旧1–6全修了はCASUAL権限を維持する |
 | モード解放 | `app/game/Progression.ts` | `ProgressionRepository`, `AuthorizationService` | `TRAINING→CASUAL→TACTICS→MISSION→SURVIVAL`、MISSION認定6印、SURVIVAL後EXTREME、旧実績からの単調復旧、保存失敗警告、`?debug=all`非保存をJSON contractどおり実装する |
+| 解放報告 | `app/game/ModeAuthorization.ts`, `presentation.briefings.authorizations` | `AuthorizationBriefingPresenter` | 初回完遂の時だけ1回保存し、save成功/失敗に応じたsequenceをAARの前に開く。SURVIVAL後はEXTREMEと明記する |
 | SURVIVAL 作戦記録 | `app/game/OperationRecord.ts` | `SurvivalOperationRecorder` | 実行中のみの aggregate。pause/resume、stage 別の engagement/retry/行動/被害/損失、完了スナップショットを再実装する |
 | 戦果報告 | `app/game/AfterAction.ts` | `AfterActionFormatter`, `CommandAssessmentService` | 事実テーブル、非難しない所見、Zulu/JST 時刻、経過時間を再実装。端末ロケールではなく日本時間表示を明示する |
 | 描画 | `app/game/Renderer.ts` | `BoardView`, `BoardCellView`, `TargetPreviewView` | 盤面の隠蔽、命中/反響/音紋/SONAR/重要区画/選択/攻撃範囲を View 専用にする。ルール状態を View に持たせない |
@@ -90,6 +94,8 @@ Unity の DTO/ScriptableObject は次の名前・意味を保つ。C# のプロ�
 - `app/game/constants.ts` の艦定義、ID、盤面定数、兵装上限、HARPOON パターン、通常ステージ定義。
 - `app/game/Campaign.ts`、`app/game/ExtremeMissions.ts`、`app/game/AdditionalMissions.ts`、`app/game/Training.ts` のミッション・教程定義、日誌、表示文、固定 seed、公開情報、既存損傷、配置。
 - `app/game/PresentationContract.ts` の兵装/艦艇説明、用語、時間、レスポンシブUI、CIC材質契約。
+- `app/game/TrainingStoryboard.ts` と `app/game/ModeAuthorization.ts` から生成した
+  `presentation.briefings`。Web実行時と同じcue列をそのまま移す。
 - `app/game/AudioManager.ts` の `AUDIO_CUE_CONTRACT`。Web Audio API自体ではなく波形・周波数・duration・gain・pulse間隔を移す。
 - `app/game/TrainingProgress.ts`、`app/game/MissionRecords.ts`、`app/game/Progression.ts` の保存スキーマ version とフィールド意味。
 - `scripts/measure-missions.ts` の canonical route は、配布データではなく Unity のテスト fixture としてのみ export する。
@@ -104,7 +110,7 @@ Unity の DTO/ScriptableObject は次の名前・意味を保つ。C# のプロ�
   "rules": { "echo": {}, "aiModes": {}, "gameModes": {} },
   "shipDefinitions": [],
   "weapons": {},
-  "presentation": {},
+  "presentation": { "briefings": { "contract": {}, "training": [], "authorizations": [] } },
   "audio": {},
   "campaignStages": [],
   "survivalStages": [],
@@ -138,13 +144,15 @@ Content export (JSON / ScriptableObject)
         │       └── BoardView / MissionBriefView
         │
         └── GameFlowController / Save repositories / AudioDirector
+                └── BriefingDirector / BriefingPresenter / BoardBriefingOverlay
 ```
 
 1. export データと `GridContract` を固定する。
 2. Board、武器、重要区画、護衛リンク、RNG、静粛移動をヘッドレス C# で完成させる。
 3. Mission と Training の評価・保存を追加し、Web の canonical fixture と突き合わせる。
-4. AI を追加して seed 互換を検証する。
-5. View、レスポンシブ UI、音、アクセシビリティを最後に接続する。View の都合でドメインの公開情報を省略しない。
+4. `BriefingDirector`と盤面overlayを追加し、教程局面と解放保存に接続する。
+5. AI を追加して seed 互換を検証する。
+6. View、レスポンシブ UI、音、アクセシビリティを最後に接続する。View の都合でドメインの公開情報を省略しない。
 
 ## 6. 検証コマンドと Unity 受入基準
 
@@ -179,6 +187,8 @@ npm run lint
 - [ ] `tests/game-rules.test.ts` の同等ケースを C# Unit Test に移し、Board/Arsenal/護衛リンク/静粛移動/RNG の結果が一致する。
 - [ ] `unity-validation-v1.json` の全 canonical route を Unity Editor/PlayModeテストで実行し、全28任務が勝利する。fixtureをPlayer buildへ含めず、配置・初期損傷・seed・敵先攻を固定する。
 - [ ] 教程107、101–106、108、109は期待操作以外を消費なしで拒否し、運用順に修了できる。107は実配置、108は敵弾着後のreview確認、複数目標兵装は選択順を問わない。
+- [ ] `presentation.briefings` の9教程と5解放報告を同じcue順、文章、座標、表示尺で再生する。briefing中は盤面・弾薬・AI・計時を進めない。
+- [ ] 解放は初回だけ1回保存し、debugで書かず、将来versionを上書きせず、書込失敗時はsaveFailure sequenceと常設警告を表示する。
 - [ ] `candidateCells`、SONAR zone、initialIntel、initialEnemyWakes を Unity UI に表示し、固定解がプレイヤーに非公開の座標へ依存しない。
 - [ ] 保存 JSON の version 1 を読み書きし、破損 JSON、重複した教程、無効な記録で例外を出さず Web と同じ正規化結果になる。
 - [ ] phone portrait、tablet portrait、compact landscape、wide landscape で、安全領域内に盤面・主操作・LOG・任務ブリーフが収まる。詳細な数値は `docs/UNITY_UI_HANDOFF.md` に従う。

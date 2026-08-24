@@ -27,6 +27,7 @@ Unityへ渡す静的データは、手入力ではなく `npm run export:unity` 
 | AI | `app/game/EnemyAI.ts` | 隠しセルを読まない同じ決定規則と seed |
 | MISSION | `app/game/Campaign.ts`, `app/game/ExtremeMissions.ts`, `app/game/AdditionalMissions.ts`, `app/game/MissionRules.ts` | 固定状況・目的・制約・評価の再現 |
 | INITIAL TRAINING | `app/game/Training.ts`, `app/game/TrainingRules.ts`, `app/game/TrainingProgress.ts` | 教材順序と進捗保存の再現 |
+| 映像教練・解放演出 | `app/game/BriefingSequence.ts`, `app/game/TrainingStoryboard.ts`, `app/game/ModeAuthorization.ts` | JSON正本のcue、盤面注釈、保存結果別の解放報告を再現 |
 | 表現・レイアウト | `app/game/PresentationContract.ts`, `app/globals.css` | 表示名・時間・材質契約を保った Safe Area 対応の uGUI + TextMeshPro |
 | 音 | `app/game/AudioManager.ts` | 同じイベント種別・待ち時間・脈動を再現 |
 
@@ -98,19 +99,21 @@ AudioClip または本作専用 WAV）の詳細は [Unity UI handoff](UNITY_UI_H
 
 1. [Unity UI handoff](UNITY_UI_HANDOFF.md) — Canvas、Safe Area、フォント、資産、
    演出、保存、Android QA、移植順。
-2. [Unity implementation map](UNITY_IMPLEMENTATION_MAP.md) — Web正本からUnityのDomain、
+2. [Unity briefing / authorization handoff](UNITY_BRIEFING_HANDOFF.md) — 映像教練、汎用cue再生、
+   モード解放、原子的保存とUnity受入テスト。
+3. [Unity implementation map](UNITY_IMPLEMENTATION_MAP.md) — Web正本からUnityのDomain、
    View、保存、音へ移すデータ境界と受入基準。
-3. [MISSION library spec](MISSION_LIBRARY_SPEC.md) — 28任務のカテゴリ、公開情報、
+4. [MISSION library spec](MISSION_LIBRARY_SPEC.md) — 28任務のカテゴリ、公開情報、
    制約、EXTREME一覧、静的検証。
-4. [MISSION mode spec](MISSION_MODE_SPEC.md) — 初期4任務の詳細、評価順、リトライ、
+5. [MISSION mode spec](MISSION_MODE_SPEC.md) — 初期4任務の詳細、評価順、リトライ、
    AAR、canonical vector。
-5. [INITIAL TRAINING spec](TRAINING_MODE_SPEC.md) — 9教程、実配置、損傷報告、誤指令、進捗、全教程修了。
-6. [SURVIVAL directive](SURVIVAL_4_OPERATION_SPEC.md) — 4作戦、SEA BAT、永続損耗、
+6. [INITIAL TRAINING spec](TRAINING_MODE_SPEC.md) — 9教程、実配置、損傷報告、誤指令、進捗、全教程修了。
+7. [SURVIVAL directive](SURVIVAL_4_OPERATION_SPEC.md) — 4作戦、SEA BAT、永続損耗、
    脈動。
-7. [Responsive UI contract](RESPONSIVE_UI_SPEC.md) と
+8. [Responsive UI contract](RESPONSIVE_UI_SPEC.md) と
    [Responsive UI QA](RESPONSIVE_UI_QA.md) — サイズ、操作、アクセシビリティ、実測。
-8. [Text style audit](TEXT_STYLE_AUDIT.md) — 用語、英日表記、文字列の正本。
-9. [Mission clearability report](MISSION_CLEARABILITY_REPORT.md) — 28本の release-screen
+9. [Text style audit](TEXT_STYLE_AUDIT.md) — 用語、英日表記、文字列の正本。
+10. [Mission clearability report](MISSION_CLEARABILITY_REPORT.md) — 28本の release-screen
    sample と canonical route、歴史的16任務ベンチマーク。
 
 ## Web ↔ Unity parity チェックリスト
@@ -125,6 +128,8 @@ AudioClip または本作専用 WAV）の詳細は [Unity UI handoff](UNITY_UI_H
   別テストにする。
 - [ ] 誤った教程指令が無消費であること、再受講が重複保存されないこと、全9教程以外で
   `TRAINING COMPLETE` を出さないことを確認する。
+- [ ] 9教程のopening / guided step / damage review / debrief、5段階のモード解放報告を
+  JSON正本から再生し、再生中に盤面、弾薬、AI、計時を進めないことを確認する。
 - [ ] `UNCLEARED` / `CLEARED` / `COMPLETE`、カテゴリ切替時の `ALL` reset、候補座標、
   難易度 `n / 6`、LOGと結果の文言・aria labelを照合する。
 - [ ] 402×874、568×320、844×390、834×1112、1366×768以上で、Safe Area、主操作、

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import {
   CELL_LABELS,
   GAME_TITLE,
@@ -87,7 +87,7 @@ import {
 import {
   MODE_ROUTE,
   PROGRESSION_STORAGE_KEY,
-  completeMode,
+  commitModeCompletion,
   createEmptyProgression,
   debugUnlockAllFromSearch,
   isTrainingLessonUnlocked,
@@ -101,6 +101,23 @@ import {
   type ProgressionMode,
   type ProgressionState,
 } from "./Progression.ts";
+import {
+  buildModeAuthorizationSequence,
+  modeAuthorizationFor,
+  type ModeAuthorizationPresentation,
+} from "./ModeAuthorization.ts";
+import { BriefingCoach } from "./BriefingCoach.tsx";
+import { CLOSED_BRIEFING, briefingDirector } from "./BriefingDirector.ts";
+import {
+  buildTrainingDamageReview,
+  buildTrainingDebrief,
+  buildTrainingIntroduction,
+  buildTrainingStepBriefing,
+  buildTrainingStoryboard,
+  trainingDirectiveCount,
+  type BriefingCue,
+  type BriefingDismissReason,
+} from "./TrainingStoryboard.ts";
 
 type Phase = "placement" | "player" | "enemy" | "review" | "victory" | "defeat";
 type ActiveEffect = "none" | "target" | "scan" | "impact";
@@ -113,7 +130,7 @@ type PlacementBackup = { id: ShipId; start: Coord; orientation: Orientation };
 type MissionLibrarySection = "tactical" | "archive" | "extreme" | "training";
 type MissionCompletionFilter = "all" | "uncleared" | "cleared";
 type MissionClock = { accumulatedMs: number; activeSince: number | null };
-type AuthorizationNotice = { completed: ProgressionMode; authorized: ProgressionMode | null };
+type AuthorizationNotice = ModeAuthorizationPresentation & { persisted: boolean };
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const activeNow = () => typeof performance === "undefined" ? Date.now() : performance.now();
@@ -214,6 +231,7 @@ export function DeepBlueGrid() {
   const missionEnemySunkOrderRef = useRef<ShipId[]>([]);
   const enemyIdentifiedRef = useRef<ShipId[]>([]);
   const missionClockRef = useRef<MissionClock>({ accumulatedMs: 0, activeSince: null });
+  const progressionRef = useRef<ProgressionState>(createEmptyProgression());
 
   const [stageIndex, setStageIndex] = useState(0);
   const [difficulty, setDifficulty] = useState<GameMode | null>(null);
@@ -283,7 +301,10 @@ export function DeepBlueGrid() {
   const [accessNotice, setAccessNotice] = useState("");
   const [persistenceWarning, setPersistenceWarning] = useState("");
   const [authorizationNotice, setAuthorizationNotice] = useState<AuthorizationNotice | null>(null);
+  const [authorizationBriefingPresented, setAuthorizationBriefingPresented] = useState(false);
   const [trainingHoldNotice, setTrainingHoldNotice] = useState("");
+  const [briefingState, dispatchBriefing] = useReducer(briefingDirector, CLOSED_BRIEFING);
+  const [briefingCue, setBriefingCue] = useState<BriefingCue | null>(null);
   const [missionRecordUpdate, setMissionRecordUpdate] = useState<MissionRecordUpdate | null>(null);
   const [missionElapsedMs, setMissionElapsedMs] = useState(0);
   const [missionSonarReportCount, setMissionSonarReportCount] = useState(0);
@@ -293,6 +314,14 @@ export function DeepBlueGrid() {
   const extremeIntelWithheld = isExtremeDefeat && resultReview;
   const placementPreviewActive = phase === "placement" && !player.current.ships.some((ship) => ship.id === selectedShip);
   const placementValid = placementPreviewActive && player.current.canPlace(selectedShip, cursor, orientation);
+
+  const handleBriefingCueChange = useCallback((cue: BriefingCue | null) => {
+    setBriefingCue(cue);
+    if (cue?.plot) setVisibleBoard(cue.plot);
+    if (briefingState.sequence?.kind === "training-debrief" && (phase === "victory" || phase === "defeat")) {
+      setResultReview(Boolean(cue?.plot));
+    }
+  }, [briefingState.sequence?.kind, phase]);
 
   const bump = () => setRevision((value) => value + 1);
   const addLog = (text: string, tone: LogEntry["tone"] = "info", at = Date.now(), kind: LogKind = "event") => {
@@ -321,6 +350,8 @@ export function DeepBlueGrid() {
   const enemyAlive = enemy.current.ships.filter((ship) => !ship.sunk).length;
   const fleetCells = playerFleet.reduce((total, id) => total + SHIPS.find((ship) => ship.id === id)!.size, 0);
   const initStage = useCallback((nextStageIndex: number, nextDifficulty?: GameMode, nextSurvivalFleet?: ShipId[], retry = false) => {
+    dispatchBriefing({ type: "close" });
+    setBriefingCue(null);
     const selectedDifficulty = nextDifficulty ?? difficultyRef.current;
     const nextStage = stagesFor(selectedDifficulty)[nextStageIndex];
     const nextRule = missionRuleFor(selectedDifficulty, nextStage);
@@ -393,6 +424,7 @@ export function DeepBlueGrid() {
     setMissionElapsedMs(0);
     setMissionRecordUpdate(null);
     setAuthorizationNotice(null);
+    setAuthorizationBriefingPresented(false);
     setStageIndex(nextStageIndex);
     setPhase("placement");
     setMessage(nextRule
@@ -441,11 +473,17 @@ export function DeepBlueGrid() {
     const loadedProgression = loadProgression(undefined, evidence);
     const repairedProgression = storedProgressionStatus === "invalid"
       || (storedProgressionStatus === "current" && storedProgression !== serializeProgression(loadedProgression));
-    const shouldPersistProgression = !debugAuthorized && (storedProgressionStatus === "missing" || repairedProgression);
+    // A fresh install does not need an empty save. Persist only when verified
+    // legacy evidence actually recovers authorization; ordinary progress is
+    // committed once, at the mode-clear boundary.
+    const shouldPersistProgression = !debugAuthorized
+      && loadedProgression.completedModes.length > 0
+      && (storedProgressionStatus === "missing" || repairedProgression);
     const progressionPersisted = !shouldPersistProgression || saveProgression(loadedProgression);
     const stateFrame = window.requestAnimationFrame(() => {
       setTrainingProgress(loadedTraining);
       setMissionRecords(loadedRecords);
+      progressionRef.current = loadedProgression;
       setProgression(loadedProgression);
       setDebugAll(debugAuthorized);
       if (storedProgressionStatus === "future") setAccessNotice("この端末には新しい版の進行記録があります。記録を上書きせず、確認できた既存実績だけで作戦権限を復元しました。");
@@ -499,13 +537,17 @@ export function DeepBlueGrid() {
 
   const recordModeCompletion = (mode: ProgressionMode) => {
     if (debugAll) return;
-    const updated = completeMode(progression, mode);
-    if (updated === progression) return;
-    const persisted = saveProgression(updated);
-    setProgression(updated);
-    if (!persisted) setPersistenceWarning("この端末に作戦権限を保存できません。現在の画面では解放済みですが、再読込後に戻る可能性があります。");
-    const completedIndex = MODE_ROUTE.indexOf(mode);
-    setAuthorizationNotice({ completed: mode, authorized: MODE_ROUTE[completedIndex + 1] ?? null });
+    const commit = commitModeCompletion(progressionRef.current, mode);
+    if (!commit.changed) return;
+    progressionRef.current = commit.progression;
+    setProgression(commit.progression);
+    if (!commit.persisted) {
+      setPersistenceWarning(commit.writeProtected
+        ? "この端末には新しい版の進行記録があります。互換性を守るため上書きせず、今回の解放は現在の画面だけに反映しました。"
+        : "この端末に作戦権限を保存できません。現在の画面では解放済みですが、再読込後に戻る可能性があります。");
+    }
+    setAuthorizationNotice({ ...modeAuthorizationFor(mode), persisted: commit.persisted });
+    setAuthorizationBriefingPresented(false);
   };
 
   useEffect(() => {
@@ -559,6 +601,10 @@ export function DeepBlueGrid() {
     }
     setMissionLibraryOpen(false);
     initStage(startingIndex, selectedDifficulty, startingFleet);
+    if (selectedDifficulty === "training" && selectedRule?.training) {
+      dispatchBriefing({ type: "open", sequence: buildTrainingIntroduction(selectedRule) });
+      pauseMissionClock();
+    }
   };
 
   const openMissionLibrary = (section: MissionLibrarySection = "tactical") => {
@@ -580,6 +626,8 @@ export function DeepBlueGrid() {
 
   const returnToMissionLibrary = () => {
     pauseMissionClock();
+    dispatchBriefing({ type: "close" });
+    setBriefingCue(null);
     const returnMode: GameMode = difficultyRef.current === "training" ? "training" : "mission";
     difficultyRef.current = "casual";
     setDifficulty(null);
@@ -633,6 +681,8 @@ export function DeepBlueGrid() {
         time: renderTime,
         escortZone: phase === "placement" && isEscort(selectedShip),
         scanActive: activeEffect === "scan",
+        briefingMarks: briefingCue?.plot === "player" ? briefingCue.marks : [],
+        briefingVisual: briefingCue?.plot === "player" ? briefingCue.visual : undefined,
       });
     }
     if (enemyCanvas.current) {
@@ -658,11 +708,13 @@ export function DeepBlueGrid() {
               complete: missionSonarReportsRef.current.some((actual) => sameCoord(actual.origin, report.origin) && actual.contact === report.contact),
             }))
           : [],
-        trainingHighlights: missionRule?.training?.steps[missionFriendlyActionsRef.current]?.highlight ?? [],
+        trainingHighlights: briefingCue ? [] : missionRule?.training?.steps[missionFriendlyActionsRef.current]?.highlight ?? [],
+        briefingMarks: briefingCue?.plot === "enemy" ? briefingCue.marks : [],
+        briefingVisual: briefingCue?.plot === "enemy" ? briefingCue.visual : undefined,
         time: renderTime,
       });
     }
-  }, [phase, cursor, selectedShip, orientation, weapon, attackOrientation, previewTargets, active, activeEffect, locked, placementPreviewActive, playerWakes, enemyWakes, enemyIdentified, enemyIdentificationCoords, identificationRules, resultReview, extremeIntelWithheld, revision, missionRule, reducedMotion]);
+  }, [phase, cursor, selectedShip, orientation, weapon, attackOrientation, previewTargets, active, activeEffect, locked, placementPreviewActive, playerWakes, enemyWakes, enemyIdentified, enemyIdentificationCoords, identificationRules, resultReview, extremeIntelWithheld, revision, missionRule, reducedMotion, briefingCue]);
 
   useEffect(() => {
     animation.current = requestAnimationFrame(render);
@@ -688,7 +740,7 @@ export function DeepBlueGrid() {
         if (difficultyRef.current === "mission" || difficultyRef.current === "training") pauseMissionClock();
       } else {
         recorder?.resume(activeNow());
-        if (difficultyRef.current === "mission" || difficultyRef.current === "training") resumeMissionClock();
+        if ((difficultyRef.current === "mission" || difficultyRef.current === "training") && !briefingState.sequence) resumeMissionClock();
       }
     };
     document.addEventListener("visibilitychange", updateOperationClock);
@@ -697,7 +749,7 @@ export function DeepBlueGrid() {
       document.removeEventListener("visibilitychange", updateOperationClock);
       window.removeEventListener("pageshow", updateOperationClock);
     };
-  }, []);
+  }, [briefingState.sequence]);
 
   const randomize = () => {
     if (!interactivePlacement || placementDrill) return;
@@ -812,6 +864,9 @@ export function DeepBlueGrid() {
     setMissionElapsedMs(elapsedMs);
     setPhase(outcome.result);
     setLocked(false);
+    if (outcome.result === "victory" && missionRule?.training) {
+      dispatchBriefing({ type: "open", sequence: buildTrainingDebrief(missionRule) });
+    }
     if (outcome.result === "victory") audio.current?.victory();
     else audio.current?.defeat();
   };
@@ -848,6 +903,8 @@ export function DeepBlueGrid() {
     setPhase("review");
     setLocked(false);
     bump();
+    pauseMissionClock();
+    dispatchBriefing({ type: "open", sequence: buildTrainingDamageReview(missionRule!) });
   };
 
   const startBattle = () => {
@@ -931,9 +988,12 @@ export function DeepBlueGrid() {
       return;
     }
     setPhase("player");
+    const firstTrainingPhase = missionRule?.training
+      ? Number(Boolean(missionRule.training.placementDrill)) + Number(Boolean(missionRule.training.enemyDemonstration)) + 1
+      : 1;
     setMessage(missionRule
       ? missionRule.training
-        ? `TRAINING DIRECTIVE 1：${missionRule.training.steps[0].instruction}`
+        ? `TRAINING PHASE ${firstTrainingPhase}：${missionRule.training.steps[0].instruction}`
         : `${controlStation.english}：${missionRule.directive}`
       : "FIRE CONTROL：兵装を選択し、敵情図へ目標を指示してください。");
     setFlash("player");
@@ -941,6 +1001,10 @@ export function DeepBlueGrid() {
     audio.current?.confirm();
     audio.current?.turn();
     bump();
+    if (missionRule?.training) {
+      pauseMissionClock();
+      dispatchBriefing({ type: "open", sequence: buildTrainingStepBriefing(missionRule, missionFriendlyActionsRef.current) });
+    }
   };
 
   const completeEnemyFleetDefeat = () => {
@@ -1148,6 +1212,10 @@ export function DeepBlueGrid() {
     audio.current?.turn();
     setTimeout(() => setFlash(null), PRESENTATION_TIMINGS_MS.turnFlash);
     setLocked(false);
+    if (missionRule?.training) {
+      pauseMissionClock();
+      dispatchBriefing({ type: "open", sequence: buildTrainingStepBriefing(missionRule, missionFriendlyActionsRef.current) });
+    }
   };
 
   const showBoard = (board: "player" | "enemy") => {
@@ -1157,16 +1225,45 @@ export function DeepBlueGrid() {
     }
   };
 
+  const openTrainingReel = (currentStep = false) => {
+    if (!missionRule?.training) return;
+    const sequence = phase === "placement"
+      ? buildTrainingIntroduction(missionRule)
+      : phase === "review" && missionRule.training.enemyDemonstration
+        ? buildTrainingDamageReview(missionRule)
+        : currentStep || phase === "player"
+          ? buildTrainingStepBriefing(missionRule, missionFriendlyActionsRef.current)
+          : buildTrainingStoryboard(missionRule);
+    pauseMissionClock();
+    dispatchBriefing({ type: "open", sequence });
+  };
+
+  const openTrainingDebrief = () => {
+    if (!missionRule?.training) return;
+    dispatchBriefing({ type: "open", sequence: buildTrainingDebrief(missionRule) });
+  };
+
+  const closeBriefing = (reason: BriefingDismissReason) => {
+    dispatchBriefing({ type: "close", reason });
+    setBriefingCue(null);
+    setResultReview(false);
+    setVisibleBoard(phase === "player" ? "enemy" : "player");
+    if (difficultyRef.current === "training" && phase !== "victory" && phase !== "defeat") resumeMissionClock();
+  };
+
   const continueTrainingInstruction = () => {
     const next = missionRule?.training?.steps[missionFriendlyActionsRef.current];
     if (!next) return false;
+    const phaseOffset = Number(Boolean(missionRule?.training?.placementDrill)) + Number(Boolean(missionRule?.training?.enemyDemonstration));
     setWeapon(next.expected.weapon);
     setAttackOrientation(next.expected.weapon === "sparrow" ? next.expected.orientation : "north");
     setPicked([]);
     setTrainingHoldNotice("");
     setPhase("player");
     setLocked(false);
-    setMessage(`TRAINING DIRECTIVE ${missionFriendlyActionsRef.current + 1}：${next.instruction}`);
+    setMessage(`TRAINING PHASE ${phaseOffset + missionFriendlyActionsRef.current + 1}：${next.instruction}`);
+    pauseMissionClock();
+    dispatchBriefing({ type: "open", sequence: buildTrainingStepBriefing(missionRule!, missionFriendlyActionsRef.current) });
     return true;
   };
 
@@ -1644,6 +1741,7 @@ export function DeepBlueGrid() {
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      if (briefingState.sequence) return;
       if (logOpen) {
         if (event.key === "Escape") {
           event.preventDefault();
@@ -1695,13 +1793,13 @@ export function DeepBlueGrid() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [phase, cursor, weapon, attackOrientation, picked, locked, ready, selectedShip, orientation, placementPreviewActive, placementBackup, playerFleet, difficulty, logOpen, weaponOrder]);
+  }, [phase, cursor, weapon, attackOrientation, picked, locked, ready, selectedShip, orientation, placementPreviewActive, placementBackup, playerFleet, difficulty, logOpen, weaponOrder, briefingState.sequence]);
 
   useEffect(() => {
     // Dialogs remain keyboard-contained on desktop without changing the touch
     // layout. Restoring the prior focus also keeps gamepad/keyboard users near
     // the control that opened LOG or the mission library.
-    const resultDialogOpen = (phase === "victory" || phase === "defeat") && !resultReview;
+    const resultDialogOpen = (phase === "victory" || phase === "defeat") && !resultReview && !briefingState.sequence;
     const selector = logOpen
       ? ".log-drawer"
       : !difficulty && missionLibraryOpen
@@ -1743,7 +1841,7 @@ export function DeepBlueGrid() {
       dialog.removeEventListener("keydown", keepFocusInside);
       previousFocus?.focus({ preventScroll: true });
     };
-  }, [difficulty, logOpen, missionLibraryOpen, phase, resultReview]);
+  }, [briefingState.sequence, difficulty, logOpen, missionLibraryOpen, phase, resultReview]);
 
   const shipCard = (board: Board, shipId: ShipId, options: ShipCardOptions = {}) => {
     const { selectable = false, concealDamage = false, concealIdentity = false, identified = false, contactIndex = 0 } = options;
@@ -1806,6 +1904,14 @@ export function DeepBlueGrid() {
   const campaignClear = phase === "victory" && (difficulty === "training"
     ? trainingAllComplete
     : difficulty !== "mission" && stageIndex === activeStages.length - 1);
+  useEffect(() => {
+    if (phase !== "victory" || !authorizationNotice || authorizationBriefingPresented || briefingState.sequence) return;
+    setAuthorizationBriefingPresented(true);
+    dispatchBriefing({
+      type: "open",
+      sequence: buildModeAuthorizationSequence(authorizationNotice.completed, authorizationNotice.persisted),
+    });
+  }, [authorizationBriefingPresented, authorizationNotice, briefingState.sequence, phase]);
   const currentUnitEnglish = progressUnit.english;
   const currentUnitJapanese = progressUnit.japanese;
   const missionOrdersRemaining = missionRule ? Math.max(0, missionRule.objective.maxFriendlyActions - stats.turns) : null;
@@ -1943,6 +2049,10 @@ export function DeepBlueGrid() {
       addLog(`${routeUnit(difficultyRef.current).english} ${stageIndex + 1} ${difficultyRef.current === "mission" || difficultyRef.current === "training" ? "固定状況を再読込" : "艦隊配置を再設定"}。`, "info", at);
     }
     initStage(stageIndex, difficulty ?? difficultyRef.current, difficulty === "survival" ? survivalFleetRef.current : undefined, true);
+    if (difficultyRef.current === "training" && missionRule?.training) {
+      dispatchBriefing({ type: "open", sequence: buildTrainingIntroduction(missionRule) });
+      pauseMissionClock();
+    }
   };
 
   const addSupplyLog = (nextFleet?: ShipId[]) => {
@@ -1965,7 +2075,15 @@ export function DeepBlueGrid() {
     }
     if (difficulty === "training") {
       if (phase === "defeat") retryCurrentStage();
-      else if (hasNextTrainingLesson) initStage(nextTrainingIndex, "training");
+      else if (hasNextTrainingLesson) {
+        const nextStage = activeStages[nextTrainingIndex];
+        const nextRule = missionRuleFor("training", nextStage);
+        initStage(nextTrainingIndex, "training");
+        if (nextRule?.training) {
+          dispatchBriefing({ type: "open", sequence: buildTrainingIntroduction(nextRule) });
+          pauseMissionClock();
+        }
+      }
       else returnToMissionLibrary();
       return;
     }
@@ -1992,20 +2110,29 @@ export function DeepBlueGrid() {
     }
   };
 
+  const renderTrainingDirective = (compact = false) => {
+    if (!missionRule?.training) return null;
+    const stepIndex = Math.min(missionFriendlyActionsRef.current, missionRule.training.steps.length - 1);
+    const step = missionRule.training.steps[stepIndex];
+    const phaseOffset = Number(Boolean(missionRule.training.placementDrill)) + Number(Boolean(missionRule.training.enemyDemonstration));
+    const phaseNumber = phaseOffset + stepIndex + 1;
+    const phaseCount = trainingDirectiveCount(missionRule);
+    return <section className={`training-directive ${compact ? "compact-live" : ""}`} aria-live="polite" aria-label="現在の訓練指示" data-briefing-anchor={compact ? "status" : undefined}>
+      <header>
+        <span>TRAINING PHASE {String(phaseNumber).padStart(2, "0")} / {String(phaseCount).padStart(2, "0")}</span>
+        <b>{step.title}</b>
+        <button onClick={() => openTrainingReel(true)}><strong>図解を再生</strong><small>VISUAL REPLAY</small></button>
+      </header>
+      <p>{step.instruction}</p>
+      <div className="training-input-hint"><b>今すること</b><span>「{WEAPON_META[step.expected.weapon].label}」を選択 → {missionOrderTargetLabel(step.expected)}を指定 → 「{ACTION_LABEL[step.expected.weapon]}」</span></div>
+      {trainingHoldNotice && <strong className="training-hold-notice" role="alert">TRAINING HOLD / {trainingHoldNotice}</strong>}
+      {!compact && <><small>{step.doctrine}</small><details><summary>文章で説明を確認</summary><p>{missionRule.training.plainBrief}</p></details></>}
+    </section>;
+  };
+
   const renderWeaponControls = () => (
     <>
-      {missionRule?.training && (() => {
-        const stepIndex = Math.min(missionFriendlyActionsRef.current, missionRule.training.steps.length - 1);
-        const step = missionRule.training.steps[stepIndex];
-        return <section className="training-directive" aria-live="polite" aria-label="現在の訓練指示">
-          <header><span>TRAINING DIRECTIVE {String(stepIndex + 1).padStart(2, "0")} / {String(missionRule.training.steps.length).padStart(2, "0")}</span><b>{step.title}</b></header>
-          <p>{step.instruction}</p>
-          <div className="training-input-hint"><b>操作</b><span>「{WEAPON_META[step.expected.weapon].label}」を選択 → {missionOrderTargetLabel(step.expected)}を指定 → 「{ACTION_LABEL[step.expected.weapon]}」ボタン</span></div>
-          {trainingHoldNotice && <strong className="training-hold-notice" role="alert">TRAINING HOLD / {trainingHoldNotice}</strong>}
-          <small>{step.doctrine}</small>
-          <details><summary>説明を再表示</summary><p>{missionRule.training.plainBrief}</p></details>
-        </section>;
-      })()}
+      {renderTrainingDirective()}
       <div className={"weapon-peek " + (weaponPeek ? "visible" : "")} aria-live="polite">
         <span>SYSTEM STATUS</span>
         <b>{displayedMeta.label}</b>
@@ -2039,7 +2166,7 @@ export function DeepBlueGrid() {
         <button className="cmd cancel-command" onClick={cancelAim} disabled={locked || !picked.length}>
           <b>CANCEL</b><small>照準解除 / ESC</small>
         </button>
-        <button className={"cmd confirm " + (ready ? "ready" : "")} onClick={() => void confirmAction()} disabled={!ready || locked}>
+        <button className={"cmd confirm " + (ready ? "ready" : "")} onClick={() => void confirmAction()} disabled={!ready || locked} data-briefing-anchor="confirm-action">
           <b>{confirmLabel}</b><small>{weapon === "sparrow" ? `方位 ${STRADDLE_DIRECTION[attackOrientation]} / 4区画` : `${picked.length} / ${targetRequirement} SELECTED`}</small>
         </button>
       </div>
@@ -2056,6 +2183,7 @@ export function DeepBlueGrid() {
           <div><dt>CONSTRAINTS / 制約</dt><dd>{missionRule.condition}</dd></div>
           {missionRule.category !== "archive" && <div><dt>{missionRule.category === "training" ? "DOCTRINE / 要点" : "HOSTILE DISCLOSURE / 敵情"}</dt><dd>{missionRule.category === "training" ? missionRule.training?.doctrine : missionRule.enemyDisclosure.summary}</dd></div>}
         </dl>
+        {missionRule.training && <button className="training-reel-open" onClick={() => openTrainingReel(false)}><b>TRAINING REEL / 図解を再生</b><small>実際の盤面と操作卓で最初から確認</small></button>}
         {missionRule.training?.placementDrill && (
           <section className="training-setup-plan" aria-label="配置訓練の手順">
             <header><span>PLACEMENT DRILL</span><b>{missionRule.training.placementDrill.title}</b></header>
@@ -2118,6 +2246,7 @@ export function DeepBlueGrid() {
           <header><span>PLACEMENT DRILL</span><b>{placementDrill.title}</b></header>
           <p>{missionRule.training.plainBrief}</p>
           <strong>{placementDrill.instruction}</strong>
+          <button className="training-reel-open" onClick={() => openTrainingReel(false)}><b>TRAINING REEL / 図解を再生</b><small>配置・回転・確定を実画面で確認</small></button>
           <ul>{placementDrill.placements.map((placement) => {
             const definition = SHIPS.find((ship) => ship.id === placement.id);
             const direction = { north: "北（上）", east: "東（右）", south: "南（下）", west: "西（左）" }[placement.orientation];
@@ -2220,7 +2349,7 @@ export function DeepBlueGrid() {
           {!cardUnlocked ? (
             <><span>AUTHORIZATION REQUIRED</span><b>{lockReason}</b></>
           ) : item.category === "training" ? (
-            <><span>{cleared ? "LESSON COMPLETE" : "AVAILABLE"}</span><b>{item.training?.steps.length ?? item.objective.maxFriendlyActions} DIRECTIVES</b></>
+            <><span>{cleared ? "LESSON COMPLETE" : "AVAILABLE"}</span><b>{trainingDirectiveCount(item)} PHASES / VISUAL REEL</b></>
           ) : record ? (
             <><span>CLEARED × {record.clearCount}</span><b>BEST {record.fewestCommands} ORDERS / {formatOperationDuration(record.fastestActiveMs)}</b></>
           ) : (
@@ -2289,7 +2418,7 @@ export function DeepBlueGrid() {
         </nav>
       )}
 
-      <section className={"status-strip " + (phase === "enemy" ? "enemy" : phase === "review" ? "review" : "")} aria-live="polite">
+      <section className={"status-strip " + (phase === "enemy" ? "enemy" : phase === "review" ? "review" : "")} aria-live="polite" data-briefing-anchor="status">
         <span className="tag">{phase === "placement" ? difficulty === "mission" || difficulty === "training" ? "REVIEW" : "DEPLOY" : phase === "enemy" ? "HOSTILE" : phase === "review" ? "REPORT" : controlStation.english}</span>
         <p><b>{mission.title}</b> — {message}</p>
         <span className="turn-counter">{missionRule ? missionRule.objective.kind === "sonar-reports" ? `LISTENING ${stats.turns}/${missionRule.objective.maxFriendlyActions}` : `ORDERS REMAINING ${missionOrdersRemaining}` : `TURN ${String(phase === "player" && !locked ? stats.turns + 1 : Math.max(1, stats.turns)).padStart(2, "0")}`} / FRIENDLY {ownAlive} / HOSTILE {phase === "placement" ? "?" : enemyAlive}</span>
@@ -2326,7 +2455,7 @@ export function DeepBlueGrid() {
         </aside>
       )}
 
-      <nav className="mobile-field-switch" aria-label="表示する戦術図">
+      <nav className="mobile-field-switch" aria-label="表示する戦術図" data-briefing-anchor="plot-switch">
         <div>
           <b>{resultReview ? extremeIntelWithheld ? "交戦後解析：公開情報を確認" : phase === "defeat" ? "交戦後解析：敵配置を確認" : "最終戦況：両軍戦術図を確認" : phase === "enemy" ? "敵攻撃中：自軍戦術図を表示" : phase === "review" ? "損害報告：自軍戦術図を表示" : phase === "player" ? "指令待機：敵情図を表示" : difficulty === "training" ? "教程確認：両軍戦術図と指示を確認" : difficulty === "mission" ? "状況確認：両軍戦術図を照合" : "艦隊配置：自軍戦術図を表示"}</b>
           <small>{resultReview ? extremeIntelWithheld ? "再挑戦資格保全のため未確認配置は秘匿されます" : "LOGから交戦記録も確認できます" : phase === "placement" && missionRule ? "自軍・敵情・LOGを切り替えて確認できます" : phase === "review" ? `戦闘記録への記載後、${controlStation.japanese}へ復帰` : "状況に合わせて同じ位置へ切り替えます"}</small>
@@ -2363,9 +2492,15 @@ export function DeepBlueGrid() {
         )}
       </nav>
 
+      {difficulty === "training" && phase === "player" && !result && (
+        <div className="training-live-coach compact-command-bottom">
+          {renderTrainingDirective(true)}
+        </div>
+      )}
+
       <div className={"combat-workspace " + (difficulty && (!result || resultReview) ? "active" : "")}>
         <div className="boards" ref={boardsRef}>
-        <section className={"tactical-panel " + (compactViewport && visibleBoard !== "player" ? "mobile-hidden" : "")}>
+        <section className={"tactical-panel " + (compactViewport && visibleBoard !== "player" ? "mobile-hidden" : "")} data-briefing-anchor="own-plot">
           <div className="panel-head"><h2>{UI_TEXT_CATALOG.fields.ownPlot}</h2><span>DEFENSE GRID</span></div>
           {phase !== "placement" && (
             <div className={"enemy-command-help own-field-help " + (phase === "review" || resultReview ? "reviewing" : "")} aria-live="polite">
@@ -2397,7 +2532,7 @@ export function DeepBlueGrid() {
       <div className="fleet-row">{playerFleet.map((id) => shipCard(player.current, id, { selectable: phase === "placement" && interactivePlacement }))}</div>
         </section>
 
-        <section className={"tactical-panel enemy-board " + (compactViewport && visibleBoard !== "enemy" ? "mobile-hidden" : "")}>
+        <section className={"tactical-panel enemy-board " + (compactViewport && visibleBoard !== "enemy" ? "mobile-hidden" : "")} data-briefing-anchor="hostile-plot">
           <div className="panel-head"><h2>{UI_TEXT_CATALOG.fields.enemyPlot}</h2><span>CONTACT GRID</span></div>
           {phase !== "placement" && (
             <div className={"enemy-command-help " + (ready ? "armed" : "")} aria-live="polite">
@@ -2451,11 +2586,11 @@ export function DeepBlueGrid() {
         {difficulty && (!result || resultReview) && (
           <aside className="desktop-command-rail" aria-label="戦術指揮卓">
             {phase === "placement" ? (
-              <section className="placement-tools rail-placement-tools" aria-label={missionRule ? "限定任務作戦資料" : "艦隊配置指揮卓"}>
+              <section className="placement-tools rail-placement-tools" aria-label={missionRule ? "限定任務作戦資料" : "艦隊配置指揮卓"} data-briefing-anchor="placement-tools">
                 {renderPlacementControls("rail")}
               </section>
             ) : phase === "review" ? (
-              <section className="rail-report">
+              <section className="rail-report" data-briefing-anchor="damage-report">
                 <span>DAMAGE REPORT / CIC LOG</span>
                 <b>損害報告を戦闘記録へ反映</b>
                 <p>自軍戦術図の着弾・損傷・識別警告を報告へ記載します。</p>
@@ -2469,7 +2604,7 @@ export function DeepBlueGrid() {
                   <span>SELECTED SYSTEM</span><b>{displayedMeta.label}</b><em>{displayedPattern} / {displayedState.status}</em>
                   <p>{displayedState.available ? displayedState.reason || displayedMeta.help : displayedState.reason}</p>
                 </section>
-                <section className="command-deck rail-command-deck">{renderWeaponControls()}</section>
+                <section className="command-deck rail-command-deck" data-briefing-anchor="command-deck">{renderWeaponControls()}</section>
                 <div className="battle-log rail-log">
                   <span>CIC EVENT LOG / ZULU TIME / ENTRIES {logs.length}</span>
                   <ol>{[...logs].reverse().map((entry) => <li key={entry.id} className={`${entry.tone} ${entry.kind}`}><time>{formatZulu(entry.at)}</time><span>{entry.text}</span></li>)}</ol>
@@ -2482,11 +2617,11 @@ export function DeepBlueGrid() {
 
 
       {phase === "placement" ? (
-        <section className="placement-tools compact-placement-bottom">
+        <section className="placement-tools compact-placement-bottom" data-briefing-anchor="placement-tools">
           {renderPlacementControls("bottom")}
         </section>
       ) : phase === "review" ? (
-        <section className="turn-review compact-command-bottom" aria-label="損害報告">
+        <section className="turn-review compact-command-bottom" aria-label="損害報告" data-briefing-anchor="damage-report">
           <div>
             <span>DAMAGE REPORT / CIC LOG</span>
             <b>着弾・損傷情報を報告へ反映</b>
@@ -2498,7 +2633,7 @@ export function DeepBlueGrid() {
         </section>
       ) : !result ? (
         <>
-          <section className="command-deck compact-command-bottom">
+          <section className="command-deck compact-command-bottom" data-briefing-anchor="command-deck">
             <div className={"weapon-peek " + (weaponPeek ? "visible" : "")} aria-live="polite">
               <span>SYSTEM STATUS</span><b>{displayedMeta.label}</b>
               <em>{displayedPattern} / {displayedState.status}</em>
@@ -2531,7 +2666,7 @@ export function DeepBlueGrid() {
               <button className="cmd cancel-command" onClick={cancelAim} disabled={locked || !picked.length}>
                 <b>CANCEL</b><small>照準解除 / ESC</small>
               </button>
-              <button className={"cmd confirm " + (ready ? "ready" : "")} onClick={() => void confirmAction()} disabled={!ready || locked}>
+              <button className={"cmd confirm " + (ready ? "ready" : "")} onClick={() => void confirmAction()} disabled={!ready || locked} data-briefing-anchor="confirm-action">
                 <b>{confirmLabel}</b><small>{picked.length} / {targetRequirement} SELECTED</small>
               </button>
             </div>
@@ -2723,7 +2858,7 @@ export function DeepBlueGrid() {
 
       {result && !resultReview && (
         <div className="result-modal">
-          <section className={"result-card " + (phase === "defeat" ? "loss" : "")} role="dialog" aria-modal="true" aria-labelledby="result-title">
+          <section className={"result-card " + (phase === "defeat" ? "loss" : "")} role="dialog" aria-modal="true" aria-labelledby="result-title" data-briefing-anchor="result">
             <div className="eyebrow">{currentUnitEnglish} AFTER ACTION REPORT</div>
             <h2 id="result-title">{difficulty === "training"
               ? phase === "victory" ? campaignClear ? "TRAINING COMPLETE" : "LESSON COMPLETE" : "TRAINING HOLD"
@@ -2745,12 +2880,15 @@ export function DeepBlueGrid() {
             </p>
             {authorizationNotice && (
               <section className="new-authorization" role="status" aria-live="assertive" aria-label="新しい作戦権限">
-                <header><span>NEW AUTHORIZATION / 新規作戦権限</span><b>{PROGRESSION_MODE_LABEL[authorizationNotice.completed]} COMPLETE</b></header>
-                {authorizationNotice.authorized ? (
-                  <p><strong>{PROGRESSION_MODE_LABEL[authorizationNotice.authorized]} AUTHORIZED</strong><span>{PROGRESSION_MODE_PLAIN[authorizationNotice.authorized]} モード選択から出撃できます。</span></p>
-                ) : (
-                  <p><strong>ALL OPERATIONS AUTHORIZED</strong><span>全作戦課程を完了しました。達成済みのモードへ何度でも再出撃できます。</span></p>
-                )}
+                <header><span>NEW AUTHORIZATION / 新規作戦権限</span><b>{authorizationNotice.completedLabel} COMPLETE</b></header>
+                <p><strong>{authorizationNotice.authorizedLabel} AUTHORIZED</strong><span>{authorizationNotice.summary}</span></p>
+                <ul>{authorizationNotice.features.map((feature) => <li key={feature}>{feature}</li>)}</ul>
+                <footer>
+                  <small className={authorizationNotice.persisted ? "saved" : "not-saved"}>{authorizationNotice.persisted ? "LOCAL RECORD SAVED" : "LOCAL RECORD NOT SAVED"}</small>
+                  <button type="button" onClick={() => dispatchBriefing({ type: "open", sequence: buildModeAuthorizationSequence(authorizationNotice.completed, authorizationNotice.persisted) })}>
+                    特徴説明を再表示
+                  </button>
+                </footer>
               </section>
             )}
             <div className="operation-time" aria-label="交戦時刻">
@@ -2801,6 +2939,7 @@ export function DeepBlueGrid() {
             {difficulty === "training" && phase === "victory" && missionRule?.training && <section className="training-debrief" aria-label="教程確認事項">
               <header><span>LESSON DEBRIEF</span><b>確認事項</b></header>
               <ul>{missionRule.training.debrief.map((line) => <li key={line}>{line}</li>)}</ul>
+              <button className="training-reel-open" onClick={openTrainingDebrief}><b>VISUAL DEBRIEF / 正解図を再生</b><small>最終射撃解と実戦で残る情報を確認</small></button>
             </section>}
             {difficulty === "mission" && (
               <section className="mission-record-panel" aria-label="限定任務記録">
@@ -2875,6 +3014,13 @@ export function DeepBlueGrid() {
           </section>
         </div>
       )}
+      <BriefingCoach
+        state={briefingState}
+        dispatch={dispatchBriefing}
+        reducedMotion={reducedMotion}
+        onCueChange={handleBriefingCueChange}
+        onDismiss={closeBriefing}
+      />
     </main>
   );
 }

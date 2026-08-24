@@ -5,6 +5,7 @@ import { applyMissionResult, createEmptyMissionRecords } from "../app/game/Missi
 import {
   MODE_ROUTE,
   PROGRESSION_STORAGE_KEY,
+  commitModeCompletion,
   completeMode,
   createEmptyProgression,
   debugUnlockAllFromSearch,
@@ -20,6 +21,10 @@ import {
   serializeProgression,
   updateStoredModeCompletion,
 } from "../app/game/Progression.ts";
+import {
+  MODE_AUTHORIZATION_PRESENTATIONS,
+  buildModeAuthorizationSequence,
+} from "../app/game/ModeAuthorization.ts";
 import { createEmptyTrainingProgress, completeTrainingLesson } from "../app/game/TrainingProgress.ts";
 
 test("fresh progression exposes only training and unlocks one mode at a time", () => {
@@ -125,4 +130,89 @@ test("progression storage helpers tolerate unavailable storage", () => {
   const failing = { getItem() { throw new Error("no read"); }, setItem() { throw new Error("no write"); } };
   assert.deepEqual(loadProgression(failing), createEmptyProgression());
   assert.equal(saveProgression(createEmptyProgression(), failing), false);
+});
+
+test("a mode clear writes progression once, is idempotent, and restores after reload", () => {
+  const memory = new Map<string, string>();
+  let writes = 0;
+  const storage = {
+    getItem(key: string) { return memory.get(key) ?? null; },
+    setItem(key: string, value: string) { writes += 1; memory.set(key, value); },
+  };
+  const first = commitModeCompletion(createEmptyProgression(), "training", storage);
+  assert.deepEqual(first, {
+    progression: { version: 1, completedModes: ["training"] },
+    changed: true,
+    persisted: true,
+    wrote: true,
+    writeProtected: false,
+  });
+  assert.equal(writes, 1);
+  assert.deepEqual(loadProgression(storage), first.progression);
+
+  const duplicate = commitModeCompletion(first.progression, "training", storage);
+  assert.equal(duplicate.changed, false);
+  assert.equal(duplicate.wrote, false);
+  assert.equal(writes, 1);
+
+  let routeProgress = first.progression;
+  for (const mode of MODE_ROUTE.slice(1)) {
+    const clear = commitModeCompletion(routeProgress, mode, storage);
+    assert.equal(clear.wrote, true);
+    routeProgress = clear.progression;
+  }
+  assert.equal(writes, MODE_ROUTE.length);
+  assert.deepEqual(loadProgression(storage).completedModes, MODE_ROUTE);
+});
+
+test("debug completion performs no mutation or write", () => {
+  let writes = 0;
+  const storage = { getItem() { return null; }, setItem() { writes += 1; } };
+  const initial = createEmptyProgression();
+  const result = commitModeCompletion(initial, "training", storage, { write: false });
+  assert.equal(result.progression, initial);
+  assert.equal(result.changed, false);
+  assert.equal(result.wrote, false);
+  assert.equal(writes, 0);
+});
+
+test("mode completion reports write failure and protects future-version records", () => {
+  const failing = { getItem() { return null; }, setItem() { throw new Error("storage denied"); } };
+  const failed = commitModeCompletion(createEmptyProgression(), "training", failing);
+  assert.equal(failed.changed, true);
+  assert.equal(failed.persisted, false);
+  assert.equal(failed.wrote, false);
+  assert.equal(failed.writeProtected, false);
+
+  let writes = 0;
+  const future = {
+    getItem() { return '{"version":2,"completedModes":["training"]}'; },
+    setItem() { writes += 1; },
+  };
+  const protectedResult = commitModeCompletion(createEmptyProgression(), "training", future);
+  assert.equal(protectedResult.changed, true);
+  assert.equal(protectedResult.persisted, false);
+  assert.equal(protectedResult.writeProtected, true);
+  assert.equal(writes, 0);
+});
+
+test("every completed mode has a two-scene feature briefing for the actual route", () => {
+  assert.deepEqual(MODE_ROUTE.map((mode) => MODE_AUTHORIZATION_PRESENTATIONS[mode].authorized), [
+    "casual",
+    "tactics",
+    "mission",
+    "survival",
+    "extreme",
+  ]);
+  for (const mode of MODE_ROUTE) {
+    const presentation = MODE_AUTHORIZATION_PRESENTATIONS[mode];
+    assert.equal(presentation.features.length, 3);
+    assert.ok(presentation.features.every(Boolean));
+    const sequence = buildModeAuthorizationSequence(mode);
+    assert.equal(sequence.kind, "operation-clear");
+    assert.equal(sequence.cues.length, 2);
+    assert.match(sequence.cues[1].title, /AUTHORIZED$/);
+    assert.deepEqual(sequence.cues[1].facts, presentation.features);
+  }
+  assert.match(buildModeAuthorizationSequence("training", false).cues[0].facts.join(" "), /保存未完了/);
 });

@@ -4,7 +4,7 @@
   "sourceRepository": "https://github.com/spthx/deep-blue-grid",
   "sourceBranch": "master",
   "sourceRef": "unity-handoff-2026-08-21-progression-v2",
-  "publicReferenceUrl": "https://spthx.github.io/deep-blue-grid/",
+  "publicReferenceUrl": "https://deep-blue-grid.pages.dev/",
   "primaryContent": "unity-content-v2.json",
   "editorValidationFixture": "unity-validation-v1.json",
   "runtimeExclusions": [
@@ -22,6 +22,7 @@
     "../UNITY_HANDOFF_INDEX.md",
     "../UNITY_IMPLEMENTATION_MAP.md",
     "../UNITY_UI_HANDOFF.md",
+    "../UNITY_BRIEFING_HANDOFF.md",
     "../RESPONSIVE_UI_SPEC.md",
     "../RESPONSIVE_UI_QA.md",
     "../TEXT_STYLE_AUDIT.md",
@@ -50,6 +51,10 @@
     "../../app/game/SubmarineWake.ts",
     "../../app/game/engine.ts",
     "../../app/game/PresentationContract.ts",
+    "../../app/game/BriefingSequence.ts",
+    "../../app/game/BriefingDirector.ts",
+    "../../app/game/TrainingStoryboard.ts",
+    "../../app/game/ModeAuthorization.ts",
     "../../app/game/Progression.ts",
     "../../app/game/AudioManager.ts"
   ],
@@ -57,6 +62,7 @@
     "../UNITY_HANDOFF_INDEX.md",
     "../UNITY_IMPLEMENTATION_MAP.md",
     "../UNITY_UI_HANDOFF.md",
+    "../UNITY_BRIEFING_HANDOFF.md",
     "../RESPONSIVE_UI_SPEC.md",
     "../RESPONSIVE_UI_QA.md",
     "../TEXT_STYLE_AUDIT.md",
@@ -89,7 +95,11 @@
     "visualSource": [
       "../../app/game/Renderer.ts",
       "../../app/globals.css",
-      "../../app/game/PresentationContract.ts"
+      "../../app/game/PresentationContract.ts",
+      "../../app/game/BriefingCoach.tsx",
+      "../../app/game/BriefingSequence.ts",
+      "../../app/game/TrainingStoryboard.ts",
+      "../../app/game/ModeAuthorization.ts"
     ],
     "audioSource": "../../app/game/AudioManager.ts",
     "externalAudioFiles": []
@@ -106,7 +116,7 @@
   "validation": [
     "npm run export:unity",
     "npm test",
-    "npm run build:pages",
+    "npm run build:cloudflare",
     "npm run measure:missions -- 100"
   ]
 }

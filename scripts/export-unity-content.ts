@@ -52,7 +52,19 @@ import {
   PROGRESSION_HANDOFF_CONTRACT,
   PROGRESSION_STORAGE_KEY,
   PROGRESSION_VERSION,
+  MODE_ROUTE,
 } from "../app/game/Progression.ts";
+import {
+  buildTrainingDamageReview,
+  buildTrainingDebrief,
+  buildTrainingIntroduction,
+  buildTrainingStepBriefing,
+  buildTrainingStoryboard,
+} from "../app/game/TrainingStoryboard.ts";
+import {
+  MODE_AUTHORIZATION_PRESENTATIONS,
+  buildModeAuthorizationSequence,
+} from "../app/game/ModeAuthorization.ts";
 import { CANONICAL_MISSION_ROUTES } from "./measure-missions.ts";
 
 const SOURCE_REF = "unity-handoff-2026-08-21-progression-v2";
@@ -79,6 +91,7 @@ const handoffDocumentation = [
   "../UNITY_HANDOFF_INDEX.md",
   "../UNITY_IMPLEMENTATION_MAP.md",
   "../UNITY_UI_HANDOFF.md",
+  "../UNITY_BRIEFING_HANDOFF.md",
   "../RESPONSIVE_UI_SPEC.md",
   "../RESPONSIVE_UI_QA.md",
   "../TEXT_STYLE_AUDIT.md",
@@ -95,6 +108,50 @@ const missionCounts = {
   archive: MISSION_LIBRARY.filter((mission) => mission.category === "archive").length,
   extreme: MISSION_LIBRARY.filter((mission) => mission.category === "extreme").length,
 };
+
+const briefingContract = {
+  schemaVersion: 1,
+  sequenceKinds: ["training-intro", "training-debrief", "mode-intro", "operation-clear"],
+  chapters: ["WATCH", "READ", "GUIDED", "CHECK", "DEBRIEF"],
+  focusAnchors: [
+    "overview", "status", "plot-switch", "own-plot", "hostile-plot", "placement-tools",
+    "command-deck", "confirm-action", "damage-report", "result",
+  ],
+  plots: ["player", "enemy"],
+  markTones: ["observe", "target", "exclude", "link"],
+  visualKinds: ["scan", "path", "rotate", "echo-cross", "weapon-pattern", "impact", "link"],
+  dismissReasons: ["complete", "skip"],
+  timing: {
+    clock: "unscaled",
+    pauseWhenHidden: true,
+    pauseGameClock: true,
+    reducedMotion: "manual-navigation-only",
+  },
+  gameStateIsolation: ["board", "ammunition", "turn", "ai", "missionClock"],
+  overlayOrder: ["operational-marks", "wake-selection-preview", "briefing-visual", "briefing-labels", "focus-frame"],
+} as const;
+
+const trainingBriefings = TRAINING_STAGES.map((stage) => {
+  if (!stage.training) throw new Error(`Training stage ${stage.id} has no training definition.`);
+  return {
+    stageId: stage.id,
+    lesson: stage.training.lesson,
+    storyboard: buildTrainingStoryboard(stage),
+    opening: buildTrainingIntroduction(stage),
+    steps: stage.training.steps.map((_, index) => buildTrainingStepBriefing(stage, index)),
+    damageReview: stage.training.enemyDemonstration ? buildTrainingDamageReview(stage) : null,
+    debrief: buildTrainingDebrief(stage),
+  };
+});
+
+const authorizationBriefings = MODE_ROUTE.map((completed) => ({
+  completed,
+  presentation: MODE_AUTHORIZATION_PRESENTATIONS[completed],
+  sequences: {
+    persisted: buildModeAuthorizationSequence(completed, true),
+    saveFailed: buildModeAuthorizationSequence(completed, false),
+  },
+}));
 
 const runtimePayload = {
   schema: "deep-blue-grid.unity-content",
@@ -142,6 +199,11 @@ const runtimePayload = {
     timingsMs: PRESENTATION_TIMINGS_MS,
     responsiveUi: RESPONSIVE_UI_CONTRACT,
     cicMaterial: CIC_MATERIAL_CONTRACT,
+    briefings: {
+      contract: briefingContract,
+      training: trainingBriefings,
+      authorizations: authorizationBriefings,
+    },
   },
   audio: AUDIO_CUE_CONTRACT,
   contentCounts: {
@@ -169,6 +231,15 @@ const runtimePayload = {
       storageKey: PROGRESSION_STORAGE_KEY,
       version: PROGRESSION_VERSION,
       contract: PROGRESSION_HANDOFF_CONTRACT,
+      completionCommit: {
+        resultFields: ["progression", "changed", "persisted", "wrote", "writeProtected"],
+        firstCompletionOnly: true,
+        singleDurableWrite: true,
+        debugWrites: false,
+        futureVersionWrites: false,
+        saveFailureBehavior: "keep runtime authorization and show LOCAL RECORD NOT SAVED until acknowledged",
+        presentationOrder: ["evaluate", "commit-in-memory", "durable-write", "open-authorization-sequence", "resume-after-action-report"],
+      },
     },
     unitySaveData: UNITY_SAVE_DATA_CONTRACT,
   },
@@ -200,7 +271,7 @@ const manifest = {
   sourceRepository: "https://github.com/spthx/deep-blue-grid",
   sourceBranch: "master",
   sourceRef: SOURCE_REF,
-  publicReferenceUrl: "https://spthx.github.io/deep-blue-grid/",
+  publicReferenceUrl: "https://deep-blue-grid.pages.dev/",
   primaryContent: "unity-content-v2.json",
   editorValidationFixture: "unity-validation-v1.json",
   runtimeExclusions: ["unity-validation-v1.json"],
@@ -218,6 +289,10 @@ const manifest = {
     "../../app/game/SubmarineWake.ts",
     "../../app/game/engine.ts",
     "../../app/game/PresentationContract.ts",
+    "../../app/game/BriefingSequence.ts",
+    "../../app/game/BriefingDirector.ts",
+    "../../app/game/TrainingStoryboard.ts",
+    "../../app/game/ModeAuthorization.ts",
     "../../app/game/Progression.ts",
     "../../app/game/AudioManager.ts",
   ],
@@ -230,6 +305,10 @@ const manifest = {
       "../../app/game/Renderer.ts",
       "../../app/globals.css",
       "../../app/game/PresentationContract.ts",
+      "../../app/game/BriefingCoach.tsx",
+      "../../app/game/BriefingSequence.ts",
+      "../../app/game/TrainingStoryboard.ts",
+      "../../app/game/ModeAuthorization.ts",
     ],
     audioSource: "../../app/game/AudioManager.ts",
     externalAudioFiles: [],
@@ -246,7 +325,7 @@ const manifest = {
   validation: [
     "npm run export:unity",
     "npm test",
-    "npm run build:pages",
+    "npm run build:cloudflare",
     "npm run measure:missions -- 100",
   ],
 } as const;

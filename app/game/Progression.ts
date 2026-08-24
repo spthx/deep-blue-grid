@@ -52,6 +52,13 @@ export type MissionQualificationMark = Readonly<{
   complete: boolean;
 }>;
 export type ProgressionSerializedStatus = "missing" | "current" | "invalid" | "future";
+export type ModeCompletionCommit = Readonly<{
+  progression: ProgressionState;
+  changed: boolean;
+  persisted: boolean;
+  wrote: boolean;
+  writeProtected: boolean;
+}>;
 
 export function createEmptyProgression(): ProgressionState {
   return { version: PROGRESSION_VERSION, completedModes: [] };
@@ -207,14 +214,45 @@ export function saveProgression(
 export function updateStoredModeCompletion(
   mode: GameMode,
   storage: ProgressionStorage | null = browserStorage(),
+  options: Readonly<{ write?: boolean }> = {},
 ) {
   const previous = loadProgression(storage);
+  return commitModeCompletion(previous, mode, storage, options);
+}
+
+/**
+ * A mode-clear transaction.  The in-memory authorization and its single
+ * durable write are decided together so repeated result callbacks cannot
+ * incrementally rewrite the same completion.  Debug callers pass
+ * `{ write:false }`, which deliberately changes neither memory nor storage.
+ */
+export function commitModeCompletion(
+  previous: ProgressionState,
+  mode: GameMode,
+  storage: ProgressionStorage | null = browserStorage(),
+  options: Readonly<{ write?: boolean }> = {},
+): ModeCompletionCommit {
+  if (options.write === false) {
+    return { progression: previous, changed: false, persisted: true, wrote: false, writeProtected: false };
+  }
+
   const progression = completeMode(previous, mode);
-  return {
-    progression,
-    changed: progression !== previous,
-    persisted: progression === previous || saveProgression(progression, storage),
-  };
+  if (progression === previous) {
+    return { progression, changed: false, persisted: true, wrote: false, writeProtected: false };
+  }
+
+  if (storage !== null) {
+    try {
+      if (progressionSerializedStatus(storage.getItem(PROGRESSION_STORAGE_KEY)) === "future") {
+        return { progression, changed: true, persisted: false, wrote: false, writeProtected: true };
+      }
+    } catch {
+      return { progression, changed: true, persisted: false, wrote: false, writeProtected: false };
+    }
+  }
+
+  const persisted = saveProgression(progression, storage);
+  return { progression, changed: true, persisted, wrote: persisted, writeProtected: false };
 }
 
 export function debugUnlockAllFromSearch(search: string) {

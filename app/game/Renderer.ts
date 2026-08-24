@@ -1,5 +1,6 @@
 import { CELL_LABELS, GRID_SIZE, SHIPS, type Coord, type Orientation, type ShipId } from "./constants.ts";
 import { Board, criticalCoordFor, harpoonCells, keyOf, radarCells, straddleCells } from "./engine.ts";
+import type { BriefingPlotMark, BriefingVisual } from "./BriefingSequence.ts";
 
 export type RenderOptions = {
   revealShips: boolean; cursor?: Coord; previewShip?: { id: ShipId; orientation: Orientation; valid: boolean };
@@ -7,6 +8,8 @@ export type RenderOptions = {
   attackOrientation?: Orientation; showCritical?: boolean; identifications?: Array<{ coord: Coord; id: ShipId }>; escortZone?: boolean;
   missionZones?: Array<{ origin: Coord; label: string; complete: boolean }>;
   trainingHighlights?: Coord[];
+  briefingMarks?: ReadonlyArray<BriefingPlotMark>;
+  briefingVisual?: BriefingVisual;
 };
 
 export function drawBoard(canvas: HTMLCanvasElement, board: Board, opts: RenderOptions) {
@@ -37,6 +40,8 @@ export function drawBoard(canvas: HTMLCanvasElement, board: Board, opts: RenderO
   for(const wave of opts.waves??[])drawWake(ctx,wave,m,cell,t);
   for(const zone of opts.missionZones??[])drawMissionZone(ctx,zone,m,cell,t);
   for(const coord of opts.trainingHighlights??[])drawTrainingHighlight(ctx,coord,m,cell,t,dpr);
+  if(opts.briefingVisual)drawBriefingVisual(ctx,opts.briefingVisual,m,cell,t,dpr);
+  for(const mark of opts.briefingMarks??[])drawBriefingMark(ctx,mark,m,cell,t,dpr);
   if(opts.cursor){
     let cells=[opts.cursor]; if(opts.previewShip){const def=SHIPS.find(s=>s.id===opts.previewShip!.id)!;cells=board.cellsFor(opts.cursor,def.size,opts.previewShip.orientation,opts.previewShip.id);}
     else if(opts.weapon==="harpoon")cells=harpoonCells(opts.cursor);
@@ -68,6 +73,42 @@ function drawTrainingHighlight(ctx:CanvasRenderingContext2D,coord:Coord,m:number
   for(const [cx,cy,dx,dy] of [[x+inset,y+inset,1,1],[x+cell-inset,y+inset,-1,1],[x+inset,y+cell-inset,1,-1],[x+cell-inset,y+cell-inset,-1,-1]]){
     ctx.beginPath();ctx.moveTo(cx+dx*arm,cy);ctx.lineTo(cx,cy);ctx.lineTo(cx,cy+dy*arm);ctx.stroke();
   }
+  ctx.restore();
+}
+function drawBriefingVisual(ctx:CanvasRenderingContext2D,visual:BriefingVisual,m:number,cell:number,t:number,dpr:number){
+  const valid=(coord:Coord)=>coord.x>=0&&coord.y>=0&&coord.x<GRID_SIZE&&coord.y<GRID_SIZE;
+  const cells=(visual.cells??[]).filter(valid),center=(coord:Coord)=>({x:m+(coord.x+.5)*cell,y:m+(coord.y+.5)*cell});
+  const points=cells.map(center),cycle=((t%2.4)+2.4)%2.4/2.4,pulse=.62+.28*Math.sin(t*4.2);
+  ctx.save();ctx.lineCap="square";ctx.lineJoin="miter";ctx.strokeStyle="#fff0a0";ctx.fillStyle="rgba(255,240,160,.16)";ctx.lineWidth=Math.max(2,dpr*1.45);
+  if(visual.kind==="path"){
+    const from=visual.from&&valid(visual.from)?center(visual.from):points[0],to=visual.to&&valid(visual.to)?center(visual.to):points.at(-1);
+    if(from&&to){ctx.setLineDash([cell*.13,cell*.09]);ctx.beginPath();ctx.moveTo(from.x,from.y);ctx.lineTo(to.x,to.y);ctx.stroke();ctx.setLineDash([]);const x=from.x+(to.x-from.x)*cycle,y=from.y+(to.y-from.y)*cycle;ctx.beginPath();ctx.arc(x,y,Math.max(4*dpr,cell*.1),0,Math.PI*2);ctx.fillStyle="#9ffff8";ctx.fill();}
+  }else if(visual.kind==="scan"&&points.length){
+    const xs=points.map((point)=>point.x),ys=points.map((point)=>point.y),left=Math.min(...xs)-cell*.48,right=Math.max(...xs)+cell*.48,top=Math.min(...ys)-cell*.48,bottom=Math.max(...ys)+cell*.48;
+    ctx.strokeStyle=`rgba(159,255,248,${.48+pulse*.4})`;ctx.strokeRect(left,top,right-left,bottom-top);const sweep=top+(bottom-top)*cycle;ctx.beginPath();ctx.moveTo(left,sweep);ctx.lineTo(right,sweep);ctx.stroke();ctx.fillStyle="rgba(124,229,223,.09)";ctx.fillRect(left,top,right-left,Math.max(0,sweep-top));
+  }else if(visual.kind==="rotate"&&points.length){
+    const cx=points.reduce((sum,point)=>sum+point.x,0)/points.length,cy=points.reduce((sum,point)=>sum+point.y,0)/points.length,r=Math.max(cell*.58,Math.min(cell*1.25,points.length*cell*.13));const end=-Math.PI*.1+cycle*Math.PI*1.5;
+    ctx.strokeStyle="#9ffff8";ctx.beginPath();ctx.arc(cx,cy,r,-Math.PI*.6,end);ctx.stroke();ctx.save();ctx.translate(cx+Math.cos(end)*r,cy+Math.sin(end)*r);ctx.rotate(end+Math.PI/2);ctx.fillStyle="#9ffff8";ctx.beginPath();ctx.moveTo(0,-cell*.14);ctx.lineTo(cell*.11,cell*.1);ctx.lineTo(-cell*.11,cell*.1);ctx.closePath();ctx.fill();ctx.restore();
+  }else if(visual.kind==="echo-cross"){
+    ctx.strokeStyle=`rgba(159,255,248,${.55+pulse*.35})`;for(const point of points){const arm=cell*(.38+.08*pulse);ctx.beginPath();ctx.moveTo(point.x-arm,point.y);ctx.lineTo(point.x+arm,point.y);ctx.moveTo(point.x,point.y-arm);ctx.lineTo(point.x,point.y+arm);ctx.stroke();ctx.beginPath();ctx.arc(point.x,point.y,cell*(.15+.09*cycle),0,Math.PI*2);ctx.stroke();}
+  }else if(visual.kind==="weapon-pattern"){
+    points.forEach((point,index)=>{const wave=.45+.45*Math.sin(t*4-index*.72);ctx.globalAlpha=.45+wave*.5;ctx.fillStyle="rgba(255,240,160,.18)";ctx.fillRect(point.x-cell*.42,point.y-cell*.42,cell*.84,cell*.84);ctx.strokeStyle="#fff0a0";ctx.strokeRect(point.x-cell*.38,point.y-cell*.38,cell*.76,cell*.76);});
+  }else if(visual.kind==="impact"){
+    points.forEach((point,index)=>{const local=(cycle+index/Math.max(1,points.length)*.18)%1;ctx.globalAlpha=1-local;ctx.strokeStyle="#ffb18d";ctx.beginPath();ctx.arc(point.x,point.y,cell*(.12+local*.42),0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(point.x-cell*.32,point.y);ctx.lineTo(point.x+cell*.32,point.y);ctx.moveTo(point.x,point.y-cell*.32);ctx.lineTo(point.x,point.y+cell*.32);ctx.stroke();});
+  }else if(visual.kind==="link"&&points.length>1){
+    ctx.globalAlpha=.65+pulse*.3;ctx.strokeStyle="#d9b8ff";ctx.setLineDash([cell*.12,cell*.07]);ctx.beginPath();ctx.moveTo(points[0].x,points[0].y);for(const point of points.slice(1))ctx.lineTo(point.x,point.y);ctx.stroke();ctx.setLineDash([]);for(const point of points){ctx.beginPath();ctx.arc(point.x,point.y,cell*.11,0,Math.PI*2);ctx.fillStyle="#d9b8ff";ctx.fill();}
+  }
+  ctx.restore();
+}
+function drawBriefingMark(ctx:CanvasRenderingContext2D,mark:BriefingPlotMark,m:number,cell:number,t:number,dpr:number){
+  const x=m+mark.coord.x*cell,y=m+mark.coord.y*cell,p=.82+.12*Math.sin(t*3.2);
+  const palette={observe:{stroke:"#e5d78a",fill:"rgba(229,215,138,.16)"},target:{stroke:"#9ffff8",fill:"rgba(124,229,223,.2)"},exclude:{stroke:"#ff8585",fill:"rgba(255,133,133,.15)"},link:{stroke:"#d9b8ff",fill:"rgba(198,151,255,.16)"}}[mark.tone];
+  ctx.save();ctx.globalAlpha=p;ctx.fillStyle=palette.fill;ctx.strokeStyle=palette.stroke;ctx.lineWidth=Math.max(2,dpr*1.8);
+  if(mark.tone==="exclude")ctx.setLineDash([cell*.12,cell*.07]);
+  ctx.fillRect(x+cell*.06,y+cell*.06,cell*.88,cell*.88);ctx.strokeRect(x+cell*.07,y+cell*.07,cell*.86,cell*.86);ctx.setLineDash([]);
+  const label=mark.label.slice(0,5),badgeH=Math.max(16*dpr,cell*.3),badgeW=Math.min(cell*.84,Math.max(badgeH,label.length*cell*.16));
+  ctx.globalAlpha=1;ctx.fillStyle=palette.stroke;ctx.fillRect(x+cell*.09,y+cell*.09,badgeW,badgeH);
+  ctx.fillStyle="#06131d";ctx.font=`900 ${Math.max(10*dpr,cell*.18)}px monospace`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(label,x+cell*.09+badgeW/2,y+cell*.09+badgeH/2,badgeW*.88);
   ctx.restore();
 }
 function drawRadarScan(ctx:CanvasRenderingContext2D,origin:Coord,contact:boolean,m:number,cell:number,t:number,dpr:number){

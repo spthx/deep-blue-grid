@@ -1,6 +1,6 @@
 # DEEP BLUE GRID — Unity / Android UI・演出引き継ぎ仕様
 
-更新日: 2026-08-12
+更新日: 2026-08-25
 
 対象: 将来の Unity 6 / Android 版。現時点では Unity 実装を開始せず、Web 版を攻略・調整した後に移植するための契約を定める。
 
@@ -25,6 +25,7 @@ Unity 版の基準は「旧作らしさの再解釈」ではなく、**現在の
 | 兵装・艦艇文、演出時間、レスポンシブ・材質契約 | `app/game/PresentationContract.ts` |
 | 色、余白、レスポンシブ配置 | `app/globals.css` |
 | 8×8盤面、艦影、ECHO、音紋、SONAR、重要区画 | `app/game/Renderer.ts` |
+| 映像教練、盤面注釈、モード解放報告 | `app/game/BriefingSequence.ts`, `app/game/TrainingStoryboard.ts`, `app/game/ModeAuthorization.ts`, `docs/UNITY_BRIEFING_HANDOFF.md` |
 | ルール、艦、兵装、乱数 | `app/game/constants.ts`, `app/game/engine.ts` |
 | AI | `app/game/EnemyAI.ts` |
 | MISSION 定義・評価 | `app/game/Campaign.ts`, `app/game/AdditionalMissions.ts`, `app/game/MissionRules.ts` |
@@ -546,13 +547,14 @@ pixel-perfect差分だけを合否にしない。フォントrasterizer差は許
 
 ## 14. 移植開始時の順序
 
-1. Web版をスマートフォン縦持ちで28 MISSIONと6 INITIAL TRAININGを含め実際に攻略し、未解決UIをWebで先に直す。
+1. Web版をスマートフォン縦持ちで28 MISSIONと9 INITIAL TRAININGを含め実際に攻略し、未解決UIをWebで先に直す。
 2. 基準commitと全参照スクリーンショット／動画を固定する。
 3. Domain parity testsを先に移植し、UIなしで同じ入力・結果を確認する。
 4. Theme、font atlas、SafeAreaRoot、4つのLayoutProfileを作る。
 5. 盤面Graphicと入力座標を移植する。
 6. 配置、射撃、Player Review、結果の順にViewModelへ接続する。
-7. 演出queueと音を接続する。演出からDomainを呼ばない。
-8. Browser/Unity比較表を埋め、実機の縦持ちで文字・指移動・Safe Areaを最終調整する。
+7. `presentation.briefings`から教練/解放cueを再生する汎用Directorと盤面overlayを接続する。
+8. 通常の演出queueと音を接続する。演出からDomainを呼ばない。
+9. Browser/Unity比較表を埋め、実機の縦持ちで文字・指移動・Safe Areaを最終調整する。
 
 この順序なら、見た目を直すたびにルールが変わること、Unityの端末差で文字が崩れること、演出短縮で戦況確認が飛ばされることを避けられる。

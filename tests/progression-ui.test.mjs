@@ -31,6 +31,22 @@ test("record persistence failure is visibly reported instead of silently losing 
   assert.match(css, /\.persistence-warning/);
 });
 
+test("first mode completion queues a reusable feature briefing after any active debrief", () => {
+  assert.match(game, /commitModeCompletion\(progressionRef\.current, mode\)/);
+  assert.match(game, /setAuthorizationNotice\(\{ \.\.\.modeAuthorizationFor\(mode\), persisted: commit\.persisted \}\)/);
+  assert.match(game, /if \(phase !== "victory" \|\| !authorizationNotice \|\| authorizationBriefingPresented \|\| briefingState\.sequence\) return;/);
+  assert.match(game, /buildModeAuthorizationSequence\(authorizationNotice\.completed, authorizationNotice\.persisted\)/);
+  assert.match(game, /特徴説明を再表示/);
+});
+
+test("authorization feature copy remains visible in the result report", () => {
+  assert.match(game, /authorizationNotice\.authorizedLabel/);
+  assert.match(game, /authorizationNotice\.features\.map/);
+  assert.match(game, /authorizationNotice\.persisted \? "LOCAL RECORD SAVED" : "LOCAL RECORD NOT SAVED"/);
+  assert.match(css, /\.new-authorization ul/);
+  assert.match(css, /\.new-authorization footer button/);
+});
+
 test("deployment lesson requires a real movable and rotatable placement", () => {
   assert.match(game, /if \(!nextRule\.training\?\.placementDrill\) deployScenarioFleet/);
   assert.match(game, /const interactivePlacement = !missionRule \|\| Boolean\(placementDrill\)/);

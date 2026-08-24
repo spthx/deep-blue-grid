@@ -44,7 +44,9 @@ body {
   -webkit-text-size-adjust: 100%;
 }
 html:has(.difficulty-modal),
-body:has(.difficulty-modal) { overflow:hidden; }
+body:has(.difficulty-modal),
+html:has(.briefing-coach),
+body:has(.briefing-coach) { overflow:hidden; }
 button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 :where(button, summary):focus-visible {
   outline:2px solid var(--foam); outline-offset:3px;
@@ -753,6 +755,12 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
 .new-authorization p { display:grid; gap:3px; margin:8px 0 0 !important; }
 .new-authorization strong { color:var(--cyan); font-size:13px; letter-spacing:.08em; }
 .new-authorization p span { color:#d0d2bd; font-size:9px; line-height:1.55; }
+.new-authorization ul { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; margin:9px 0 0; padding:0; list-style:none; }
+.new-authorization li { min-width:0; padding:5px 6px; border:1px solid #5a5b3d; background:#0c1718cc; color:#d8d9bd; font-size:7.5px; line-height:1.4; }
+.new-authorization footer { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:9px; }
+.new-authorization footer small { color:#83d7c8; font-size:7px; font-weight:900; letter-spacing:.11em; }
+.new-authorization footer small.not-saved { color:#ffb8a0; }
+.new-authorization footer button { min-height:36px; padding:6px 10px; border:1px solid #6c806e; background:#122527; color:#b6eee6; font:700 8px/1.3 var(--font-display); letter-spacing:.05em; cursor:pointer; }
 .mission-public-intel > span { color:var(--amber); font-size:8px; font-weight:900; letter-spacing:.12em; }
 .mission-public-intel > div { display:flex; flex-wrap:wrap; gap:4px; }
 .mission-public-intel i { font-style:normal; }
@@ -893,6 +901,9 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
   .mission-record-panel > div { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .new-authorization header { display:grid; gap:2px; }
   .new-authorization strong { font-size:11px; }
+  .new-authorization ul { grid-template-columns:1fr; }
+  .new-authorization footer { align-items:stretch; flex-direction:column; }
+  .new-authorization footer button { min-height:44px; }
   .training-setup-plan header,.training-enemy-plan header { display:grid; gap:2px; }
 }
 
@@ -1584,4 +1595,600 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
 @media (forced-colors:active) {
   .cmd.selected,.mobile-field-switch button.active { outline:3px solid Highlight; outline-offset:-4px; }
   .canvas-wrap { border:2px solid CanvasText; }
+}
+
+/*
+ * VISUAL TRAINING REEL
+ *
+ * The reel is an overlay on the live CIC rather than a separate help page. The
+ * illuminated frame preserves the real plot as evidence, while the console
+ * occupies the command-rail side on wide screens and only the lower/upper half
+ * of compact screens. Every texture is local so the console keeps the same
+ * material whether it swaps sides to expose a highlighted control.
+ */
+.training-reel-open {
+  --cic-material-opacity:.14;
+  position:relative;
+  isolation:isolate;
+  display:grid;
+  width:100%;
+  min-height:var(--tap-target);
+  padding:8px 10px;
+  overflow:hidden;
+  border:1px solid #4c8995;
+  border-left:3px solid var(--cyan);
+  color:var(--foam);
+  background:linear-gradient(90deg,#17424a90,transparent 72%),#071821;
+  box-shadow:inset 0 0 18px #0008,0 4px 12px #0005;
+  cursor:pointer;
+  text-align:left;
+}
+.training-reel-open::after,
+.briefing-console::before,
+.training-directive.compact-live::after {
+  content:"";
+  position:absolute;
+  inset:1px;
+  z-index:-1;
+  pointer-events:none;
+  opacity:var(--cic-material-opacity,.13);
+  background:var(--cic-grain-a),var(--cic-grain-b),var(--cic-scanline);
+  background-size:29px 31px,43px 47px,100% 4px;
+  background-blend-mode:soft-light,soft-light,multiply;
+}
+.training-reel-open b { color:var(--cyan); font-size:11px; letter-spacing:.06em; }
+.training-reel-open small { margin-top:2px; color:#9fc1c7; font-size:9px; line-height:1.4; }
+.training-reel-open:hover { border-color:var(--foam); background-color:#0b2731; }
+.training-reel-open:active { transform:translateY(1px); }
+
+.training-directive header { flex-wrap:wrap; }
+.training-directive header > :where(span,b) { min-width:0; }
+.training-directive header button {
+  min-width:104px;
+  min-height:var(--tap-target);
+  display:grid;
+  place-content:center;
+  margin-left:auto;
+  padding:5px 8px;
+  border:1px solid #5d939b;
+  color:var(--foam);
+  background:#0a2630;
+  cursor:pointer;
+}
+.training-directive header button strong,
+.training-directive header button small { display:block; }
+.training-directive header button strong { color:var(--cyan); font-size:9px; }
+.training-directive header button small { color:#86aab1; font-size:7px; letter-spacing:.08em; }
+.training-live-coach { display:none!important; }
+
+.briefing-coach {
+  position:fixed;
+  z-index:110;
+  inset:0;
+  min-width:0;
+  min-height:100vh;
+  min-height:100dvh;
+  color:var(--foam);
+  font-family:var(--font-tactical);
+  overscroll-behavior:contain;
+}
+.briefing-full-dim {
+  position:fixed;
+  z-index:0;
+  inset:0;
+  pointer-events:none;
+  background:rgba(2,9,14,.84);
+  backdrop-filter:blur(2px) saturate(.72);
+}
+.briefing-focus-frame {
+  position:fixed;
+  z-index:1;
+  pointer-events:none;
+  border:2px solid var(--cyan);
+  background:rgba(124,229,223,.035);
+  box-shadow:0 0 0 9999px rgba(2,9,14,.8),inset 0 0 18px #7ce5df26,0 0 20px #7ce5df88;
+  animation:briefingTargetPulse 1.25s steps(2,end) infinite alternate;
+}
+.briefing-focus-frame::before,
+.briefing-focus-frame::after {
+  content:"";
+  position:absolute;
+  width:14px;
+  height:14px;
+  border-color:var(--foam);
+  pointer-events:none;
+}
+.briefing-focus-frame::before { left:-5px; top:-5px; border-left:2px solid; border-top:2px solid; }
+.briefing-focus-frame::after { right:-5px; bottom:-5px; border-right:2px solid; border-bottom:2px solid; }
+.briefing-focus-frame > span {
+  position:absolute;
+  left:0;
+  bottom:calc(100% + 5px);
+  min-height:22px;
+  display:flex;
+  align-items:center;
+  padding:3px 7px;
+  border:1px solid var(--cyan);
+  color:var(--abyss);
+  background:var(--cyan);
+  box-shadow:0 2px 10px #000a;
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:.14em;
+}
+@keyframes briefingTargetPulse {
+  from { border-color:#6ec8c5; box-shadow:0 0 0 9999px rgba(2,9,14,.82),inset 0 0 12px #7ce5df1f,0 0 10px #7ce5df66; }
+  to { border-color:var(--foam); box-shadow:0 0 0 9999px rgba(2,9,14,.76),inset 0 0 24px #7ce5df44,0 0 25px #7ce5dfaa; }
+}
+
+.briefing-console {
+  --cic-material-opacity:.13;
+  position:fixed;
+  z-index:3;
+  top:max(10px,env(safe-area-inset-top,0px));
+  right:max(10px,env(safe-area-inset-right,0px));
+  bottom:max(10px,env(safe-area-inset-bottom,0px));
+  width:clamp(318px,24vw,360px);
+  min-height:0;
+  display:grid;
+  grid-template-rows:auto auto minmax(0,1fr) auto;
+  overflow:hidden;
+  isolation:isolate;
+  border:1px solid #5f8993;
+  border-left:3px solid var(--cyan);
+  background:
+    linear-gradient(135deg,rgba(34,91,102,.34),transparent 40%),
+    linear-gradient(#0a222cea,#06151ef7);
+  box-shadow:inset 0 0 34px #000a,0 12px 34px #000c;
+}
+.briefing-console::after {
+  content:"";
+  position:absolute;
+  z-index:-1;
+  inset:6px;
+  pointer-events:none;
+  border:1px solid rgba(124,229,223,.11);
+}
+.focus-hostile-plot .briefing-console,
+.focus-placement-tools .briefing-console,
+.focus-command-deck .briefing-console,
+.focus-confirm-action .briefing-console,
+.focus-damage-report .briefing-console,
+.focus-result .briefing-console {
+  left:max(10px,env(safe-area-inset-left,0px));
+  right:auto;
+}
+.briefing-console-head {
+  min-height:54px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:8px;
+  padding:8px 9px;
+  border-bottom:1px solid #355d66;
+  background:#071923d9;
+}
+.briefing-console-head > div { min-width:0; }
+.briefing-console-head span,
+.briefing-console-head b { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.briefing-console-head span { color:#86afb6; font-size:8px; letter-spacing:.1em; }
+.briefing-console-head b { margin-top:3px; color:var(--cyan); font-size:11px; letter-spacing:.05em; }
+.briefing-console-head > div > small {
+  display:-webkit-box;
+  margin-top:3px;
+  overflow:hidden;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+  color:#8caab0;
+  font-size:8px;
+  line-height:1.35;
+}
+.briefing-skip {
+  min-height:var(--tap-target);
+  display:grid;
+  place-content:center;
+  padding:5px 8px;
+  border:1px solid #516f77;
+  color:#c6dadd;
+  background:#0b2029;
+  cursor:pointer;
+  font-size:9px;
+}
+.briefing-skip small { color:#78959c; font-size:7px; letter-spacing:.08em; }
+.briefing-timeline {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:8px;
+  min-height:28px;
+  padding:5px 9px;
+  border-bottom:1px solid #294b54;
+  background:#06151ecf;
+}
+.briefing-timeline > div {
+  position:relative;
+  height:5px;
+  overflow:hidden;
+  border:1px solid #32565e;
+  background:#041016;
+}
+.briefing-timeline > div::after {
+  content:"";
+  position:absolute;
+  inset:0 auto 0 0;
+  width:var(--briefing-progress,0%);
+  background:linear-gradient(90deg,#397a82,var(--cyan));
+  box-shadow:0 0 9px #7ce5df88;
+  transition:width .22s ease-out;
+}
+.briefing-timeline > span { color:#7f9da4; font-size:8px; letter-spacing:.08em; }
+.briefing-copy {
+  min-height:0;
+  padding:14px 14px 12px;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  scrollbar-color:#52757d #06151e;
+  animation:briefingCopyIn .28s ease-out both;
+}
+@keyframes briefingCopyIn {
+  from { opacity:0; transform:translateY(7px); }
+  to { opacity:1; transform:translateY(0); }
+}
+.briefing-chapter {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:baseline;
+  gap:6px 9px;
+  margin-bottom:7px;
+}
+.briefing-chapter span {
+  padding:3px 6px;
+  color:var(--abyss);
+  background:var(--cyan);
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:.14em;
+}
+.briefing-chapter small { color:var(--amber); font-size:9px; line-height:1.45; letter-spacing:.04em; }
+.briefing-copy h2 { margin:0; color:var(--foam); font-size:clamp(17px,1.5vw,21px); line-height:1.38; letter-spacing:.035em; }
+.briefing-copy > p { margin:9px 0 0; color:#c6dcdf; font-size:13px; line-height:1.72; }
+.briefing-copy > strong {
+  display:block;
+  margin-top:10px;
+  padding:8px 9px;
+  border:1px solid #4f7c84;
+  border-left:3px solid var(--amber);
+  color:#fff5bd;
+  background:#242317b8;
+  font-size:13px;
+  line-height:1.6;
+}
+.briefing-copy ul { margin:10px 0 0; padding:9px 9px 9px 27px; border-top:1px solid #34545c; background:#071820a8; }
+.briefing-copy li { margin:0 0 5px; color:#a9c5ca; font-size:11px; line-height:1.55; }
+.briefing-copy li:last-child { margin-bottom:0; }
+.briefing-copy li::marker { color:var(--cyan); }
+.briefing-controls {
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:4px;
+  padding:7px;
+  border-top:1px solid #416973;
+  background:#05131be8;
+}
+.briefing-controls button {
+  min-width:0;
+  min-height:var(--tap-target);
+  display:grid;
+  place-content:center;
+  padding:5px 3px;
+  border:1px solid #44636b;
+  color:#cfe2e4;
+  background:linear-gradient(#17343e,#0a1e27);
+  cursor:pointer;
+  text-align:center;
+}
+.briefing-controls button b,
+.briefing-controls button small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.briefing-controls button b { font-size:9px; }
+.briefing-controls button small { margin-top:2px; color:#78969d; font-size:6px; letter-spacing:.025em; }
+.briefing-controls button.primary { border-color:var(--cyan); color:var(--abyss); background:linear-gradient(#a8f8ef,#50aca9); box-shadow:inset 0 0 0 2px #153b42,0 0 12px #7ce5df44; }
+.briefing-controls button.primary small { color:#174348; }
+.briefing-controls button:disabled { opacity:.42; cursor:default; filter:saturate(.45); }
+
+@media (max-width:1099px) and (orientation:portrait),
+       (max-width:959px) and (max-height:600px) {
+  .training-live-coach.compact-command-bottom {
+    display:block!important;
+    position:relative;
+    z-index:18;
+    margin:6px 0 7px;
+  }
+  .training-live-coach .training-directive.compact-live {
+    --cic-material-opacity:.11;
+    position:relative;
+    isolation:isolate;
+    max-height:min(156px,25dvh);
+    margin:0;
+    padding:7px 9px;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    scrollbar-color:#52757d #06151e;
+  }
+  .training-live-coach .training-directive header {
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    align-items:center;
+    gap:2px 7px;
+  }
+  .training-live-coach .training-directive header span { grid-column:1; font-size:9px; }
+  .training-live-coach .training-directive header b { grid-column:1; font-size:14px; line-height:1.35; }
+  .training-live-coach .training-directive header button { grid-column:2; grid-row:1 / span 2; min-width:92px; min-height:var(--tap-target); margin-left:0; }
+  .training-live-coach .training-directive > p { margin:6px 0 5px; color:#e1f2f3; font-size:14px; line-height:1.5; }
+  .training-live-coach .training-input-hint { margin:5px 0 0; padding:6px 7px; }
+  .training-live-coach .training-input-hint b { align-self:start; font-size:10px; }
+  .training-live-coach .training-input-hint span { font-size:12px; line-height:1.45; }
+  .training-live-coach .training-hold-notice { font-size:12px; line-height:1.45; }
+  .compact-command-bottom.command-deck > .training-directive:not(.compact-live),
+  .desktop-command-rail .training-directive { display:none; }
+
+  .briefing-coach .briefing-console {
+    top:auto;
+    left:max(6px,env(safe-area-inset-left,0px));
+    right:max(6px,env(safe-area-inset-right,0px));
+    bottom:max(6px,env(safe-area-inset-bottom,0px));
+    width:auto;
+    height:min(55dvh,430px);
+    max-height:calc(100dvh - max(12px,env(safe-area-inset-top,0px)) - max(12px,env(safe-area-inset-bottom,0px)));
+  }
+  .focus-placement-tools .briefing-console,
+  .focus-command-deck .briefing-console,
+  .focus-confirm-action .briefing-console,
+  .focus-damage-report .briefing-console,
+  .focus-result .briefing-console {
+    top:max(6px,env(safe-area-inset-top,0px));
+    bottom:auto;
+  }
+  .briefing-console-head { min-height:50px; padding:5px 7px; }
+  .briefing-console-head span { font-size:9px; }
+  .briefing-console-head b { font-size:11px; }
+  .briefing-console-head > div > small { display:none; }
+  .briefing-skip { min-height:var(--tap-target); font-size:10px; }
+  .briefing-timeline { min-height:25px; padding:4px 8px; }
+  .briefing-timeline > span { font-size:9px; }
+  .briefing-copy { padding:10px 11px 9px; }
+  .briefing-chapter { margin-bottom:5px; }
+  .briefing-chapter span { font-size:10px; }
+  .briefing-chapter small { font-size:11px; }
+  .briefing-copy h2 { font-size:18px; line-height:1.38; }
+  .briefing-copy > p { margin-top:7px; font-size:14px; line-height:1.62; }
+  .briefing-copy > strong { margin-top:8px; padding:7px 8px; font-size:14px; line-height:1.55; }
+  .briefing-copy ul { margin-top:8px; padding:7px 7px 7px 25px; }
+  .briefing-copy li { font-size:12px; line-height:1.5; }
+  .briefing-controls {
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:4px;
+    padding:5px;
+  }
+  .briefing-controls button { min-height:var(--tap-target); padding:4px; }
+  .briefing-controls button:nth-child(4) { grid-column:1; }
+  .briefing-controls button.primary { grid-column:2 / 4; }
+  .briefing-controls button b { font-size:12px; }
+  .briefing-controls button small { font-size:8px; }
+  .training-reel-open { min-height:var(--tap-target); }
+  .training-reel-open b { font-size:12px; }
+  .training-reel-open small { font-size:11px; }
+}
+
+@media (max-width:360px) and (max-height:650px) and (orientation:portrait) {
+  .training-live-coach .training-directive.compact-live { max-height:132px; }
+  .training-live-coach .training-directive header button { min-width:82px; padding-inline:5px; }
+  .training-live-coach .training-directive header button strong { font-size:8px; }
+  .briefing-coach .briefing-console { left:4px; right:4px; bottom:max(4px,env(safe-area-inset-bottom,0px)); height:min(58dvh,330px); }
+  .focus-placement-tools .briefing-console,
+  .focus-command-deck .briefing-console,
+  .focus-confirm-action .briefing-console,
+  .focus-damage-report .briefing-console,
+  .focus-result .briefing-console { top:max(4px,env(safe-area-inset-top,0px)); bottom:auto; }
+  .briefing-console-head { min-height:46px; }
+  .briefing-console-head span { max-width:150px; }
+  .briefing-copy { padding:8px 9px; }
+  .briefing-copy h2 { font-size:17px; }
+  .briefing-copy > p,
+  .briefing-copy > strong { font-size:14px; }
+  .briefing-controls { gap:3px; padding:4px; }
+  .briefing-controls button { min-height:var(--tap-target); }
+}
+
+/* A focused compact reel yields the majority of the portrait viewport to the
+   live plot/control it is explaining. One 44px control row preserves all reel
+   actions while recovering roughly 40px compared with the general two-row
+   layout; the copy remains independently scrollable. */
+@media (max-width:1099px) and (orientation:portrait) {
+  .briefing-coach:is(
+    .focus-own-plot,
+    .focus-hostile-plot,
+    .focus-placement-tools,
+    .focus-command-deck,
+    .focus-confirm-action,
+    .focus-damage-report,
+    .focus-result
+  ) .briefing-console {
+    height:min(43dvh,350px);
+  }
+  .briefing-coach:is(
+    .focus-own-plot,
+    .focus-hostile-plot,
+    .focus-placement-tools,
+    .focus-command-deck,
+    .focus-confirm-action,
+    .focus-damage-report,
+    .focus-result
+  ) .briefing-controls {
+    grid-template-columns:repeat(5,minmax(0,1fr));
+  }
+  .briefing-coach:is(
+    .focus-own-plot,
+    .focus-hostile-plot,
+    .focus-placement-tools,
+    .focus-command-deck,
+    .focus-confirm-action,
+    .focus-damage-report,
+    .focus-result
+  ) .briefing-controls button:nth-child(4),
+  .briefing-coach:is(
+    .focus-own-plot,
+    .focus-hostile-plot,
+    .focus-placement-tools,
+    .focus-command-deck,
+    .focus-confirm-action,
+    .focus-damage-report,
+    .focus-result
+  ) .briefing-controls button.primary {
+    grid-column:auto;
+  }
+  .briefing-coach:is(
+    .focus-own-plot,
+    .focus-hostile-plot,
+    .focus-placement-tools,
+    .focus-command-deck,
+    .focus-confirm-action,
+    .focus-damage-report,
+    .focus-result
+  ) .briefing-controls button b { font-size:9px; }
+  .briefing-coach:is(
+    .focus-own-plot,
+    .focus-hostile-plot,
+    .focus-placement-tools,
+    .focus-command-deck,
+    .focus-confirm-action,
+    .focus-damage-report,
+    .focus-result
+  ) .briefing-controls button small { font-size:6.5px; }
+}
+
+/* Phone landscape is a short desktop-rail layout. Keep the live directive out
+   of document flow so the pre-calculated 100dvh workspace is not clipped by
+   the shell's intentional overflow guard. The full instruction is still one
+   tap away through the 44px replay control. */
+@media (min-width:480px) and (max-width:959px) and (max-height:600px) and (orientation:landscape) {
+  .training-live-coach.compact-command-bottom {
+    position:fixed;
+    z-index:31;
+    top:max(100px,calc(env(safe-area-inset-top,0px) + 62px));
+    right:max(8px,env(safe-area-inset-right,0px));
+    left:auto;
+    width:clamp(280px,34vw,310px);
+    height:48px;
+    margin:0;
+  }
+  .training-live-coach .training-directive.compact-live {
+    position:relative;
+    height:48px;
+    max-height:48px;
+    padding:3px 98px 3px 7px;
+    overflow:hidden;
+  }
+  .training-live-coach .training-directive header { display:block; }
+  .training-live-coach .training-directive header > :where(span,b) { display:none; }
+  .training-live-coach .training-directive header button {
+    position:absolute;
+    z-index:2;
+    top:1px;
+    right:1px;
+    width:92px;
+    min-width:92px;
+    height:44px;
+    min-height:44px;
+    margin:0;
+  }
+  .training-live-coach .training-directive > p {
+    display:block;
+    margin:0;
+    overflow:hidden;
+    color:#e1f2f3;
+    font-size:13px;
+    line-height:40px;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .training-live-coach .training-input-hint { display:none; }
+  .training-live-coach .training-hold-notice {
+    position:absolute;
+    z-index:1;
+    top:3px;
+    right:98px;
+    bottom:3px;
+    left:5px;
+    margin:0;
+    padding:4px 6px;
+    overflow:hidden;
+    font-size:10px;
+    line-height:1.35;
+  }
+  .training-live-coach .training-directive:has(.training-hold-notice) > p { visibility:hidden; }
+
+  .briefing-coach .briefing-console {
+    top:max(6px,env(safe-area-inset-top,0px));
+    right:max(6px,env(safe-area-inset-right,0px));
+    bottom:max(6px,env(safe-area-inset-bottom,0px));
+    left:auto;
+    width:min(430px,60vw);
+    height:auto;
+    max-height:none;
+  }
+  .briefing-coach:is(
+    .focus-placement-tools,
+    .focus-command-deck,
+    .focus-confirm-action,
+    .focus-damage-report
+  ) .briefing-console {
+    right:auto;
+    left:max(6px,env(safe-area-inset-left,0px));
+  }
+  .briefing-controls { grid-template-columns:repeat(5,minmax(0,1fr)); }
+  .briefing-controls button:nth-child(4),
+  .briefing-controls button.primary { grid-column:auto; }
+  .briefing-controls button b { font-size:9px; }
+  .briefing-controls button small { font-size:6.5px; }
+}
+
+/* Match the narrower 1024px landscape command rail without intruding into the
+   adjacent plot. 1366px and full-HD retain the wider console. */
+@media (min-width:960px) and (max-width:1099px) and (orientation:landscape) {
+  .briefing-console { width:min(296px,calc(100vw - 20px)); }
+}
+
+/* BriefingCoach applies this state when an anchor is too close to the visual
+   viewport edge; keep the chapter slug inside the illuminated frame. */
+.briefing-focus-frame.label-inside > span {
+  top:4px;
+  bottom:auto;
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .briefing-focus-frame,
+  .briefing-copy,
+  .briefing-timeline > div::after,
+  .training-reel-open { animation:none!important; transition:none!important; }
+  .briefing-focus-frame {
+    border-color:var(--foam);
+    box-shadow:0 0 0 9999px rgba(2,9,14,.8),inset 0 0 16px #7ce5df33,0 0 16px #7ce5df88;
+  }
+}
+
+@media (prefers-contrast:more) {
+  .briefing-console,
+  .briefing-focus-frame,
+  .training-reel-open,
+  .training-directive.compact-live { border-width:2px; }
+  .briefing-copy > strong { border-left-width:4px; }
+}
+
+@media (forced-colors:active) {
+  .briefing-full-dim { background:Canvas; opacity:.82; }
+  .briefing-focus-frame { outline:3px solid Highlight; outline-offset:2px; box-shadow:none; }
+  .briefing-console,
+  .briefing-controls button,
+  .training-reel-open { border:2px solid CanvasText; }
+  .briefing-controls button.primary { color:HighlightText; background:Highlight; }
 }

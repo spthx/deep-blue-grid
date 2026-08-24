@@ -40,6 +40,7 @@ next-env.d.ts
 *.tsbuildinfo
 /dist/
 /gh-pages-dist/
+/cloudflare-dist/
 /.wrangler/
 /outputs/
 /work/

@@ -56,6 +56,17 @@ import {
   PROGRESSION_STORAGE_KEY,
   PROGRESSION_VERSION,
 } from "../app/game/Progression.ts";
+import {
+  buildTrainingDamageReview,
+  buildTrainingDebrief,
+  buildTrainingIntroduction,
+  buildTrainingStepBriefing,
+  buildTrainingStoryboard,
+} from "../app/game/TrainingStoryboard.ts";
+import {
+  MODE_AUTHORIZATION_PRESENTATIONS,
+  buildModeAuthorizationSequence,
+} from "../app/game/ModeAuthorization.ts";
 import { CANONICAL_MISSION_ROUTES } from "../scripts/measure-missions.ts";
 
 const runtimeUrl = new URL("../docs/unity-handoff/unity-content-v2.json", import.meta.url);
@@ -105,7 +116,7 @@ test("Unity runtime handoff matches canonical domain and content", () => {
 });
 
 test("Unity runtime handoff matches presentation and audio contracts", () => {
-  assert.deepEqual(exported.presentation, {
+  assert.deepEqual({ ...exported.presentation, briefings: undefined }, {
     weaponSystems: WEAPON_PRESENTATION,
     actionLabels: ACTION_LABEL,
     commonText: UI_TEXT_CATALOG,
@@ -115,7 +126,30 @@ test("Unity runtime handoff matches presentation and audio contracts", () => {
     timingsMs: PRESENTATION_TIMINGS_MS,
     responsiveUi: RESPONSIVE_UI_CONTRACT,
     cicMaterial: CIC_MATERIAL_CONTRACT,
+    briefings: undefined,
   });
+  assert.equal(exported.presentation.briefings.contract.schemaVersion, 1);
+  assert.deepEqual(exported.presentation.briefings.contract.dismissReasons, ["complete", "skip"]);
+  assert.deepEqual(exported.presentation.briefings.contract.visualKinds,
+    ["scan", "path", "rotate", "echo-cross", "weapon-pattern", "impact", "link"]);
+  assert.deepEqual(exported.presentation.briefings.training, TRAINING_STAGES.map((stage) => ({
+    stageId: stage.id,
+    lesson: stage.training!.lesson,
+    storyboard: buildTrainingStoryboard(stage),
+    opening: buildTrainingIntroduction(stage),
+    steps: stage.training!.steps.map((_, index) => buildTrainingStepBriefing(stage, index)),
+    damageReview: stage.training!.enemyDemonstration ? buildTrainingDamageReview(stage) : null,
+    debrief: buildTrainingDebrief(stage),
+  })));
+  assert.deepEqual(exported.presentation.briefings.authorizations,
+    Object.keys(MODE_AUTHORIZATION_PRESENTATIONS).map((completed) => ({
+      completed,
+      presentation: MODE_AUTHORIZATION_PRESENTATIONS[completed as keyof typeof MODE_AUTHORIZATION_PRESENTATIONS],
+      sequences: {
+        persisted: buildModeAuthorizationSequence(completed as keyof typeof MODE_AUTHORIZATION_PRESENTATIONS, true),
+        saveFailed: buildModeAuthorizationSequence(completed as keyof typeof MODE_AUTHORIZATION_PRESENTATIONS, false),
+      },
+    })));
   assert.deepEqual(exported.audio, AUDIO_CUE_CONTRACT);
 });
 
@@ -141,6 +175,15 @@ test("Unity runtime handoff preserves counts and persistence contracts", () => {
       storageKey: PROGRESSION_STORAGE_KEY,
       version: PROGRESSION_VERSION,
       contract: PROGRESSION_HANDOFF_CONTRACT,
+      completionCommit: {
+        resultFields: ["progression", "changed", "persisted", "wrote", "writeProtected"],
+        firstCompletionOnly: true,
+        singleDurableWrite: true,
+        debugWrites: false,
+        futureVersionWrites: false,
+        saveFailureBehavior: "keep runtime authorization and show LOCAL RECORD NOT SAVED until acknowledged",
+        presentationOrder: ["evaluate", "commit-in-memory", "durable-write", "open-authorization-sequence", "resume-after-action-report"],
+      },
     },
     unitySaveData: UNITY_SAVE_DATA_CONTRACT,
   });
@@ -196,6 +239,9 @@ test("Unity handoff checksums cover exactly the manifest targets", async () => {
 test("Unity handoff manifest references only packaged files", async () => {
   assert.equal(manifest.schemaVersion, 2);
   assert.equal(manifest.sourceRef, exported.sourceRef);
+  assert.equal(manifest.publicReferenceUrl, "https://deep-blue-grid.pages.dev/");
+  assert.ok(manifest.validation.includes("npm run build:cloudflare"));
+  assert.equal(manifest.validation.includes("npm run build:pages"), false);
   assert.equal(manifest.primaryContent, "unity-content-v2.json");
   assert.equal(manifest.editorValidationFixture, "unity-validation-v1.json");
   assert.deepEqual(manifest.runtimeExclusions, ["unity-validation-v1.json"]);

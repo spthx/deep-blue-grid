@@ -4,6 +4,8 @@ import test from "node:test";
 
 const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
 const component = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.meta.url), "utf8");
+const briefingCoach = await readFile(new URL("../app/game/BriefingCoach.tsx", import.meta.url), "utf8");
+const briefingSequence = await readFile(new URL("../app/game/BriefingSequence.ts", import.meta.url), "utf8");
 
 test("interactive CIC surfaces own their material instead of depending on screen z-order", () => {
   assert.match(css, /DETERMINISTIC CIC MATERIAL/);
@@ -26,4 +28,24 @@ test("motion preference covers the canvas loop and utility icons are determinist
   assert.match(component, /function SoundGlyph/);
   assert.match(component, /function RetryGlyph/);
   assert.doesNotMatch(component, /🔊|🔇|⚔/u);
+});
+
+test("visual training reel remains readable, bounded, and reusable across operation flows", () => {
+  assert.match(css, /VISUAL TRAINING REEL/);
+  assert.match(css, /\.briefing-coach \{[\s\S]*?position:fixed;[\s\S]*?z-index:110/);
+  assert.match(css, /\.briefing-copy > p \{[^}]*font-size:13px;[^}]*line-height:1\.72/);
+  assert.match(css, /orientation:portrait[\s\S]*?\.briefing-copy > p \{[^}]*font-size:14px/);
+  assert.match(css, /\.briefing-controls button \{[^}]*min-height:var\(--tap-target\)/);
+  assert.match(css, /prefers-reduced-motion:reduce[\s\S]*?\.briefing-focus-frame/);
+  assert.match(briefingCoach, /role="dialog"/);
+  assert.match(briefingCoach, /window\.innerWidth - left - 4/);
+  assert.match(briefingCoach, /window\.innerHeight - top - 4/);
+  assert.match(briefingCoach, /visualViewport\?\.addEventListener\("resize"/);
+  assert.match(briefingCoach, /onDismiss\("complete"\)/);
+  assert.match(briefingCoach, /onDismiss\("skip"\)/);
+  assert.match(briefingSequence, /"training-intro" \| "training-debrief" \| "mode-intro" \| "operation-clear"/);
+  assert.match(briefingSequence, /export function buildBriefingSequence/);
+  assert.match(briefingSequence, /buildModeIntroductionSequence/);
+  assert.match(briefingSequence, /buildOperationClearSequence/);
+  assert.ok((component.match(/data-briefing-anchor=/g) ?? []).length >= 12);
 });
