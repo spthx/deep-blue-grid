@@ -55,10 +55,15 @@ test("novice training owns the center with animated hints and a one-tap completi
   assert.match(css, /grid-template-columns:minmax\(250px,42%\) minmax\(0,1fr\)/);
   assert.match(css, /\.briefing-motion-grid \{[\s\S]*grid-template-columns:repeat\(8,1fr\)/);
   assert.match(css, /@keyframes briefingHintHand/);
+  assert.match(css, /@keyframes briefingShipPlacement/);
+  assert.match(css, /\.briefing-demo-destination/);
+  assert.match(css, /\.briefing-action-strip/);
   assert.match(css, /\.briefing-quick-complete \{[\s\S]*min-height:62px/);
   assert.match(briefingCoach, /HINT \/ ここだけ覚える/);
   assert.match(briefingCoach, /いまやること/);
   assert.match(briefingCoach, /plainActionHint/);
+  assert.match(briefingCoach, /ここへ置く/);
+  assert.match(briefingCoach, /艦を押す/);
   assert.match(briefingCoach, /ONE TAP CLEAR/);
   assert.match(component, /quickCompleteTraining/);
 });

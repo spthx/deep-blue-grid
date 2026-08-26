@@ -209,6 +209,24 @@ function BriefingMotionStage({ cue, replayKey }: Readonly<{ cue: BriefingCue; re
     ...(cue.visual?.to ? [cue.visual.to] : []),
   ];
   const motion = new Set(motionCoords.map((coord) => `${coord.x},${coord.y}`));
+  const placementDemo = cue.visual?.kind === "path" || cue.visual?.kind === "rotate";
+  const markedCoords = (cue.marks ?? []).map((mark) => mark.coord);
+  const destinationCoords = markedCoords.length ? markedCoords : motionCoords;
+  const minX = destinationCoords.length ? Math.min(...destinationCoords.map((coord) => coord.x)) : 3;
+  const maxX = destinationCoords.length ? Math.max(...destinationCoords.map((coord) => coord.x)) : minX;
+  const minY = destinationCoords.length ? Math.min(...destinationCoords.map((coord) => coord.y)) : 3;
+  const maxY = destinationCoords.length ? Math.max(...destinationCoords.map((coord) => coord.y)) : minY;
+  const from = cue.visual?.from ?? destinationCoords[0] ?? { x: 3, y: 3 };
+  const shipStyle = {
+    "--ship-from-left": `${(from.x + .5) * 12.5}%`,
+    "--ship-from-top": `${(from.y + .5) * 12.5}%`,
+    "--ship-to-left": `${((minX + maxX + 1) * .5) * 12.5}%`,
+    "--ship-to-top": `${((minY + maxY + 1) * .5) * 12.5}%`,
+  } as CSSProperties;
+  const destinationStyle = {
+    left: `${minX * 12.5}%`, top: `${minY * 12.5}%`,
+    width: `${(maxX - minX + 1) * 12.5}%`, height: `${(maxY - minY + 1) * 12.5}%`,
+  } as CSSProperties;
   const cells = Array.from({ length: 64 }, (_, index) => {
     const x = index % 8;
     const y = Math.floor(index / 8);
@@ -222,9 +240,22 @@ function BriefingMotionStage({ cue, replayKey }: Readonly<{ cue: BriefingCue; re
   });
   return <div className={`briefing-motion-stage motion-${cue.visual?.kind ?? "scan"}`} role="img" aria-label="盤面の動くヒント図">
     <div className="briefing-motion-label"><b>動くヒント</b><span>{cue.plot === "enemy" ? "敵情図" : cue.plot === "player" ? "自軍図" : "操作の流れ"}</span></div>
-    <div className="briefing-motion-grid">{cells}</div>
-    <div className="briefing-motion-hand" aria-hidden="true">＋</div>
+    <div className="briefing-motion-grid">
+      {cells}
+      {placementDemo && <div className="briefing-demo-destination" style={destinationStyle}><b>ここへ置く</b></div>}
+      {placementDemo && <div key={`${cue.id}-${replayKey}-ship`} className="briefing-demo-ship" style={shipStyle} aria-hidden="true"><b>DD</b><i /><i /></div>}
+    </div>
+    {!placementDemo && <div className="briefing-motion-hand" aria-hidden="true">＋</div>}
+    <div className="briefing-action-strip">{actionSteps(cue).map((step, index) => <span key={`${cue.id}-action-${index}`}><b>{index + 1}</b>{step}</span>)}</div>
   </div>;
+}
+
+function actionSteps(cue: BriefingCue) {
+  if (cue.visual?.kind === "path" || cue.visual?.kind === "rotate") return ["艦を押す", "ここへ動かす", "ROTATE", "LOCK"];
+  if (cue.visual?.kind === "scan") return ["光る範囲を見る", "SONARを選ぶ", "実行"];
+  if (cue.visual?.kind === "impact") return ["光るマスを見る", "結果を確認"];
+  if (cue.focus === "command-deck") return ["兵装を選ぶ", "光るマスを押す", "実行"];
+  return ["動きを見る", "右の説明を読む", "次へ"];
 }
 
 /**

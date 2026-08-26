@@ -47,6 +47,11 @@ Safe Area中央の大きな不透明CICウィンドウを使う。
 - one-tap修了も通常と同じtraining progress保存を使い、debug時は書き込まない。保存失敗は画面内警告を維持する。
 - `prefers-reduced-motion`ではミニ盤面の手カーソルとpulseを停止し、静止した注釈を残す。
 
+配置visualの `path` / `rotate` は抽象cursorだけで済ませない。DD上面シルエットを開始座標へ描き、
+目的地を`ここへ置く`のamber面で示し、4.2秒の反復で移動→90度回転→固定を見せる。
+図の直下には `1 艦を押す / 2 ここへ動かす / 3 ROTATE / 4 LOCK` を常時表示する。
+縦持ちは教材表示領域の58%を動く図、42%をスクロール可能な説明へ割り当てる。
+
 Unityは `presentationStyles` と `trainingQuickComplete` をcontractから読み、Webと同じ中央配置、
 動的8×8ヒント、plain Japanese、ワンタップ修了を再現する。validation fixtureはPlayerへ含めない。
 

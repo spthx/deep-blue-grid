@@ -3,7 +3,7 @@
   "schemaVersion": 2,
   "sourceRepository": "https://github.com/spthx/deep-blue-grid",
   "sourceBranch": "master",
-  "sourceRef": "unity-handoff-2026-08-26-friendly-training",
+  "sourceRef": "unity-handoff-2026-08-27-visual-placement-demo",
   "publicReferenceUrl": "https://deep-blue-grid.pages.dev/",
   "primaryContent": "unity-content-v2.json",
   "editorValidationFixture": "unity-validation-v1.json",

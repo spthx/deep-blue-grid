@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 
-const targets = await (await fetch("http://127.0.0.1:9223/json")).json();
+const cdpPort = process.env.DBG_CDP_PORT ?? "9223";
+const targets = await (await fetch(`http://127.0.0.1:${cdpPort}/json`)).json();
 const page = targets.find((target) => target.type === "page" && target.url.includes("4317"));
 if (!page) throw new Error("Deep Blue Grid CDP page was not found.");
 
@@ -60,8 +61,13 @@ await clickText("INITIAL TRAINING");
 await clickText("FLEET DEPLOYMENT");
 await capture("training-center-402x874-scene1.png", 402, 874, true);
 await evaluate(`document.querySelector(".briefing-controls button.primary")?.click()`);
-await wait(450);
-await capture("training-center-402x874-scene2.png", 402, 874, true);
+await wait(250);
+await evaluate(`[...document.querySelectorAll(".briefing-controls button")].find((button) => button.innerText.includes("動きをもう一度"))?.click()`);
+await capture("training-placement-402x874-start.png", 402, 874, true);
+await wait(1150);
+await capture("training-placement-402x874-moving.png", 402, 874, true);
+await wait(1300);
+await capture("training-placement-402x874-rotated.png", 402, 874, true);
 await capture("training-center-1366x768.png", 1366, 768, false);
 
 const audit = await evaluate(`(() => {
