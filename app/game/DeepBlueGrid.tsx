@@ -624,7 +624,7 @@ export function DeepBlueGrid() {
     setMissionCompletionFilter("all");
   };
 
-  const returnToMissionLibrary = () => {
+  const returnToMissionLibraryWithTrainingProgress = (trainingOverride?: TrainingProgress) => {
     pauseMissionClock();
     dispatchBriefing({ type: "close" });
     setBriefingCue(null);
@@ -635,12 +635,13 @@ export function DeepBlueGrid() {
     setResultReview(false);
     setLogOpen(false);
     setMissionRecords(loadMissionRecords());
-    setTrainingProgress(loadTrainingProgress());
+    setTrainingProgress(trainingOverride ?? loadTrainingProgress());
     const currentRule = missionRuleFor(returnMode, stagesFor(returnMode)[stageIndex]);
     setMissionLibrarySection(currentRule ? missionSectionFor(currentRule.category) : returnMode === "training" ? "training" : "tactical");
     setMissionCompletionFilter("all");
     setMissionLibraryOpen(true);
   };
+  const returnToMissionLibrary = () => returnToMissionLibraryWithTrainingProgress();
 
   const previewTargets = useMemo(() => {
     if (!picked.length) return [];
@@ -1249,6 +1250,31 @@ export function DeepBlueGrid() {
     setResultReview(false);
     setVisibleBoard(phase === "player" ? "enemy" : "player");
     if (difficultyRef.current === "training" && phase !== "victory" && phase !== "defeat") resumeMissionClock();
+  };
+
+  const quickCompleteTraining = () => {
+    const training = missionRule?.training;
+    if (difficultyRef.current !== "training" || !training) return;
+    pauseMissionClock();
+    const endedAt = Date.now();
+    let completed = trainingProgress;
+    if (!debugAll) {
+      const update = updateStoredTrainingProgress(training.lesson);
+      completed = update.progress;
+      setTrainingProgress(completed);
+      if (!update.persisted) {
+        setPersistenceWarning("この端末に教程の修了記録を保存できません。現在の画面では修了済みですが、再読込後に戻る可能性があります。");
+      }
+      if (TRAINING_LESSONS.every((lesson) => isTrainingLessonComplete(completed, lesson))) {
+        recordModeCompletion("training");
+        setAccessNotice("INITIAL TRAINING COMPLETE：CASUALを解放しました。モード選択から出撃できます。");
+      }
+    }
+    addLog(`TRAINING ${training.lesson}：中央教材の確認により教程修了。`, "good", endedAt, "stage-end");
+    setMessage("TRAINING COMPLETE：説明を確認しました。実戦で迷ったら教程を再受講できます。");
+    dispatchBriefing({ type: "close", reason: "complete" });
+    setBriefingCue(null);
+    returnToMissionLibraryWithTrainingProgress(completed);
   };
 
   const continueTrainingInstruction = () => {
@@ -3020,6 +3046,7 @@ export function DeepBlueGrid() {
         reducedMotion={reducedMotion}
         onCueChange={handleBriefingCueChange}
         onDismiss={closeBriefing}
+        onQuickComplete={briefingState.sequence?.kind === "training-intro" ? quickCompleteTraining : undefined}
       />
     </main>
   );

@@ -12,9 +12,10 @@ type BriefingCoachProps = Readonly<{
   reducedMotion: boolean;
   onCueChange: (cue: BriefingCue | null) => void;
   onDismiss: (reason: BriefingDismissReason) => void;
+  onQuickComplete?: () => void;
 }>;
 
-export function BriefingCoach({ state, dispatch, reducedMotion, onCueChange, onDismiss }: BriefingCoachProps) {
+export function BriefingCoach({ state, dispatch, reducedMotion, onCueChange, onDismiss, onQuickComplete }: BriefingCoachProps) {
   const cue = currentBriefingCue(state);
   const sequence = state.sequence;
   const briefingOpen = Boolean(sequence);
@@ -136,7 +137,7 @@ export function BriefingCoach({ state, dispatch, reducedMotion, onCueChange, onD
   return (
     <div
       ref={rootRef}
-      className={`briefing-coach briefing-${sequence.kind} focus-${cue.focus} ${state.playing && !reducedMotion ? "playing" : "paused"}`}
+      className={`briefing-coach briefing-${sequence.kind} presentation-${sequence.presentation ?? "edge-console"} focus-${cue.focus} ${state.playing && !reducedMotion ? "playing" : "paused"}`}
       role="dialog"
       aria-modal="true"
       aria-labelledby="briefing-cue-title"
@@ -161,25 +162,69 @@ export function BriefingCoach({ state, dispatch, reducedMotion, onCueChange, onD
           <div role="progressbar" aria-valuemin={1} aria-valuemax={sequence.cues.length} aria-valuenow={state.cueIndex + 1} style={{ "--briefing-progress": `${progress}%` } as CSSProperties} />
           <span>SCENE {String(state.cueIndex + 1).padStart(2, "0")} / {String(sequence.cues.length).padStart(2, "0")}</span>
         </div>
-        <div className="briefing-copy" role="status" aria-live="polite" aria-atomic="true">
-          <Fragment key={`${cue.id}-copy-${replayKey}`}>
-            <div className="briefing-chapter"><span>{cue.chapter}</span><small>{cue.kicker}</small></div>
-            <h2 id="briefing-cue-title">{cue.title}</h2>
-            <p id="briefing-cue-narration">{cue.narration}</p>
-            <strong>{cue.caption}</strong>
-            <ul>{cue.facts.map((fact, index) => <li key={`${cue.id}-${index}`}>{fact}</li>)}</ul>
-          </Fragment>
+        <div className="briefing-learning-area">
+          <BriefingMotionStage cue={cue} replayKey={replayKey} />
+          <div className="briefing-copy" role="status" aria-live="polite" aria-atomic="true">
+            <Fragment key={`${cue.id}-copy-${replayKey}`}>
+              <div className="briefing-chapter"><span>{cue.chapter}</span><small>{cue.kicker}</small></div>
+              <div className="briefing-now"><b>いまやること</b><span>{plainActionHint(cue)}</span></div>
+              <h2 id="briefing-cue-title">{cue.title}</h2>
+              <p id="briefing-cue-narration">{cue.narration}</p>
+              <strong>{cue.caption}</strong>
+              <div className="briefing-hint-title">HINT / ここだけ覚える</div>
+              <ul>{cue.facts.map((fact, index) => <li key={`${cue.id}-${index}`}>{fact}</li>)}</ul>
+            </Fragment>
+          </div>
         </div>
         <footer className="briefing-controls">
-          <button onClick={() => dispatch({ type: "seek", cueIndex: 0 })} disabled={state.cueIndex === 0}><b>最初から</b><small>RESTART</small></button>
-          <button onClick={() => dispatch({ type: "previous" })} disabled={state.cueIndex === 0}><b>戻る</b><small>PREVIOUS</small></button>
-          <button onClick={() => dispatch({ type: state.playing ? "pause" : "play" })} disabled={reducedMotion}><b>{state.playing ? "一時停止" : "自動再生"}</b><small>{reducedMotion ? "静止表示中" : state.playing ? "PAUSE" : "PLAY"}</small></button>
-          <button onClick={() => setReplayKey((value) => value + 1)}><b>もう一度</b><small>REPLAY SCENE</small></button>
+          {sequence.presentation !== "center-stage" && <button onClick={() => dispatch({ type: "seek", cueIndex: 0 })} disabled={state.cueIndex === 0}><b>最初から</b><small>RESTART</small></button>}
+          <button onClick={() => dispatch({ type: "previous" })} disabled={state.cueIndex === 0}><b>ひとつ戻る</b><small>BACK</small></button>
+          {sequence.presentation !== "center-stage" && <button onClick={() => dispatch({ type: state.playing ? "pause" : "play" })} disabled={reducedMotion}><b>{state.playing ? "一時停止" : "自動再生"}</b><small>{reducedMotion ? "静止表示中" : state.playing ? "PAUSE" : "PLAY"}</small></button>}
+          <button onClick={() => setReplayKey((value) => value + 1)}><b>動きをもう一度</b><small>REPLAY</small></button>
           <button ref={primaryRef} className="primary" onClick={advance}><b>{last ? sequence.finishLabel : "次へ"}</b><small>{last ? "END REEL" : "NEXT SCENE"}</small></button>
+          {sequence.quickComplete && onQuickComplete && <button className="briefing-quick-complete" onClick={onQuickComplete}><b>説明だけで修了</b><small>ONE TAP CLEAR</small></button>}
         </footer>
       </section>
     </div>
   );
+}
+
+function plainActionHint(cue: BriefingCue) {
+  if (cue.focus === "own-plot") return "自軍図の光るマスだけ見ればOKです";
+  if (cue.focus === "hostile-plot") return "敵情図の光るマスだけ見ればOKです";
+  if (cue.focus === "placement-tools") return "ROTATEで回転し、LOCKで決定します";
+  if (cue.focus === "command-deck") return "光っている兵装ボタンを選びます";
+  if (cue.focus === "confirm-action") return "プレビューを見て、最後に実行を押します";
+  if (cue.focus === "damage-report") return "被害を見て、報告ボタンを1回押します";
+  if (cue.focus === "plot-switch") return "自軍図と敵情図の切替場所を見ます";
+  if (cue.focus === "result") return "結果を眺めれば完了です";
+  return "まずは画面を見るだけで大丈夫です";
+}
+
+function BriefingMotionStage({ cue, replayKey }: Readonly<{ cue: BriefingCue; replayKey: number }>) {
+  const marks = new Map((cue.marks ?? []).map((mark) => [`${mark.coord.x},${mark.coord.y}`, mark]));
+  const motionCoords = [
+    ...(cue.visual?.cells ?? []),
+    ...(cue.visual?.from ? [cue.visual.from] : []),
+    ...(cue.visual?.to ? [cue.visual.to] : []),
+  ];
+  const motion = new Set(motionCoords.map((coord) => `${coord.x},${coord.y}`));
+  const cells = Array.from({ length: 64 }, (_, index) => {
+    const x = index % 8;
+    const y = Math.floor(index / 8);
+    const mark = marks.get(`${x},${y}`);
+    const active = motion.has(`${x},${y}`);
+    return <span
+      key={`${cue.id}-${replayKey}-${x}-${y}`}
+      className={`briefing-motion-cell${mark ? ` tone-${mark.tone}` : ""}${active ? " is-moving" : ""}`}
+      style={{ "--hint-delay": `${(x + y) * 45}ms` } as CSSProperties}
+    >{mark?.label ?? ""}</span>;
+  });
+  return <div className={`briefing-motion-stage motion-${cue.visual?.kind ?? "scan"}`} role="img" aria-label="盤面の動くヒント図">
+    <div className="briefing-motion-label"><b>動くヒント</b><span>{cue.plot === "enemy" ? "敵情図" : cue.plot === "player" ? "自軍図" : "操作の流れ"}</span></div>
+    <div className="briefing-motion-grid">{cells}</div>
+    <div className="briefing-motion-hand" aria-hidden="true">＋</div>
+  </div>;
 }
 
 /**

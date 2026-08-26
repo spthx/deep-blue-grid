@@ -1597,6 +1597,140 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
   .canvas-wrap { border:2px solid CanvasText; }
 }
 
+/* Central training theater: large Famicom-style message window, animated
+   mini plot and plain-language hints.  The operational board remains visible
+   behind it, but cannot receive input while the dialog is open. */
+.presentation-center-stage.briefing-coach {
+  display:grid;
+  place-items:center;
+  padding:max(8px,env(safe-area-inset-top,0px)) max(8px,env(safe-area-inset-right,0px)) max(8px,env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px));
+}
+.presentation-center-stage .briefing-full-dim { background:#02080dde; backdrop-filter:blur(1.5px); }
+.presentation-center-stage .briefing-focus-frame { opacity:.62; }
+.presentation-center-stage .briefing-console {
+  position:relative;
+  inset:auto;
+  transform:none;
+  width:min(960px,96vw);
+  height:min(78dvh,700px);
+  max-height:calc(100dvh - max(16px,env(safe-area-inset-top,0px)) - max(16px,env(safe-area-inset-bottom,0px)));
+  display:grid;
+  grid-template-rows:auto auto minmax(0,1fr) auto;
+  border:3px solid var(--foam);
+  border-radius:0;
+  background:#06131df8;
+  box-shadow:inset 0 0 0 2px #153b45,inset 0 0 0 5px #071016,0 0 0 2px #071016,0 18px 60px #000d;
+}
+.presentation-center-stage .briefing-console::after { inset:6px; border-color:#4e7980; opacity:.75; }
+.presentation-center-stage .briefing-console-head { min-height:66px; padding:9px 14px; }
+.presentation-center-stage .briefing-console-head span { font-size:11px; }
+.presentation-center-stage .briefing-console-head b { font-size:clamp(17px,2vw,24px); }
+.presentation-center-stage .briefing-console-head > div > small { font-size:11px; line-height:1.45; white-space:normal; }
+.presentation-center-stage .briefing-timeline { min-height:34px; padding:6px 13px; }
+.briefing-learning-area { min-height:0; display:block; }
+.presentation-center-stage .briefing-learning-area {
+  display:grid;
+  grid-template-columns:minmax(250px,42%) minmax(0,1fr);
+  gap:10px;
+  padding:10px 12px;
+  overflow:hidden;
+}
+.briefing-motion-stage { display:none; }
+.presentation-center-stage .briefing-motion-stage {
+  position:relative;
+  min-height:0;
+  display:grid;
+  grid-template-rows:auto minmax(0,1fr);
+  padding:8px;
+  border:2px solid #4d7c83;
+  background:radial-gradient(circle at 50% 48%,#10465488,#061821 70%);
+  box-shadow:inset 0 0 0 2px #061016,inset 0 0 28px #000b;
+  overflow:hidden;
+}
+.briefing-motion-label { display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:30px; padding:0 3px 6px; color:var(--cyan); }
+.briefing-motion-label b { font-size:13px; letter-spacing:.08em; }
+.briefing-motion-label span { color:var(--amber); font-size:11px; }
+.briefing-motion-grid {
+  width:min(100%,310px);
+  aspect-ratio:1;
+  place-self:center;
+  display:grid;
+  grid-template-columns:repeat(8,1fr);
+  grid-template-rows:repeat(8,1fr);
+  border:2px solid #66878d;
+  background:#082630;
+}
+.briefing-motion-cell { position:relative; display:grid; place-items:center; min-width:0; border-right:1px solid #71909b45; border-bottom:1px solid #71909b45; color:var(--foam); font:700 9px/1 "IBM Plex Mono","Courier New",monospace; }
+.briefing-motion-cell:nth-child(8n) { border-right:0; }
+.briefing-motion-cell:nth-last-child(-n+8) { border-bottom:0; }
+.briefing-motion-cell.tone-observe { background:#7ce5df28; box-shadow:inset 0 0 0 2px #7ce5dfaa; }
+.briefing-motion-cell.tone-target { background:#e5d78a32; box-shadow:inset 0 0 0 3px #e5d78a; color:#fff8c8; }
+.briefing-motion-cell.tone-exclude { background:#ff858526; box-shadow:inset 0 0 0 2px #ff8585b8; }
+.briefing-motion-cell.tone-link { background:#7ce5df30; box-shadow:inset 0 0 0 2px #7ce5df; }
+.briefing-motion-cell.is-moving::after { content:""; position:absolute; inset:12%; border:2px solid var(--amber); border-radius:50%; animation:briefingHintPulse 1.15s steps(3,end) infinite; animation-delay:var(--hint-delay); }
+.briefing-motion-hand { position:absolute; left:18%; top:34%; width:34px; height:34px; display:grid; place-items:center; border:2px solid var(--foam); color:var(--foam); background:#06131de8; font-size:24px; box-shadow:0 0 14px #7ce5df77; animation:briefingHintHand 2.8s steps(5,end) infinite; }
+@keyframes briefingHintPulse { 0%,100% { opacity:.35; transform:scale(.7); } 55% { opacity:1; transform:scale(1.12); } }
+@keyframes briefingHintHand { 0% { transform:translate(0,0); } 35% { transform:translate(90px,28px); } 60% { transform:translate(90px,28px) scale(.82); } 100% { transform:translate(145px,92px); } }
+.presentation-center-stage .briefing-copy { min-height:0; overflow:auto; padding:10px 12px 12px; border:2px solid #284c54; background:#071820e8; }
+.presentation-center-stage .briefing-chapter span { font-size:12px; }
+.presentation-center-stage .briefing-chapter small { font-size:13px; }
+.briefing-now { display:none; }
+.presentation-center-stage .briefing-now { display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; gap:8px; margin:7px 0 9px; padding:8px 10px; border:2px solid var(--cyan); background:#0b343dcc; color:var(--foam); }
+.presentation-center-stage .briefing-now b { padding:3px 6px; color:var(--abyss); background:var(--cyan); font-size:12px; white-space:nowrap; }
+.presentation-center-stage .briefing-now span { font-size:15px; font-weight:800; line-height:1.45; }
+.presentation-center-stage .briefing-copy h2 { font-size:clamp(21px,2.25vw,29px); line-height:1.35; }
+.presentation-center-stage .briefing-copy > p { margin-top:9px; font-size:clamp(15px,1.5vw,18px); line-height:1.7; }
+.presentation-center-stage .briefing-copy > strong { font-size:clamp(14px,1.35vw,17px); line-height:1.62; }
+.briefing-hint-title { display:none; }
+.presentation-center-stage .briefing-hint-title { display:block; margin-top:10px; padding:6px 9px; border-left:5px solid var(--amber); color:var(--amber); background:#2a2619cc; font-size:13px; font-weight:900; }
+.presentation-center-stage .briefing-copy ul { margin-top:0; padding:9px 10px 8px 30px; }
+.presentation-center-stage .briefing-copy li { margin-bottom:6px; color:#d7eeee; font-size:14px; line-height:1.55; }
+.presentation-center-stage .briefing-controls { grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; padding:7px 10px 10px; }
+.presentation-center-stage .briefing-controls button { min-height:50px; }
+.presentation-center-stage .briefing-controls button b { font-size:12px; }
+.presentation-center-stage .briefing-controls button small { font-size:8px; }
+.presentation-center-stage .briefing-controls .briefing-quick-complete { grid-column:1 / -1; min-height:62px; border-color:var(--amber); color:var(--foam); background:linear-gradient(#694a1f,#2c2114); box-shadow:inset 0 0 0 2px #160e08,0 0 14px #e5d78a55; }
+.presentation-center-stage .briefing-controls .briefing-quick-complete b { font-size:17px; }
+.presentation-center-stage .briefing-controls .briefing-quick-complete small { color:#f1dda0; font-size:10px; }
+
+@media (max-width:1099px) and (orientation:portrait) {
+  .presentation-center-stage .briefing-console,
+  .presentation-center-stage.focus-placement-tools .briefing-console,
+  .presentation-center-stage.focus-command-deck .briefing-console,
+  .presentation-center-stage.focus-confirm-action .briefing-console,
+  .presentation-center-stage.focus-damage-report .briefing-console,
+  .presentation-center-stage.focus-result .briefing-console {
+    position:relative;
+    inset:auto;
+    transform:none;
+    width:calc(100vw - 12px);
+    height:min(82dvh,720px);
+  }
+  .presentation-center-stage .briefing-console-head { min-height:58px; padding:7px 10px; }
+  .presentation-center-stage .briefing-console-head > div > small { display:block; font-size:10px; }
+  .presentation-center-stage .briefing-learning-area { grid-template-columns:1fr; grid-template-rows:minmax(170px,42%) minmax(0,58%); gap:6px; padding:6px 8px; }
+  .presentation-center-stage .briefing-motion-stage { padding:5px; }
+  .presentation-center-stage .briefing-motion-label { min-height:24px; padding-bottom:3px; }
+  .presentation-center-stage .briefing-motion-grid { width:min(100%,190px); }
+  .presentation-center-stage .briefing-motion-hand { width:28px; height:28px; font-size:20px; }
+  .presentation-center-stage .briefing-copy { padding:8px 9px; }
+  .presentation-center-stage .briefing-now { grid-template-columns:1fr; gap:4px; margin:5px 0 7px; padding:6px 7px; }
+  .presentation-center-stage .briefing-now b { width:max-content; font-size:11px; }
+  .presentation-center-stage .briefing-now span { font-size:14px; }
+  .presentation-center-stage .briefing-copy h2 { font-size:21px; }
+  .presentation-center-stage .briefing-copy > p { font-size:15px; line-height:1.58; }
+  .presentation-center-stage .briefing-copy > strong { font-size:14px; line-height:1.48; }
+  .presentation-center-stage .briefing-copy li { font-size:13px; line-height:1.42; }
+  .presentation-center-stage .briefing-controls { grid-template-columns:repeat(3,minmax(0,1fr)); padding:5px 8px 8px; }
+  .presentation-center-stage .briefing-controls .briefing-quick-complete { grid-column:1 / -1; }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .briefing-motion-cell.is-moving::after,
+  .briefing-motion-hand { animation:none!important; }
+  .briefing-motion-cell.is-moving::after { opacity:1; transform:none; }
+}
+
 /*
  * VISUAL TRAINING REEL
  *
@@ -2191,4 +2325,47 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
   .briefing-controls button,
   .training-reel-open { border:2px solid CanvasText; }
   .briefing-controls button.primary { color:HighlightText; background:Highlight; }
+}
+
+/* Final cascade guard: legacy edge-console responsive rules are intentionally
+   later in this file, so the opt-in center-stage contract must win explicitly. */
+.presentation-center-stage.briefing-coach .briefing-console,
+.presentation-center-stage.briefing-coach.focus-placement-tools .briefing-console,
+.presentation-center-stage.briefing-coach.focus-command-deck .briefing-console,
+.presentation-center-stage.briefing-coach.focus-confirm-action .briefing-console,
+.presentation-center-stage.briefing-coach.focus-damage-report .briefing-console,
+.presentation-center-stage.briefing-coach.focus-result .briefing-console {
+  position:relative;
+  inset:auto;
+  transform:none;
+  width:min(960px,96vw);
+  height:min(78dvh,700px);
+  max-height:calc(100dvh - max(16px,env(safe-area-inset-top,0px)) - max(16px,env(safe-area-inset-bottom,0px)));
+  display:grid;
+  grid-template-rows:auto auto minmax(0,1fr) auto;
+}
+.presentation-center-stage.briefing-coach .briefing-controls {
+  grid-template-columns:repeat(3,minmax(0,1fr));
+}
+.presentation-center-stage.briefing-coach .briefing-controls .briefing-quick-complete {
+  grid-column:1 / -1!important;
+  width:100%;
+}
+
+@media (max-width:1099px) and (orientation:portrait) {
+  .presentation-center-stage.briefing-coach .briefing-console,
+  .presentation-center-stage.briefing-coach.focus-placement-tools .briefing-console,
+  .presentation-center-stage.briefing-coach.focus-command-deck .briefing-console,
+  .presentation-center-stage.briefing-coach.focus-confirm-action .briefing-console,
+  .presentation-center-stage.briefing-coach.focus-damage-report .briefing-console,
+  .presentation-center-stage.briefing-coach.focus-result .briefing-console {
+    position:relative;
+    inset:auto;
+    width:calc(100vw - 12px);
+    height:min(82dvh,720px);
+    max-height:calc(100dvh - max(12px,env(safe-area-inset-top,0px)) - max(12px,env(safe-area-inset-bottom,0px)));
+  }
+  .presentation-center-stage.briefing-coach .briefing-controls {
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
 }

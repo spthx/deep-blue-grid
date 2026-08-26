@@ -231,6 +231,8 @@ export function buildTrainingStoryboard(stage: MissionStageDefinition): Briefing
     cues: cues.map(withReadingTime),
     finishLabel: training.placementDrill ? "配置実習へ" : "訓練を開始",
     allowSkip: true,
+    presentation: "center-stage",
+    quickComplete: true,
   });
 }
 
@@ -307,6 +309,8 @@ export function buildTrainingDebrief(stage: MissionStageDefinition): BriefingSeq
     title: `${stage.title} // COMPLETE`,
     subtitle: "正解した操作と、実戦へ持ち込む判断基準を短く固定します。",
     allowSkip: true,
+    presentation: "center-stage",
+    quickComplete: false,
     finishLabel: "修了報告へ",
     cues: [
       {

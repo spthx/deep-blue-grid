@@ -49,3 +49,16 @@ test("visual training reel remains readable, bounded, and reusable across operat
   assert.match(briefingSequence, /buildOperationClearSequence/);
   assert.ok((component.match(/data-briefing-anchor=/g) ?? []).length >= 12);
 });
+
+test("novice training owns the center with animated hints and a one-tap completion escape", () => {
+  assert.match(css, /\.presentation-center-stage \.briefing-console \{[\s\S]*place-items|\.presentation-center-stage\.briefing-coach \{[\s\S]*place-items:center/);
+  assert.match(css, /grid-template-columns:minmax\(250px,42%\) minmax\(0,1fr\)/);
+  assert.match(css, /\.briefing-motion-grid \{[\s\S]*grid-template-columns:repeat\(8,1fr\)/);
+  assert.match(css, /@keyframes briefingHintHand/);
+  assert.match(css, /\.briefing-quick-complete \{[\s\S]*min-height:62px/);
+  assert.match(briefingCoach, /HINT \/ ここだけ覚える/);
+  assert.match(briefingCoach, /いまやること/);
+  assert.match(briefingCoach, /plainActionHint/);
+  assert.match(briefingCoach, /ONE TAP CLEAR/);
+  assert.match(component, /quickCompleteTraining/);
+});

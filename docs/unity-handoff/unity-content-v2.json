@@ -1,7 +1,7 @@
 {
   "schema": "deep-blue-grid.unity-content",
   "schemaVersion": 2,
-  "sourceRef": "unity-handoff-2026-08-21-progression-v2",
+  "sourceRef": "unity-handoff-2026-08-26-friendly-training",
   "distribution": "runtime-safe",
   "validationSolutionsIncluded": false,
   "coordinateContract": {
@@ -697,6 +697,11 @@
           "impact",
           "link"
         ],
+        "presentationStyles": [
+          "center-stage",
+          "edge-console"
+        ],
+        "trainingQuickComplete": true,
         "dismissReasons": [
           "complete",
           "skip"
@@ -1055,7 +1060,9 @@
               }
             ],
             "finishLabel": "配置実習へ",
-            "allowSkip": true
+            "allowSkip": true,
+            "presentation": "center-stage",
+            "quickComplete": true
           },
           "opening": {
             "id": "training-107-opening-v2",
@@ -1281,7 +1288,9 @@
               }
             ],
             "finishLabel": "配置実習へ",
-            "allowSkip": true
+            "allowSkip": true,
+            "presentation": "center-stage",
+            "quickComplete": true
           },
           "steps": [
             {
@@ -1398,7 +1407,9 @@
                 }
               ],
               "finishLabel": "操作へ戻る",
-              "allowSkip": true
+              "allowSkip": true,
+              "presentation": "center-stage",
+              "quickComplete": true
             }
           ],
           "damageReview": null,
@@ -1409,6 +1420,8 @@
             "title": "FLEET DEPLOYMENT // COMPLETE",
             "subtitle": "正解した操作と、実戦へ持ち込む判断基準を短く固定します。",
             "allowSkip": true,
+            "presentation": "center-stage",
+            "quickComplete": false,
             "finishLabel": "修了報告へ",
             "cues": [
               {
@@ -1659,7 +1672,9 @@
               }
             ],
             "finishLabel": "訓練を開始",
-            "allowSkip": true
+            "allowSkip": true,
+            "presentation": "center-stage",
+            "quickComplete": true
           },
           "opening": {
             "id": "training-101-opening-v2",
@@ -1735,7 +1750,9 @@
               }
             ],
             "finishLabel": "戦闘開始準備へ",
-            "allowSkip": true
+            "allowSkip": true,
+            "presentation": "center-stage",
+            "quickComplete": true
           },
           "steps": [
             {
@@ -1852,7 +1869,9 @@
                 }
               ],
               "finishLabel": "操作へ戻る",
-              "allowSkip": true
+              "allowSkip": true,
+              "presentation": "center-stage",
+              "quickComplete": true
             }
           ],
           "damageReview": null,
@@ -1863,6 +1882,8 @@
             "title": "TACTICAL PLOT // COMPLETE",
             "subtitle": "正解した操作と、実戦へ持ち込む判断基準を短く固定します。",
             "allowSkip": true,
+            "presentation": "center-stage",
+            "quickComplete": false,
             "finishLabel": "修了報告へ",
             "cues": [
               {
@@ -2189,7 +2210,9 @@
               }
             ],
             "finishLabel": "訓練を開始",
-            "allowSkip": true
+            "allowSkip": true,
+            "presentation": "center-stage",
+            "quickComplete": true
           },
           "opening": {
             "id": "training-102-opening-v2",
@@ -2293,7 +2316,9 @@
               }
             ],
             "finishLabel": "戦闘開始準備へ",
-            "allowSkip": true
+            "allowSkip": true,
+            "presentation": "center-stage",
+            "quickComplete": true
           },
           "steps": [
             {
@@ -2458,7 +2483,9 @@
                 }
               ],
               "finishLabel": "操作へ戻る",
-              "allowSkip": true
+              "allowSkip": true,
+              "presentation": "center-stage",
+              "quickComplete": true
             }
           ],
           "damageReview": null,
@@ -2469,6 +2496,8 @@
             "title": "ACOUSTIC BEARING // COMPLETE",
             "subtitle": "正解した操作と、実戦へ持ち込む判断基準を短く固定します。",
             "allowSkip": true,
+            "presentation": "center-stage",
+            "quickComplete": false,
             "finishLabel": "修了報告へ",
             "cues": [
               {
@@ -2879,7 +2908,9 @@
               }
             ],
             "finishLabel": "訓練を開始",
-            "allowSkip": true
+            "allowSkip": true,
+            "presentation": "center-stage",
+            "quickComplete": true
           },
           "opening": {
             "id": "training-103-opening-v2",
@@ -2991,7 +3022,9 @@
               }
             ],
             "finishLabel": "戦闘開始準備へ",
-            "allowSkip": true
+            "allowSkip": true,
+            "presentation": "center-stage",
+            "quickComplete": true
           },
           "steps": [
             {
@@ -3216,7 +3249,9 @@
                 }
               ],
               "finishLabel": "操作へ戻る",
-              "allowSkip": true
+              "allowSkip": true,
+              "presentation": "center-stage",
+              "quickComplete": true
             }
           ],
           "damageReview": null,
@@ -3227,6 +3262,8 @@
             "title": "CROSS FIX // COMPLETE",
             "subtitle": "正解した操作と、実戦へ持ち込む判断基準を短く固定します。",
             "allowSkip": true,
+            "presentation": "center-stage",
+            "quickComplete": false,
             "finishLabel": "修了報告へ",
             "cues": [
               {
@@ -3910,7 +3947,9 @@
               }
             ],
             "finishLabel": "訓練を開始",
-            "allowSkip": true
+            "allowSkip": true,
+            "presentation": "center-stage",
+            "quickComplete": true
           },
           "opening": {
             "id": "training-104-opening-v2",
@@ -4062,7 +4101,9 @@
               }
             ],
             "finishLabel": "戦闘開始準備へ",
-            "allowSkip": true
+            "allowSkip": true,
+            "presentation": "center-stage",
+            "quickComplete": true
           },
           "steps": [
             {
@@ -4287,7 +4328,9 @@
                 }
               ],
               "finishLabel": "操作へ戻る",
-              "allowSkip": true
+              "allowSkip": true,
+              "presentation": "center-stage",
+              "quickComplete": true
             },
             {
               "id": "training-104-step-2-guided-v2",
@@ -4511,7 +4554,9 @@
                 }
               ],
               "finishLabel": "操作へ戻る",
-              "allowSkip": true
+              "allowSkip": true,
+              "presentation": "center-stage",
+              "quickComplete": true
             }
           ],
           "damageReview": null,
@@ -4522,6 +4567,8 @@
             "title": "ESCORT SUPPORT // COMPLETE",
             "subtitle": "正解した操作と、実戦へ持ち込む判断基準を短く固定します。",
             "allowSkip": true,
+            "presentation": "center-stage",
+            "quickComplete": false,
             "finishLabel": "修了報告へ",
             "cues": [
               {
@@ -5482,7 +5529,9 @@
               }
             ],
             "finishLabel": "訓練を開始",
-            "allowSkip": true
+            "allowSkip": true,
+            "presentation": "center-stage",
+            "quickComplete": true
           },
           "opening": {
             "id": "training-105-opening-v2",
@@ -5590,7 +5639,9 @@
               }
             ],
             "finishLabel": "戦闘開始準備へ",
-            "allowSkip": true
+            "allowSkip": true,
+            "presentation": "center-stage",
+            "quickComplete": true
           },
           "steps": [
             {
@@ -5851,7 +5902,9 @@
                 }
               ],
               "finishLabel": "操作へ戻る",
-              "allowSkip": true
+              "allowSkip": true,
+              "presentation": "center-stage",
+              "quickComplete": true
             },
             {
               "id": "training-105-step-2-guided-v2",
@@ -6111,7 +6164,9 @@
                 }
               ],
               "finishLabel": "操作へ戻る",
-              "allowSkip": true
+              "allowSkip": true,
+              "presentation": "center-stage",
+              "quickComplete": true
             },
             {
               "id": "training-105-step-3-guided-v2",
@@ -6371,7 +6426,9 @@
                 }
               ],
               "finishLabel": "操作へ戻る",
-              "allowSkip": true
+              "allowSkip": true,
+              "presentation": "center-stage",
+              "quickComplete": true
             }
           ],
           "damageReview": null,
@@ -6382,6 +6439,8 @@
             "title": "FIRE CONTROL LINK // COMPLETE",
             "subtitle": "正解した操作と、実戦へ持ち込む判断基準を短く固定します。",
             "allowSkip": true,
+            "presentation": "center-stage",
+            "quickComplete": false,
             "finishLabel": "修了報告へ",
             "cues": [
               {
@@ -7150,7 +7209,9 @@
               }
             ],
             "finishLabel": "訓練を開始",
-            "allowSkip": true
+            "allowSkip": true,
+            "presentation": "center-stage",
+            "quickComplete": true
           },
           "opening": {
             "id": "training-106-opening-v2",
@@ -7270,7 +7331,9 @@
               }
             ],
             "finishLabel": "戦闘開始準備へ",
-            "allowSkip": true
+            "allowSkip": true,
+            "presentation": "center-stage",
+            "quickComplete": true
           },
           "steps": [
             {
@@ -7495,7 +7558,9 @@
                 }
               ],
               "finishLabel": "操作へ戻る",
-              "allowSkip": true
+              "allowSkip": true,
+              "presentation": "center-stage",
+              "quickComplete": true
             },
             {
               "id": "training-106-step-2-guided-v2",
@@ -7719,7 +7784,9 @@
                 }
               ],
               "finishLabel": "操作へ戻る",
-              "allowSkip": true
+              "allowSkip": true,
+              "presentation": "center-stage",
+              "quickComplete": true
             },
             {
               "id": "training-106-step-3-guided-v2",
@@ -7835,7 +7902,9 @@
                 }
               ],
               "finishLabel": "操作へ戻る",
-              "allowSkip": true
+              "allowSkip": true,
+              "presentation": "center-stage",
+              "quickComplete": true
             }
           ],
           "damageReview": null,
@@ -7846,6 +7915,8 @@
             "title": "SILENT TRACE // COMPLETE",
             "subtitle": "正解した操作と、実戦へ持ち込む判断基準を短く固定します。",
             "allowSkip": true,
+            "presentation": "center-stage",
+            "quickComplete": false,
             "finishLabel": "修了報告へ",
             "cues": [
               {
@@ -8155,7 +8226,9 @@
               }
             ],
             "finishLabel": "訓練を開始",
-            "allowSkip": true
+            "allowSkip": true,
+            "presentation": "center-stage",
+            "quickComplete": true
           },
           "opening": {
             "id": "training-108-opening-v2",
@@ -8231,7 +8304,9 @@
               }
             ],
             "finishLabel": "戦闘開始準備へ",
-            "allowSkip": true
+            "allowSkip": true,
+            "presentation": "center-stage",
+            "quickComplete": true
           },
           "steps": [
             {
@@ -8348,7 +8423,9 @@
                 }
               ],
               "finishLabel": "操作へ戻る",
-              "allowSkip": true
+              "allowSkip": true,
+              "presentation": "center-stage",
+              "quickComplete": true
             }
           ],
           "damageReview": {
@@ -8419,7 +8496,9 @@
               }
             ],
             "finishLabel": "損傷報告を確認・反撃へ",
-            "allowSkip": true
+            "allowSkip": true,
+            "presentation": "center-stage",
+            "quickComplete": true
           },
           "debrief": {
             "id": "training-108-debrief-v2",
@@ -8428,6 +8507,8 @@
             "title": "DAMAGE REPORT // COMPLETE",
             "subtitle": "正解した操作と、実戦へ持ち込む判断基準を短く固定します。",
             "allowSkip": true,
+            "presentation": "center-stage",
+            "quickComplete": false,
             "finishLabel": "修了報告へ",
             "cues": [
               {
@@ -8726,7 +8807,9 @@
               }
             ],
             "finishLabel": "訓練を開始",
-            "allowSkip": true
+            "allowSkip": true,
+            "presentation": "center-stage",
+            "quickComplete": true
           },
           "opening": {
             "id": "training-109-opening-v2",
@@ -8814,7 +8897,9 @@
               }
             ],
             "finishLabel": "戦闘開始準備へ",
-            "allowSkip": true
+            "allowSkip": true,
+            "presentation": "center-stage",
+            "quickComplete": true
           },
           "steps": [
             {
@@ -8967,7 +9052,9 @@
                 }
               ],
               "finishLabel": "操作へ戻る",
-              "allowSkip": true
+              "allowSkip": true,
+              "presentation": "center-stage",
+              "quickComplete": true
             }
           ],
           "damageReview": null,
@@ -8978,6 +9065,8 @@
             "title": "IMPORTANT SECTION // COMPLETE",
             "subtitle": "正解した操作と、実戦へ持ち込む判断基準を短く固定します。",
             "allowSkip": true,
+            "presentation": "center-stage",
+            "quickComplete": false,
             "finishLabel": "修了報告へ",
             "cues": [
               {

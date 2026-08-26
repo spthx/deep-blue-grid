@@ -59,6 +59,8 @@ export type BriefingSequence = Readonly<{
   cues: ReadonlyArray<BriefingCue>;
   finishLabel: string;
   allowSkip: boolean;
+  presentation?: "center-stage" | "edge-console";
+  quickComplete?: boolean;
 }>;
 
 export type BriefingSequenceDefinition = Readonly<{
@@ -70,6 +72,8 @@ export type BriefingSequenceDefinition = Readonly<{
   cues: ReadonlyArray<BriefingCue>;
   finishLabel: string;
   allowSkip?: boolean;
+  presentation?: "center-stage" | "edge-console";
+  quickComplete?: boolean;
 }>;
 
 export type BriefingDismissReason = "complete" | "skip";

@@ -67,7 +67,7 @@ import {
 } from "../app/game/ModeAuthorization.ts";
 import { CANONICAL_MISSION_ROUTES } from "./measure-missions.ts";
 
-const SOURCE_REF = "unity-handoff-2026-08-21-progression-v2";
+const SOURCE_REF = "unity-handoff-2026-08-26-friendly-training";
 const handoffDirectory = resolve("docs/unity-handoff");
 const runtimeOutputPath = resolve(handoffDirectory, "unity-content-v2.json");
 const validationOutputPath = resolve(handoffDirectory, "unity-validation-v1.json");
@@ -120,6 +120,8 @@ const briefingContract = {
   plots: ["player", "enemy"],
   markTones: ["observe", "target", "exclude", "link"],
   visualKinds: ["scan", "path", "rotate", "echo-cross", "weapon-pattern", "impact", "link"],
+  presentationStyles: ["center-stage", "edge-console"],
+  trainingQuickComplete: true,
   dismissReasons: ["complete", "skip"],
   timing: {
     clock: "unscaled",

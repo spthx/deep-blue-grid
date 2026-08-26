@@ -35,12 +35,28 @@ Domain を呼ばない。再生、一時停止、前後移動は見た目と音�
   `sequences.persisted` は保存成功時、`sequences.saveFailed` は書込失敗または将来version
   保護時に使う。
 
+### 初心者向け中央教材（2026-08-26）
+
+TRAININGの全sequenceは `presentation: "center-stage"` を持つ。中央教材は画面端の小型consoleではなく、
+Safe Area中央の大きな不透明CICウィンドウを使う。
+
+- 左／上側：8×8の動くミニ盤面。`visual.kind`と`marks`を同じ座標で再生する。
+- 右／下側：`いまやること`、大見出し、短い説明、強調caption、`HINT / ここだけ覚える`。
+- 操作：`ひとつ戻る`、`動きをもう一度`、`次へ`。全て44px以上。
+- `quickComplete: true`のtraining-introでは、62px以上の`説明だけで修了 / ONE TAP CLEAR`を常設する。
+- one-tap修了も通常と同じtraining progress保存を使い、debug時は書き込まない。保存失敗は画面内警告を維持する。
+- `prefers-reduced-motion`ではミニ盤面の手カーソルとpulseを停止し、静止した注釈を残す。
+
+Unityは `presentationStyles` と `trainingQuickComplete` をcontractから読み、Webと同じ中央配置、
+動的8×8ヒント、plain Japanese、ワンタップ修了を再現する。validation fixtureはPlayerへ含めない。
+
 Unity DTO は次の名前と意味を保つ。JSON の未知fieldは無視してもよいが、未知enum値は無音で
 default値に変換せずvalidation errorにする。
 
 ```text
 BriefingSequence
-  id, kind, eyebrow, title, subtitle, finishLabel, allowSkip, cues[]
+  id, kind, eyebrow, title, subtitle, finishLabel, allowSkip,
+  presentation(center-stage|edge-console), quickComplete, cues[]
 
 BriefingCue
   id, chapter, kicker, title, narration, caption, focus, plot?, marks[], visual?, facts[], durationMs

@@ -54,6 +54,8 @@ test("all nine authored lessons produce complete intro and debrief reels", () =>
     assert.equal(intro.id, `training-${stage.id}-intro-v2`);
     assert.equal(intro.kind, "training-intro");
     assert.equal(intro.allowSkip, true);
+    assert.equal(intro.presentation, "center-stage");
+    assert.equal(intro.quickComplete, true);
     assert.equal(intro.cues.length, expectedIntroCueCount(stage));
     assert.equal(debrief.id, `training-${stage.id}-debrief-v2`);
     assert.equal(debrief.kind, "training-debrief");
@@ -361,6 +363,8 @@ test("coach replay and accessibility contracts keep one scene readable and resta
   assert.match(BRIEFING_COACH_SOURCE, /revealCompactAnchor\(anchor, cue, rootRef\.current\)/, "compact reels correct for the fixed briefing console");
   assert.match(BRIEFING_COACH_SOURCE, /const consoleAtTop[\s\S]*?availableTop[\s\S]*?availableBottom[\s\S]*?window\.scrollBy/, "compact correction preserves the unobscured visual viewport");
   assert.match(BRIEFING_COACH_SOURCE, /cue\.marks[\s\S]*?cue\.visual\?\.cells[\s\S]*?\.canvas-wrap/, "plot correction follows the authored marked cells rather than only the panel bounds");
+  assert.match(BRIEFING_COACH_SOURCE, /BriefingMotionStage/, "training presents a central animated mini plot");
+  assert.match(BRIEFING_COACH_SOURCE, /説明だけで修了/, "a novice can finish the lesson from one large action");
 });
 
 test("training briefing integration keeps result focus and the active-time clock coherent", () => {
@@ -368,6 +372,10 @@ test("training briefing integration keeps result focus and the active-time clock
   assert.match(DEEP_BLUE_GRID_SOURCE, /setResultReview\(Boolean\(cue\?\.plot\)\)/, "debrief plot cues switch into battlefield review and result cues switch back");
   assert.match(DEEP_BLUE_GRID_SOURCE, /setVisibleBoard\(phase === "player" \? "enemy" : "player"\)/, "closing a reel restores the board required by the current phase");
   assert.match(DEEP_BLUE_GRID_SOURCE, /&& !briefingState\.sequence\) resumeMissionClock\(\)/, "returning from background cannot restart the active-time clock underneath a briefing");
+  assert.match(DEEP_BLUE_GRID_SOURCE, /onQuickComplete=\{briefingState\.sequence\?\.kind === "training-intro" \? quickCompleteTraining : undefined\}/,
+    "one-tap completion exists only on training introductions");
+  assert.match(DEEP_BLUE_GRID_SOURCE, /updateStoredTrainingProgress\(training\.lesson\)/,
+    "one-tap completion uses the same durable lesson progress store");
 });
 
 test("training debrief rejects an authored lesson without any operational step", () => {
