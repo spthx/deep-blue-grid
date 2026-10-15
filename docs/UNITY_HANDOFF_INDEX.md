@@ -41,11 +41,11 @@ Unityへ渡す静的データは、手入力ではなく `npm run export:unity` 
   兵装残数を継承しない。難易度表示は `1 / 6`〜`6 / 6`。
 - EXTREME 21 は **OPERATION MOBY-DICK**、目標は SSX-02 **LEVIATHAN**。SURVIVAL
   第3作戦の SSX-01 **SEA BAT** と艦、行動規則、表示名を混同しない。
-- INITIAL TRAINING は9教程を順次解放する固定教材。修了済みは再受講でき、誤操作は
-  行動、弾薬、計時、敵手を消費しない。全9教程の完了IDでCASUALを解放する。旧1–6
-  全修了記録は既存CASUAL権限を維持する。
-- 解放順は TRAINING→CASUAL→TACTICS→MISSION→SURVIVAL。MISSIONは難易度1–5
-  各1件とARCHIVE 1件の認定印、EXTREMEはSURVIVAL全4作戦完遂を要する。
+- 2026-10-13のユーザー指示により、全モード・全28任務・EXTREMEを初回から利用可能。
+  INITIAL TRAININGの9教程は自由選択の任意教材で、受講・修了を開始条件にしない。
+  誤操作は行動、弾薬、計時、敵手を消費しない。過去の順次解放仕様は現行アクセス条件には使用しない。
+- Progression v2はモードごとの実際の完遂を独立して記録する。v1の連続記録を移行し、
+  未受講の教程や未完遂モードをクリア済みと偽装しない。達成印は記録用で、アクセス条件ではない。
 - 旧実績は現行の空・破損進行記録より優先して単調復旧する。保存に失敗した場合は
   `LOCAL RECORD NOT SAVED` を即時表示し、再読込で権限が戻る可能性を明示する。
 - MISSION/TRAINING の候補座標は隠しヒントではない。`PLOTTED CONTACTS / 公開座標`

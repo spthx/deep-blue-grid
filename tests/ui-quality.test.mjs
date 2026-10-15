@@ -7,6 +7,44 @@ const component = await readFile(new URL("../app/game/DeepBlueGrid.tsx", import.
 const briefingCoach = await readFile(new URL("../app/game/BriefingCoach.tsx", import.meta.url), "utf8");
 const briefingSequence = await readFile(new URL("../app/game/BriefingSequence.ts", import.meta.url), "utf8");
 
+test("short landscape training reserves a square diagram and one reachable control row", () => {
+  const compact = css.slice(css.indexOf("/* Short landscape:"));
+  assert.match(compact, /grid-template-rows:48px 16px minmax\(0,1fr\) 56px/);
+  assert.match(compact, /grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+  assert.match(compact, /grid-column:auto!important; min-height:44px/);
+  assert.match(compact, /calc\(100dvh - 220px\)/);
+});
+
+test("combat results hold for explicit response and both report surfaces keep local navigation", () => {
+  assert.equal((component.match(/holdPlayerReport\(\);/g) ?? []).length, 2, "attack and sonar both hold");
+  assert.match(component, /phase !== "assessment" \|\| responseCommitted\.current/);
+  assert.match(component, /responseCommitted\.current = true;\s*setLocked\(true\);\s*void enemyTurn\(\)/);
+  assert.equal((component.match(/\{renderReportNavigation\(\)\}/g) ?? []).length, 4);
+  assert.match(component, /phase === "player" \|\| phase === "assessment" \? "enemy"/);
+});
+
+test("impact audio occurs before the readable beat, never on an already attacked cell", () => {
+  const player = component.slice(component.indexOf("const resolvePlayerAttack"), component.indexOf("const weaponState"));
+  const enemy = component.slice(component.indexOf("const enemyTurn"), component.indexOf("const continueToPlayer"));
+  for (const volley of [player, enemy]) {
+    assert.match(volley, /if \(result.kind === "ALREADY"\) continue;/);
+    assert.ok(volley.indexOf("audio.current?.hit()") < volley.indexOf("await sleep(PRESENTATION_TIMINGS_MS." + (volley === player ? "player" : "enemy") + "ImpactBeat)"));
+  }
+});
+
+test("cancelled touch and right click cannot accidentally commit placement", () => {
+  assert.match(component, /event.button !== 0 \|\| logOpen \|\| briefingState.sequence \|\| locked/);
+  assert.match(component, /event.type !== "pointercancel" && !touchRotated.current/);
+  assert.ok(component.indexOf('touchPointers.current.add(event.pointerId);') < component.indexOf('if (!placementPreviewActive) {', component.indexOf('const onBoardPointer')));
+});
+
+test("reduced motion keeps readable notices and the completed placement demonstration", () => {
+  assert.match(css, /\.turn-flash,\.radar-result,\.identification-alert,\.dive-alert \{ animation:none!important; opacity:1;/);
+  assert.match(css, /\.briefing-demo-ship \{ left:var\(--ship-to-left\); top:var\(--ship-to-top\);/);
+  const demo = css.slice(css.indexOf("@keyframes briefingShipPlacement"), css.indexOf(".presentation-center-stage .briefing-copy"));
+  assert.doesNotMatch(demo, /(?:left|top):/);
+});
+
 test("interactive CIC surfaces own their material instead of depending on screen z-order", () => {
   assert.match(css, /DETERMINISTIC CIC MATERIAL/);
   assert.match(css, /\.mission-card,[\s\S]*\.utility-overlay button,[\s\S]*\.ship-card/);

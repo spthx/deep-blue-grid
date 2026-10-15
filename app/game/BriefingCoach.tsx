@@ -159,7 +159,7 @@ export function BriefingCoach({ state, dispatch, reducedMotion, onCueChange, onD
           {sequence.allowSkip && <button className="briefing-skip" onClick={() => onDismiss("skip")}>説明を閉じる <small>ESC</small></button>}
         </header>
         <div className="briefing-timeline" aria-label={`説明 ${state.cueIndex + 1} / ${sequence.cues.length}`}>
-          <div role="progressbar" aria-valuemin={1} aria-valuemax={sequence.cues.length} aria-valuenow={state.cueIndex + 1} style={{ "--briefing-progress": `${progress}%` } as CSSProperties} />
+          <div role="progressbar" aria-valuemin={1} aria-valuemax={sequence.cues.length} aria-valuenow={state.cueIndex + 1} style={{ "--briefing-progress": progress / 100 } as CSSProperties} />
           <span>SCENE {String(state.cueIndex + 1).padStart(2, "0")} / {String(sequence.cues.length).padStart(2, "0")}</span>
         </div>
         <div className="briefing-learning-area">
@@ -180,7 +180,7 @@ export function BriefingCoach({ state, dispatch, reducedMotion, onCueChange, onD
           {sequence.presentation !== "center-stage" && <button onClick={() => dispatch({ type: "seek", cueIndex: 0 })} disabled={state.cueIndex === 0}><b>最初から</b><small>RESTART</small></button>}
           <button onClick={() => dispatch({ type: "previous" })} disabled={state.cueIndex === 0}><b>ひとつ戻る</b><small>BACK</small></button>
           {sequence.presentation !== "center-stage" && <button onClick={() => dispatch({ type: state.playing ? "pause" : "play" })} disabled={reducedMotion}><b>{state.playing ? "一時停止" : "自動再生"}</b><small>{reducedMotion ? "静止表示中" : state.playing ? "PAUSE" : "PLAY"}</small></button>}
-          <button onClick={() => setReplayKey((value) => value + 1)}><b>動きをもう一度</b><small>REPLAY</small></button>
+          <button onClick={() => setReplayKey((value) => value + 1)}><b>もう一度再生</b><small>REPLAY</small></button>
           <button ref={primaryRef} className="primary" onClick={advance}><b>{last ? sequence.finishLabel : "次へ"}</b><small>{last ? "END REEL" : "NEXT SCENE"}</small></button>
           {sequence.quickComplete && onQuickComplete && <button className="briefing-quick-complete" onClick={onQuickComplete}><b>説明だけで修了</b><small>ONE TAP CLEAR</small></button>}
         </footer>
@@ -222,6 +222,8 @@ function BriefingMotionStage({ cue, replayKey }: Readonly<{ cue: BriefingCue; re
     "--ship-from-top": `${(from.y + .5) * 12.5}%`,
     "--ship-to-left": `${((minX + maxX + 1) * .5) * 12.5}%`,
     "--ship-to-top": `${((minY + maxY + 1) * .5) * 12.5}%`,
+    "--ship-travel-x": `${(((minX + maxX) * .5 - from.x) * 12.5 / 34) * 100}%`,
+    "--ship-travel-y": `${(((minY + maxY) * .5 - from.y) * 12.5 / 8) * 100}%`,
   } as CSSProperties;
   const destinationStyle = {
     left: `${minX * 12.5}%`, top: `${minY * 12.5}%`,
@@ -255,7 +257,7 @@ function actionSteps(cue: BriefingCue) {
   if (cue.visual?.kind === "scan") return ["光る範囲を見る", "SONARを選ぶ", "実行"];
   if (cue.visual?.kind === "impact") return ["光るマスを見る", "結果を確認"];
   if (cue.focus === "command-deck") return ["兵装を選ぶ", "光るマスを押す", "実行"];
-  return ["動きを見る", "右の説明を読む", "次へ"];
+  return ["動きを見る", "説明を読む", "次へ"];
 }
 
 /**

@@ -31,15 +31,17 @@ test("record persistence failure is visibly reported instead of silently losing 
   assert.match(css, /\.persistence-warning/);
 });
 
-test("first mode completion queues a reusable feature briefing after any active debrief", () => {
+test("mode completion records the clear without forcing an unlock briefing", () => {
   assert.match(game, /commitModeCompletion\(progressionRef\.current, mode\)/);
-  assert.match(game, /setAuthorizationNotice\(\{ \.\.\.modeAuthorizationFor\(mode\), persisted: commit\.persisted \}\)/);
+  const commitBody = game.slice(game.indexOf("const recordModeCompletion"),game.indexOf("const startCampaign"));
+  assert.match(commitBody, /setAuthorizationNotice\(null\)/);
+  assert.doesNotMatch(commitBody, /modeAuthorizationFor/);
   assert.match(game, /if \(phase !== "victory" \|\| !authorizationNotice \|\| authorizationBriefingPresented \|\| briefingState\.sequence\) return;/);
   assert.match(game, /buildModeAuthorizationSequence\(authorizationNotice\.completed, authorizationNotice\.persisted\)/);
   assert.match(game, /特徴説明を再表示/);
 });
 
-test("authorization feature copy remains visible in the result report", () => {
+test("legacy feature presenter remains available without automatic playback", () => {
   assert.match(game, /authorizationNotice\.authorizedLabel/);
   assert.match(game, /authorizationNotice\.features\.map/);
   assert.match(game, /authorizationNotice\.persisted \? "LOCAL RECORD SAVED" : "LOCAL RECORD NOT SAVED"/);

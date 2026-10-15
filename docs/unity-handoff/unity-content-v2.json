@@ -591,12 +591,12 @@
       "enemyOpeningHold": 1050,
       "enemySilentAction": 750,
       "enemySilentSonarAction": 800,
-      "silentDiveNotice": 1900,
+      "silentDiveNotice": 1750,
       "sonarReport": 1450,
-      "enemyImpactBeat": 260,
+      "enemyImpactBeat": 400,
       "enemyPostAction": 850,
       "playerCommit": 400,
-      "playerImpactBeat": 220,
+      "playerImpactBeat": 400,
       "playerPostAction": 850,
       "playerSilentAction": 800,
       "touchRotationGuard": 200
@@ -9169,7 +9169,7 @@
               "id": "mode-authorization-training",
               "kind": "operation-clear",
               "eyebrow": "OPERATION COMPLETE / 作戦完了",
-              "title": "CASUAL AUTHORIZED",
+              "title": "CASUAL AVAILABLE",
               "subtitle": "敵艦情報を確認できる実戦課程です。配置・索敵・火力集中を、自軍先攻で身につけます。",
               "finishLabel": "戦果報告を確認",
               "allowSkip": true,
@@ -9179,21 +9179,21 @@
                   "chapter": "DEBRIEF",
                   "kicker": "OPERATIONAL MILESTONE / 課程完了",
                   "title": "INITIAL TRAINING COMPLETE",
-                  "narration": "作戦記録を照合し、当該課程の完了を確認しました。新しい作戦権限を端末内記録へ保存しました。",
-                  "caption": "戦果報告と端末内記録に新規作戦権限を追記しました。",
+                  "narration": "作戦記録を照合し、完了を端末内へ記録しました。全モードは最初から利用できます。",
+                  "caption": "戦果報告と端末内記録へ達成を追記しました。",
                   "focus": "result",
                   "facts": [
                     "課程完了を確定",
-                    "進行記録を端末内へ保存済み",
-                    "CASUALを解放"
+                    "達成記録を端末内へ保存済み",
+                    "CASUALもいつでも選択可能"
                   ],
                   "durationMs": 8200
                 },
                 {
                   "id": "authorization-training-features",
                   "chapter": "READ",
-                  "kicker": "NEW AUTHORIZATION / 新規作戦権限",
-                  "title": "CASUAL AUTHORIZED",
+                  "kicker": "OPERATION GUIDE / 作戦案内",
+                  "title": "CASUAL AVAILABLE",
                   "narration": "敵艦情報を確認できる実戦課程です。配置・索敵・火力集中を、自軍先攻で身につけます。",
                   "caption": "MODE SELECTのCASUALから出撃できます。",
                   "focus": "result",
@@ -9210,7 +9210,7 @@
               "id": "mode-authorization-training",
               "kind": "operation-clear",
               "eyebrow": "OPERATION COMPLETE / 作戦完了",
-              "title": "CASUAL AUTHORIZED",
+              "title": "CASUAL AVAILABLE",
               "subtitle": "敵艦情報を確認できる実戦課程です。配置・索敵・火力集中を、自軍先攻で身につけます。",
               "finishLabel": "戦果報告を確認",
               "allowSkip": true,
@@ -9220,21 +9220,21 @@
                   "chapter": "DEBRIEF",
                   "kicker": "OPERATIONAL MILESTONE / 課程完了",
                   "title": "INITIAL TRAINING COMPLETE",
-                  "narration": "作戦記録を照合し、当該課程の完了を確認しました。新しい権限は有効ですが、端末内記録への保存は完了していません。",
+                  "narration": "作戦の完了を確認しましたが、端末内への記録は保存できていません。全モードは引き続き利用できます。",
                   "caption": "画面上部の保存警告を確認してください。",
                   "focus": "result",
                   "facts": [
                     "課程完了を確定",
-                    "保存未完了・画面上のみ解放",
-                    "CASUALを解放"
+                    "保存未完了・今回の達成は画面上のみ",
+                    "CASUALもいつでも選択可能"
                   ],
                   "durationMs": 8200
                 },
                 {
                   "id": "authorization-training-features",
                   "chapter": "READ",
-                  "kicker": "NEW AUTHORIZATION / 新規作戦権限",
-                  "title": "CASUAL AUTHORIZED",
+                  "kicker": "OPERATION GUIDE / 作戦案内",
+                  "title": "CASUAL AVAILABLE",
                   "narration": "敵艦情報を確認できる実戦課程です。配置・索敵・火力集中を、自軍先攻で身につけます。",
                   "caption": "MODE SELECTのCASUALから出撃できます。",
                   "focus": "result",
@@ -9269,7 +9269,7 @@
               "id": "mode-authorization-casual",
               "kind": "operation-clear",
               "eyebrow": "OPERATION COMPLETE / 作戦完了",
-              "title": "TACTICS AUTHORIZED",
+              "title": "TACTICS AVAILABLE",
               "subtitle": "敵情報を秘匿した実戦規則へ移行します。重要区画を捉え、限られた情報から追撃してください。",
               "finishLabel": "戦果報告を確認",
               "allowSkip": true,
@@ -9279,21 +9279,21 @@
                   "chapter": "DEBRIEF",
                   "kicker": "OPERATIONAL MILESTONE / 課程完了",
                   "title": "CASUAL COMPLETE",
-                  "narration": "作戦記録を照合し、当該課程の完了を確認しました。新しい作戦権限を端末内記録へ保存しました。",
-                  "caption": "戦果報告と端末内記録に新規作戦権限を追記しました。",
+                  "narration": "作戦記録を照合し、完了を端末内へ記録しました。全モードは最初から利用できます。",
+                  "caption": "戦果報告と端末内記録へ達成を追記しました。",
                   "focus": "result",
                   "facts": [
                     "課程完了を確定",
-                    "進行記録を端末内へ保存済み",
-                    "TACTICSを解放"
+                    "達成記録を端末内へ保存済み",
+                    "TACTICSもいつでも選択可能"
                   ],
                   "durationMs": 8200
                 },
                 {
                   "id": "authorization-casual-features",
                   "chapter": "READ",
-                  "kicker": "NEW AUTHORIZATION / 新規作戦権限",
-                  "title": "TACTICS AUTHORIZED",
+                  "kicker": "OPERATION GUIDE / 作戦案内",
+                  "title": "TACTICS AVAILABLE",
                   "narration": "敵情報を秘匿した実戦規則へ移行します。重要区画を捉え、限られた情報から追撃してください。",
                   "caption": "MODE SELECTのTACTICSから出撃できます。",
                   "focus": "result",
@@ -9310,7 +9310,7 @@
               "id": "mode-authorization-casual",
               "kind": "operation-clear",
               "eyebrow": "OPERATION COMPLETE / 作戦完了",
-              "title": "TACTICS AUTHORIZED",
+              "title": "TACTICS AVAILABLE",
               "subtitle": "敵情報を秘匿した実戦規則へ移行します。重要区画を捉え、限られた情報から追撃してください。",
               "finishLabel": "戦果報告を確認",
               "allowSkip": true,
@@ -9320,21 +9320,21 @@
                   "chapter": "DEBRIEF",
                   "kicker": "OPERATIONAL MILESTONE / 課程完了",
                   "title": "CASUAL COMPLETE",
-                  "narration": "作戦記録を照合し、当該課程の完了を確認しました。新しい権限は有効ですが、端末内記録への保存は完了していません。",
+                  "narration": "作戦の完了を確認しましたが、端末内への記録は保存できていません。全モードは引き続き利用できます。",
                   "caption": "画面上部の保存警告を確認してください。",
                   "focus": "result",
                   "facts": [
                     "課程完了を確定",
-                    "保存未完了・画面上のみ解放",
-                    "TACTICSを解放"
+                    "保存未完了・今回の達成は画面上のみ",
+                    "TACTICSもいつでも選択可能"
                   ],
                   "durationMs": 8200
                 },
                 {
                   "id": "authorization-casual-features",
                   "chapter": "READ",
-                  "kicker": "NEW AUTHORIZATION / 新規作戦権限",
-                  "title": "TACTICS AUTHORIZED",
+                  "kicker": "OPERATION GUIDE / 作戦案内",
+                  "title": "TACTICS AVAILABLE",
                   "narration": "敵情報を秘匿した実戦規則へ移行します。重要区画を捉え、限られた情報から追撃してください。",
                   "caption": "MODE SELECTのTACTICSから出撃できます。",
                   "focus": "result",
@@ -9369,7 +9369,7 @@
               "id": "mode-authorization-tactics",
               "kind": "operation-clear",
               "eyebrow": "OPERATION COMPLETE / 作戦完了",
-              "title": "MISSION AUTHORIZED",
+              "title": "MISSION AVAILABLE",
               "subtitle": "固定戦況、兵装制限、手数制限を読み解く独立任務群です。好きな任務を選んで記録を更新できます。",
               "finishLabel": "戦果報告を確認",
               "allowSkip": true,
@@ -9379,21 +9379,21 @@
                   "chapter": "DEBRIEF",
                   "kicker": "OPERATIONAL MILESTONE / 課程完了",
                   "title": "TACTICS COMPLETE",
-                  "narration": "作戦記録を照合し、当該課程の完了を確認しました。新しい作戦権限を端末内記録へ保存しました。",
-                  "caption": "戦果報告と端末内記録に新規作戦権限を追記しました。",
+                  "narration": "作戦記録を照合し、完了を端末内へ記録しました。全モードは最初から利用できます。",
+                  "caption": "戦果報告と端末内記録へ達成を追記しました。",
                   "focus": "result",
                   "facts": [
                     "課程完了を確定",
-                    "進行記録を端末内へ保存済み",
-                    "MISSIONを解放"
+                    "達成記録を端末内へ保存済み",
+                    "MISSIONもいつでも選択可能"
                   ],
                   "durationMs": 8200
                 },
                 {
                   "id": "authorization-tactics-features",
                   "chapter": "READ",
-                  "kicker": "NEW AUTHORIZATION / 新規作戦権限",
-                  "title": "MISSION AUTHORIZED",
+                  "kicker": "OPERATION GUIDE / 作戦案内",
+                  "title": "MISSION AVAILABLE",
                   "narration": "固定戦況、兵装制限、手数制限を読み解く独立任務群です。好きな任務を選んで記録を更新できます。",
                   "caption": "MODE SELECTのMISSION INDEXから任務を選択できます。",
                   "focus": "result",
@@ -9410,7 +9410,7 @@
               "id": "mode-authorization-tactics",
               "kind": "operation-clear",
               "eyebrow": "OPERATION COMPLETE / 作戦完了",
-              "title": "MISSION AUTHORIZED",
+              "title": "MISSION AVAILABLE",
               "subtitle": "固定戦況、兵装制限、手数制限を読み解く独立任務群です。好きな任務を選んで記録を更新できます。",
               "finishLabel": "戦果報告を確認",
               "allowSkip": true,
@@ -9420,21 +9420,21 @@
                   "chapter": "DEBRIEF",
                   "kicker": "OPERATIONAL MILESTONE / 課程完了",
                   "title": "TACTICS COMPLETE",
-                  "narration": "作戦記録を照合し、当該課程の完了を確認しました。新しい権限は有効ですが、端末内記録への保存は完了していません。",
+                  "narration": "作戦の完了を確認しましたが、端末内への記録は保存できていません。全モードは引き続き利用できます。",
                   "caption": "画面上部の保存警告を確認してください。",
                   "focus": "result",
                   "facts": [
                     "課程完了を確定",
-                    "保存未完了・画面上のみ解放",
-                    "MISSIONを解放"
+                    "保存未完了・今回の達成は画面上のみ",
+                    "MISSIONもいつでも選択可能"
                   ],
                   "durationMs": 8200
                 },
                 {
                   "id": "authorization-tactics-features",
                   "chapter": "READ",
-                  "kicker": "NEW AUTHORIZATION / 新規作戦権限",
-                  "title": "MISSION AUTHORIZED",
+                  "kicker": "OPERATION GUIDE / 作戦案内",
+                  "title": "MISSION AVAILABLE",
                   "narration": "固定戦況、兵装制限、手数制限を読み解く独立任務群です。好きな任務を選んで記録を更新できます。",
                   "caption": "MODE SELECTのMISSION INDEXから任務を選択できます。",
                   "focus": "result",
@@ -9469,7 +9469,7 @@
               "id": "mode-authorization-mission",
               "kind": "operation-clear",
               "eyebrow": "OPERATION COMPLETE / 作戦完了",
-              "title": "SURVIVAL AUTHORIZED",
+              "title": "SURVIVAL AVAILABLE",
               "subtitle": "撃沈艦が戦列へ戻らない全4作戦です。各作戦後に生存艦を修復・再補給し、残存戦力を引き継ぎます。",
               "finishLabel": "戦果報告を確認",
               "allowSkip": true,
@@ -9479,21 +9479,21 @@
                   "chapter": "DEBRIEF",
                   "kicker": "OPERATIONAL MILESTONE / 課程完了",
                   "title": "MISSION QUALIFICATION COMPLETE",
-                  "narration": "作戦記録を照合し、当該課程の完了を確認しました。新しい作戦権限を端末内記録へ保存しました。",
-                  "caption": "戦果報告と端末内記録に新規作戦権限を追記しました。",
+                  "narration": "作戦記録を照合し、完了を端末内へ記録しました。全モードは最初から利用できます。",
+                  "caption": "戦果報告と端末内記録へ達成を追記しました。",
                   "focus": "result",
                   "facts": [
                     "課程完了を確定",
-                    "進行記録を端末内へ保存済み",
-                    "SURVIVALを解放"
+                    "達成記録を端末内へ保存済み",
+                    "SURVIVALもいつでも選択可能"
                   ],
                   "durationMs": 8200
                 },
                 {
                   "id": "authorization-mission-features",
                   "chapter": "READ",
-                  "kicker": "NEW AUTHORIZATION / 新規作戦権限",
-                  "title": "SURVIVAL AUTHORIZED",
+                  "kicker": "OPERATION GUIDE / 作戦案内",
+                  "title": "SURVIVAL AVAILABLE",
                   "narration": "撃沈艦が戦列へ戻らない全4作戦です。各作戦後に生存艦を修復・再補給し、残存戦力を引き継ぎます。",
                   "caption": "MODE SELECTのSURVIVALから連続作戦を開始できます。",
                   "focus": "result",
@@ -9510,7 +9510,7 @@
               "id": "mode-authorization-mission",
               "kind": "operation-clear",
               "eyebrow": "OPERATION COMPLETE / 作戦完了",
-              "title": "SURVIVAL AUTHORIZED",
+              "title": "SURVIVAL AVAILABLE",
               "subtitle": "撃沈艦が戦列へ戻らない全4作戦です。各作戦後に生存艦を修復・再補給し、残存戦力を引き継ぎます。",
               "finishLabel": "戦果報告を確認",
               "allowSkip": true,
@@ -9520,21 +9520,21 @@
                   "chapter": "DEBRIEF",
                   "kicker": "OPERATIONAL MILESTONE / 課程完了",
                   "title": "MISSION QUALIFICATION COMPLETE",
-                  "narration": "作戦記録を照合し、当該課程の完了を確認しました。新しい権限は有効ですが、端末内記録への保存は完了していません。",
+                  "narration": "作戦の完了を確認しましたが、端末内への記録は保存できていません。全モードは引き続き利用できます。",
                   "caption": "画面上部の保存警告を確認してください。",
                   "focus": "result",
                   "facts": [
                     "課程完了を確定",
-                    "保存未完了・画面上のみ解放",
-                    "SURVIVALを解放"
+                    "保存未完了・今回の達成は画面上のみ",
+                    "SURVIVALもいつでも選択可能"
                   ],
                   "durationMs": 8200
                 },
                 {
                   "id": "authorization-mission-features",
                   "chapter": "READ",
-                  "kicker": "NEW AUTHORIZATION / 新規作戦権限",
-                  "title": "SURVIVAL AUTHORIZED",
+                  "kicker": "OPERATION GUIDE / 作戦案内",
+                  "title": "SURVIVAL AVAILABLE",
                   "narration": "撃沈艦が戦列へ戻らない全4作戦です。各作戦後に生存艦を修復・再補給し、残存戦力を引き継ぎます。",
                   "caption": "MODE SELECTのSURVIVALから連続作戦を開始できます。",
                   "focus": "result",
@@ -9562,14 +9562,14 @@
               "敗北後も未確認配置を秘匿",
               "余剰指令のない最高難度D6"
             ],
-            "access": "MISSION INDEX内のEXTREME区分が解放されました。"
+            "access": "MISSION INDEX内のEXTREME区分から、いつでも選択できます。"
           },
           "sequences": {
             "persisted": {
               "id": "mode-authorization-survival",
               "kind": "operation-clear",
               "eyebrow": "OPERATION COMPLETE / 作戦完了",
-              "title": "EXTREME OPERATIONS AUTHORIZED",
+              "title": "EXTREME OPERATIONS AVAILABLE",
               "subtitle": "公開情報だけで射撃解を組み立てる最高機密任務群です。余剰指令のない状況も含まれます。",
               "finishLabel": "戦果報告を確認",
               "allowSkip": true,
@@ -9579,23 +9579,23 @@
                   "chapter": "DEBRIEF",
                   "kicker": "OPERATIONAL MILESTONE / 課程完了",
                   "title": "SURVIVAL COMPLETE",
-                  "narration": "作戦記録を照合し、当該課程の完了を確認しました。新しい作戦権限を端末内記録へ保存しました。",
-                  "caption": "戦果報告と端末内記録に新規作戦権限を追記しました。",
+                  "narration": "作戦記録を照合し、完了を端末内へ記録しました。全モードは最初から利用できます。",
+                  "caption": "戦果報告と端末内記録へ達成を追記しました。",
                   "focus": "result",
                   "facts": [
                     "課程完了を確定",
-                    "進行記録を端末内へ保存済み",
-                    "EXTREME OPERATIONSを解放"
+                    "達成記録を端末内へ保存済み",
+                    "EXTREME OPERATIONSもいつでも選択可能"
                   ],
                   "durationMs": 8200
                 },
                 {
                   "id": "authorization-survival-features",
                   "chapter": "READ",
-                  "kicker": "NEW AUTHORIZATION / 新規作戦権限",
-                  "title": "EXTREME OPERATIONS AUTHORIZED",
+                  "kicker": "OPERATION GUIDE / 作戦案内",
+                  "title": "EXTREME OPERATIONS AVAILABLE",
                   "narration": "公開情報だけで射撃解を組み立てる最高機密任務群です。余剰指令のない状況も含まれます。",
-                  "caption": "MISSION INDEX内のEXTREME区分が解放されました。",
+                  "caption": "MISSION INDEX内のEXTREME区分から、いつでも選択できます。",
                   "focus": "result",
                   "facts": [
                     "作戦日誌と公開情報だけで射撃解を構成",
@@ -9610,7 +9610,7 @@
               "id": "mode-authorization-survival",
               "kind": "operation-clear",
               "eyebrow": "OPERATION COMPLETE / 作戦完了",
-              "title": "EXTREME OPERATIONS AUTHORIZED",
+              "title": "EXTREME OPERATIONS AVAILABLE",
               "subtitle": "公開情報だけで射撃解を組み立てる最高機密任務群です。余剰指令のない状況も含まれます。",
               "finishLabel": "戦果報告を確認",
               "allowSkip": true,
@@ -9620,23 +9620,23 @@
                   "chapter": "DEBRIEF",
                   "kicker": "OPERATIONAL MILESTONE / 課程完了",
                   "title": "SURVIVAL COMPLETE",
-                  "narration": "作戦記録を照合し、当該課程の完了を確認しました。新しい権限は有効ですが、端末内記録への保存は完了していません。",
+                  "narration": "作戦の完了を確認しましたが、端末内への記録は保存できていません。全モードは引き続き利用できます。",
                   "caption": "画面上部の保存警告を確認してください。",
                   "focus": "result",
                   "facts": [
                     "課程完了を確定",
-                    "保存未完了・画面上のみ解放",
-                    "EXTREME OPERATIONSを解放"
+                    "保存未完了・今回の達成は画面上のみ",
+                    "EXTREME OPERATIONSもいつでも選択可能"
                   ],
                   "durationMs": 8200
                 },
                 {
                   "id": "authorization-survival-features",
                   "chapter": "READ",
-                  "kicker": "NEW AUTHORIZATION / 新規作戦権限",
-                  "title": "EXTREME OPERATIONS AUTHORIZED",
+                  "kicker": "OPERATION GUIDE / 作戦案内",
+                  "title": "EXTREME OPERATIONS AVAILABLE",
                   "narration": "公開情報だけで射撃解を組み立てる最高機密任務群です。余剰指令のない状況も含まれます。",
-                  "caption": "MISSION INDEX内のEXTREME区分が解放されました。",
+                  "caption": "MISSION INDEX内のEXTREME区分から、いつでも選択できます。",
                   "focus": "result",
                   "facts": [
                     "作戦日誌と公開情報だけで射撃解を構成",
@@ -15663,7 +15663,7 @@
     },
     "progression": {
       "storageKey": "deep-blue-grid.progression",
-      "version": 1,
+      "version": 2,
       "contract": {
         "route": [
           "training",
@@ -15672,6 +15672,13 @@
           "mission",
           "survival"
         ],
+        "access": {
+          "policyRevision": "2026-10-13-open-access",
+          "allModesFromFirstLaunch": true,
+          "tutorialOptional": true,
+          "allLessonsSelectable": true,
+          "allMissionCategoriesSelectable": true
+        },
         "completionRequirements": {
           "training": "complete all nine lessons",
           "casual": "secure all six sectors",
@@ -15690,7 +15697,7 @@
           "archiveMarks": 1,
           "totalMarks": 6
         },
-        "extremeAuthorization": "complete survival",
+        "extremeAuthorization": "available from first launch; no prerequisite",
         "debug": {
           "query": "?debug=all",
           "runtimeOnly": true,
@@ -15698,7 +15705,7 @@
           "visibleBanner": true
         },
         "persistence": {
-          "legacyEvidenceRecovery": "prefer the longer contiguous authorization prefix",
+          "legacyEvidenceRecovery": "preserve known completion records; never infer other mode clears from a mission record",
           "futureVersionWriteProtection": true,
           "writeFailureAlert": "LOCAL RECORD NOT SAVED"
         }
@@ -15715,13 +15722,13 @@
         "singleDurableWrite": true,
         "debugWrites": false,
         "futureVersionWrites": false,
-        "saveFailureBehavior": "keep runtime authorization and show LOCAL RECORD NOT SAVED until acknowledged",
+        "saveFailureBehavior": "keep runtime completion and show LOCAL RECORD NOT SAVED; mode access never depends on saving",
+        "automaticAuthorizationSequence": false,
         "presentationOrder": [
           "evaluate",
           "commit-in-memory",
           "durable-write",
-          "open-authorization-sequence",
-          "resume-after-action-report"
+          "show-after-action-report"
         ]
       }
     },

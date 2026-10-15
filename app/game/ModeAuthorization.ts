@@ -62,7 +62,7 @@ export const MODE_AUTHORIZATION_PRESENTATIONS: Readonly<Record<ProgressionMode, 
     authorizedLabel: "EXTREME OPERATIONS",
     summary: "公開情報だけで射撃解を組み立てる最高機密任務群です。余剰指令のない状況も含まれます。",
     features: ["作戦日誌と公開情報だけで射撃解を構成", "敗北後も未確認配置を秘匿", "余剰指令のない最高難度D6"],
-    access: "MISSION INDEX内のEXTREME区分が解放されました。",
+    access: "MISSION INDEX内のEXTREME区分から、いつでも選択できます。",
   },
 };
 
@@ -73,7 +73,7 @@ export function modeAuthorizationFor(mode: ProgressionMode): ModeAuthorizationPr
 /** Result-screen sequence shared by browser and the Unity handoff contract. */
 export function buildModeAuthorizationSequence(mode: ProgressionMode, persisted = true): BriefingSequence {
   const authorization = modeAuthorizationFor(mode);
-  const recordFact = persisted ? "進行記録を端末内へ保存済み" : "保存未完了・画面上のみ解放";
+  const recordFact = persisted ? "達成記録を端末内へ保存済み" : "保存未完了・今回の達成は画面上のみ";
   const cues: BriefingCue[] = [
     {
       id: `authorization-${mode}-complete`,
@@ -81,18 +81,18 @@ export function buildModeAuthorizationSequence(mode: ProgressionMode, persisted 
       kicker: "OPERATIONAL MILESTONE / 課程完了",
       title: `${authorization.completedLabel} COMPLETE`,
       narration: persisted
-        ? "作戦記録を照合し、当該課程の完了を確認しました。新しい作戦権限を端末内記録へ保存しました。"
-        : "作戦記録を照合し、当該課程の完了を確認しました。新しい権限は有効ですが、端末内記録への保存は完了していません。",
-      caption: persisted ? "戦果報告と端末内記録に新規作戦権限を追記しました。" : "画面上部の保存警告を確認してください。",
+        ? "作戦記録を照合し、完了を端末内へ記録しました。全モードは最初から利用できます。"
+        : "作戦の完了を確認しましたが、端末内への記録は保存できていません。全モードは引き続き利用できます。",
+      caption: persisted ? "戦果報告と端末内記録へ達成を追記しました。" : "画面上部の保存警告を確認してください。",
       focus: "result",
-      facts: ["課程完了を確定", recordFact, `${authorization.authorizedLabel}を解放`],
+      facts: ["課程完了を確定", recordFact, `${authorization.authorizedLabel}もいつでも選択可能`],
       durationMs: 8200,
     },
     {
       id: `authorization-${mode}-features`,
       chapter: "READ",
-      kicker: "NEW AUTHORIZATION / 新規作戦権限",
-      title: `${authorization.authorizedLabel} AUTHORIZED`,
+      kicker: "OPERATION GUIDE / 作戦案内",
+      title: `${authorization.authorizedLabel} AVAILABLE`,
       narration: authorization.summary,
       caption: authorization.access,
       focus: "result",
@@ -103,7 +103,7 @@ export function buildModeAuthorizationSequence(mode: ProgressionMode, persisted 
 
   return buildOperationClearSequence({
     id: `mode-authorization-${mode}`,
-    title: `${authorization.authorizedLabel} AUTHORIZED`,
+    title: `${authorization.authorizedLabel} AVAILABLE`,
     subtitle: authorization.summary,
     facts: authorization.features,
     cues,
